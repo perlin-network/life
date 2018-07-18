@@ -120,6 +120,13 @@ func (c *SSAFunctionCompiler) Compile() {
 				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
 			})
 
+		case "loop":
+			c.Locations = append(c.Locations, &Location {
+				CodePos: len(c.Code),
+				StackDepth: len(c.Stack),
+				BrHead: true,
+			})
+
 		case "end":
 			loc := c.Locations[len(c.Locations) - 1]
 			c.Locations = c.Locations[:len(c.Locations) - 1]
