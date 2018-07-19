@@ -13,6 +13,12 @@
             (drop)
             (i32.const 11)
         )
+        (drop)
+        (loop (result i32)
+            (i32.const 0)
+            (br_if 0)
+            (i32.const 99)
+        )
         return
     )
 )

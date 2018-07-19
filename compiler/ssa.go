@@ -27,6 +27,7 @@ type Location struct {
 	StackDepth int
 	BrHead bool // true for loops
 	PreserveTop bool
+	LoopPreserveTop bool
 	FixupList []FixupInfo
 
 	IfBlock bool
@@ -83,31 +84,29 @@ func (c *SSAFunctionCompiler) PushStack(values... TyValueID) {
 }
 
 func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location) {
+	if loc.PreserveTop {
+		// TODO: This might be inefficient.
+		c.Code = append(
+			c.Code,
+			buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, []TyValueID{c.PopStack(1)[0]}),
+		)
+	}
+
+	var innerBrTarget int64
 	if loc.BrHead {
-		c.Code = append(c.Code, buildInstr(0, "jmp", []int64{int64(loc.CodePos)}, []TyValueID{0}))
-		// TODO: Finish lazy fixup of internal branches.
-		for _, info := range loc.FixupList {
-			c.Code[info.CodePos].Immediates[info.TablePos] = int64(loc.CodePos)
-		}
+		innerBrTarget = int64(loc.CodePos)
 	} else {
-		if loc.PreserveTop {
-			// TODO: This might be inefficient.
-			c.Code = append(
-				c.Code,
-				buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, []TyValueID{c.PopStack(1)[0]}),
-			)
-		}
+		innerBrTarget = int64(len(c.Code))
+	}
 
-		// TODO: Finish lazy fixup of internal branches.
-		for _, info := range loc.FixupList {
-			c.Code[info.CodePos].Immediates[info.TablePos] = int64(len(c.Code))
-		}
+	for _, info := range loc.FixupList {
+		c.Code[info.CodePos].Immediates[info.TablePos] = innerBrTarget
+	}
 
-		if loc.PreserveTop {
-			retID := c.NextValueID()
-			c.Code = append(c.Code, buildInstr(retID, "phi", nil, nil))
-			c.PushStack(retID)
-		}
+	if loc.PreserveTop {
+		retID := c.NextValueID()
+		c.Code = append(c.Code, buildInstr(retID, "phi", nil, nil))
+		c.PushStack(retID)
 	}
 }
 
@@ -157,6 +156,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Locations = append(c.Locations, &Location {
 				CodePos: len(c.Code),
 				StackDepth: len(c.Stack),
+				LoopPreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
 				BrHead: true,
 			})
 
@@ -205,8 +205,8 @@ func (c *SSAFunctionCompiler) Compile() {
 				})
 			}
 
-			if (loc.PreserveTop && len(c.Stack) == loc.StackDepth + 1) ||
-				(!loc.PreserveTop && len(c.Stack) == loc.StackDepth) {
+			if ((loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth + 1) ||
+				(!(loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth) {
 			} else {
 				panic("inconsistent stack pattern")
 			}
