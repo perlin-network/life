@@ -4,6 +4,7 @@ type Opcode byte
 
 const (
 	Nop Opcode = iota
+	Unreachable
 	I32Const
 	I32Add
 	Jmp

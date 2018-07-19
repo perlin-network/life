@@ -70,6 +70,8 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 		switch ins {
 		case opcodes.Nop:
+		case opcodes.Unreachable:
+			panic("wasm: unreachable executed")
 		case opcodes.I32Const:
 			val := LE.Uint32(frame.Code[frame.IP:frame.IP + 4])
 			frame.IP += 4

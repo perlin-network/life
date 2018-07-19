@@ -19,6 +19,8 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		binary.Write(buf, binary.LittleEndian, uint32(ins.Target))
 
 		switch ins.Op {
+		case "unreachable":
+			binary.Write(buf, binary.LittleEndian, opcodes.Unreachable)
 		case "i32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Const)
 			binary.Write(buf, binary.LittleEndian, int32(ins.Immediates[0]))

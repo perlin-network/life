@@ -122,6 +122,9 @@ func (c *SSAFunctionCompiler) Compile() {
 		switch ins.Op.Name {
 		case "nop":
 
+		case "unreachable":
+			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, nil, nil))
+
 		case "i32.const":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(int32))}, nil))
