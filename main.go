@@ -2,8 +2,9 @@ package main
 
 import (
 	"os"
+	"fmt"
 	"io/ioutil"
-	"github.com/perlin-network/life/compiler"
+	"github.com/perlin-network/life/exec"
 )
 
 func main() {
@@ -12,9 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	m, err := compiler.LoadModule(input)
-	if err != nil {
-		panic(err)
-	}
-	m.Compile()
+	vm := exec.NewVirtualMachine(input)
+	ret := vm.Execute(0)
+	fmt.Println(ret)
 }
