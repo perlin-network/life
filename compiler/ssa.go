@@ -120,6 +120,8 @@ func (c *SSAFunctionCompiler) Compile() {
 	for _, ins := range c.Source.Code {
 		fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
 		switch ins.Op.Name {
+		case "nop":
+
 		case "i32.const":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(int32))}, nil))
