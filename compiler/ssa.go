@@ -25,6 +25,8 @@ type Location struct {
 	BrHead bool // true for loops
 	PreserveTop bool
 	FixupList []FixupInfo
+
+	IfBlock bool
 }
 
 type FixupInfo struct {
@@ -62,7 +64,7 @@ func (c *SSAFunctionCompiler) PushStack(values... TyValueID) {
 
 func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location) {
 	if loc.BrHead {
-		c.Code = append(c.Code, buildInstr(0, "jmp", []int64{int64(loc.CodePos)}, nil))
+		c.Code = append(c.Code, buildInstr(0, "jmp", []int64{int64(loc.CodePos)}, []TyValueID{0}))
 		// TODO: Finish lazy fixup of internal branches.
 		for _, info := range loc.FixupList {
 			c.Code[info.CodePos].Immediates[info.TablePos] = int64(loc.CodePos)
@@ -133,9 +135,51 @@ func (c *SSAFunctionCompiler) Compile() {
 				BrHead: true,
 			})
 
+		case "if":
+			cond := c.PopStack(1)[0]
+
+			c.Locations = append(c.Locations, &Location {
+				CodePos: len(c.Code),
+				StackDepth: len(c.Stack),
+				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				IfBlock: true,
+			})
+
+			c.Code = append(c.Code, buildInstr(0, "jmp_if", []int64{int64(len(c.Code) + 2)}, []TyValueID{cond, 0}))
+			c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
+
+		case "else":
+			loc := c.Locations[len(c.Locations) - 1]
+			if !loc.IfBlock {
+				panic("expected if block")
+			}
+
+			loc.FixupList = append(loc.FixupList, FixupInfo {
+				CodePos: len(c.Code),
+			})
+
+			if loc.PreserveTop {
+				c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, c.PopStack(1)))
+			} else {
+				c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
+			}
+
+			c.Code[loc.CodePos + 1].Immediates[0] = int64(len(c.Code))
+			loc.IfBlock = false
+
 		case "end":
 			loc := c.Locations[len(c.Locations) - 1]
 			c.Locations = c.Locations[:len(c.Locations) - 1]
+
+			if loc.IfBlock {
+				if loc.PreserveTop {
+					panic("if block without an else cannot yield values")
+				}
+				loc.FixupList = append(loc.FixupList, FixupInfo {
+					CodePos: loc.CodePos + 1,
+				})
+			}
+
 			if (loc.PreserveTop && len(c.Stack) == loc.StackDepth + 1) ||
 				(!loc.PreserveTop && len(c.Stack) == loc.StackDepth) {
 			} else {
