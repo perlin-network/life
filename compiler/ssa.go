@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/disasm"
 )
@@ -29,7 +30,6 @@ type Location struct {
 type FixupInfo struct {
 	CodePos int
 	TablePos int
-	ValueID TyValueID
 }
 
 type Instr struct {
@@ -68,25 +68,22 @@ func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location) {
 			c.Code[info.CodePos].Immediates[info.TablePos] = int64(loc.CodePos)
 		}
 	} else {
+		if loc.PreserveTop {
+			// TODO: This might be inefficient.
+			c.Code = append(
+				c.Code,
+				buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, []TyValueID{c.PopStack(1)[0]}),
+			)
+		}
+
 		// TODO: Finish lazy fixup of internal branches.
 		for _, info := range loc.FixupList {
 			c.Code[info.CodePos].Immediates[info.TablePos] = int64(len(c.Code))
 		}
 
 		if loc.PreserveTop {
-			phiInput := make([]TyValueID, len(loc.FixupList) + 1)
-			for i, info := range loc.FixupList {
-				if info.ValueID == 0 {
-					panic("expected info.ValueID != 0")
-				}
-				phiInput[i] = info.ValueID
-			}
-
-			last := c.PopStack(1)[0]
-			phiInput[len(phiInput) - 1] = last
-
 			retID := c.NextValueID()
-			c.Code = append(c.Code, buildInstr(retID, "phi", nil, phiInput))
+			c.Code = append(c.Code, buildInstr(retID, "phi", nil, nil))
 			c.PushStack(retID)
 		}
 	}
@@ -99,6 +96,7 @@ func (c *SSAFunctionCompiler) Compile() {
 	})
 
 	for _, ins := range c.Source.Code {
+		fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
 		switch ins.Op.Name {
 		case "i32.const":
 			retID := c.NextValueID()
@@ -151,45 +149,55 @@ func (c *SSAFunctionCompiler) Compile() {
 			fixupInfo := FixupInfo {
 				CodePos: len(c.Code),
 			}
+
+			brValues := []TyValueID{0}
 			if loc.PreserveTop {
-				fixupInfo.ValueID = c.Stack[len(c.Stack) - 1]
+				brValues[0] = c.Stack[len(c.Stack) - 1]
 			}
 			loc.FixupList = append(loc.FixupList, fixupInfo)
-			c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, nil))
+			c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, brValues))
 
 		case "br_if":
-			brCondition := c.PopStack(1)
+			brValues := []TyValueID{c.PopStack(1)[0], 0}
 			label := int(ins.Immediates[0].(uint32))
 			loc := c.Locations[len(c.Locations) - 1 - label]
 			fixupInfo := FixupInfo {
 				CodePos: len(c.Code),
 			}
 			if loc.PreserveTop {
-				fixupInfo.ValueID = c.Stack[len(c.Stack) - 1]
+				brValues[1] = c.Stack[len(c.Stack) - 1]
 			}
 			loc.FixupList = append(loc.FixupList, fixupInfo)
-			c.Code = append(c.Code, buildInstr(0, "jmp_if", []int64{-1}, brCondition))
+			c.Code = append(c.Code, buildInstr(0, "jmp_if", []int64{-1}, brValues))
 
 		case "br_table":
 			brCount := int(ins.Immediates[0].(uint32)) + 1
 			brTargets := make([]int64, brCount)
-			brCondition := c.PopStack(1)
+			brValues := []TyValueID{c.PopStack(1)[0], 0}
+
+			preserveTop := false
 
 			for i := 0; i < brCount; i++ {
 				label := int(ins.Immediates[i + 1].(uint32))
 				loc := c.Locations[len(c.Locations) - 1 - label]
 
+				if loc.PreserveTop {
+					preserveTop = true
+				}
+
 				fixupInfo := FixupInfo {
 					CodePos: len(c.Code),
 					TablePos: i,
 				}
-				if loc.PreserveTop {
-					fixupInfo.ValueID = c.Stack[len(c.Stack) - 1]
-				}
 				loc.FixupList = append(loc.FixupList, fixupInfo)
 				brTargets[i] = -1
 			}
-			c.Code = append(c.Code, buildInstr(0, "jmp_table", brTargets, brCondition))
+
+			if preserveTop {
+				brValues[1] = c.Stack[len(c.Stack) - 1]
+			}
+
+			c.Code = append(c.Code, buildInstr(0, "jmp_table", brTargets, brValues))
 
 		case "return":
 			if len(c.Stack) == 1 {
@@ -197,7 +205,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			} else if len(c.Stack) == 0 {
 				c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
 			} else {
-				panic("incorrect stack state at return")
+				panic(fmt.Errorf("incorrect stack state at return: depth = %d", len(c.Stack)))
 			}
 
 		default:

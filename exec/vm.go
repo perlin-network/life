@@ -36,8 +36,8 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 
 func (vm *VirtualMachine) Execute(functionID int) int64 {
 	functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
-	if len(functionInfo.Sig.ParamTypes) != 0 || len(functionInfo.Sig.ReturnTypes) != 0 {
-		panic("entry function must have no params or return values")
+	if len(functionInfo.Sig.ParamTypes) != 0 {
+		panic("entry function must have no params")
 	}
 
 	vm.CallStack = append(vm.CallStack, Frame {
@@ -47,7 +47,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 	frame := &vm.CallStack[len(vm.CallStack) - 1]
 	code := vm.FunctionCode[frame.FunctionID]
-	lastValueID := 0
+	var yielded int64
 
 	for {
 		valueID := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
@@ -66,12 +66,16 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a + b)
 		case opcodes.Jmp:
-			frame.IP = int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			target := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			yielded = frame.Regs[int(LE.Uint32(code[frame.IP + 4 : frame.IP + 8]))]
+			frame.IP = target
 		case opcodes.JmpIf:
 			target := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
 			cond := int(LE.Uint32(code[frame.IP + 4:frame.IP + 8]))
-			frame.IP += 8
+			yieldedReg := int(LE.Uint32(code[frame.IP + 8 : frame.IP + 12]))
+			frame.IP += 12
 			if frame.Regs[cond] != 0 {
+				yielded = frame.Regs[yieldedReg]
 				frame.IP = target
 			}
 		case opcodes.JmpTable:
@@ -85,6 +89,9 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 4
 
 			cond := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			frame.IP += 4
+
+			yielded = frame.Regs[int(LE.Uint32(code[frame.IP:frame.IP + 4]))]
 			frame.IP += 4
 
 			val := int(frame.Regs[cond])
@@ -121,13 +128,9 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 8
 			frame.Locals[id] = val
 		case opcodes.Phi:
-			frame.Regs[valueID] = frame.Regs[lastValueID]
+			frame.Regs[valueID] = yielded
 		default:
 			panic("unknown instruction")
-		}
-
-		if valueID != 0 {
-			lastValueID = valueID
 		}
 	}
 }

@@ -31,6 +31,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 
 			reloc32Targets = append(reloc32Targets, buf.Len())
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
 		case "jmp_if":
 			binary.Write(buf, binary.LittleEndian, opcodes.JmpIf)
@@ -39,6 +40,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "jmp_table":
 			binary.Write(buf, binary.LittleEndian, opcodes.JmpTable)
 			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Immediates) - 1))
@@ -49,10 +51,9 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			}
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "phi":
 			binary.Write(buf, binary.LittleEndian, opcodes.Phi)
-			// TODO: We are using runtime state instead of statically determining the inputs.
-			// Can be changed.
 		case "return":
 			if len(ins.Values) != 0 {
 				binary.Write(buf, binary.LittleEndian, opcodes.ReturnValue)
