@@ -16,6 +16,9 @@ type SSAFunctionCompiler struct {
 	Stack []TyValueID
 	Locations []*Location
 
+	StackValueSets map[int][]TyValueID
+	UsedValueIDs map[TyValueID]struct{}
+
 	ValueID TyValueID
 }
 
@@ -42,6 +45,15 @@ type Instr struct {
 	Values []TyValueID
 }
 
+func NewSSAFunctionCompiler(m *wasm.Module, d *disasm.Disassembly) *SSAFunctionCompiler {
+	return &SSAFunctionCompiler {
+		Module: m,
+		Source: d,
+		StackValueSets: make(map[int][]TyValueID),
+		UsedValueIDs: make(map[TyValueID]struct{}),
+	}
+}
+
 func (c *SSAFunctionCompiler) NextValueID() TyValueID {
 	c.ValueID++
 	return c.ValueID
@@ -59,6 +71,14 @@ func (c *SSAFunctionCompiler) PopStack(n int) []TyValueID {
 }
 
 func (c *SSAFunctionCompiler) PushStack(values... TyValueID) {
+	for i, id := range values {
+		if _, ok := c.UsedValueIDs[id]; ok {
+			panic("pushing a value ID twice is not supported yet")
+		}
+		c.UsedValueIDs[id] = struct{}{}
+		c.StackValueSets[len(c.Stack) + i] = append(c.StackValueSets[len(c.Stack) + i], id)
+	}
+
 	c.Stack = append(c.Stack, values...)
 }
 

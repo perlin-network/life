@@ -31,11 +31,10 @@ func (m *Module) CompileForInterpreter() [][]byte {
 		if err != nil {
 			panic(err)
 		}
-		compiler := &SSAFunctionCompiler {
-			Module: m.Base,
-			Source: d,
-		}
+		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.Compile()
+		fmt.Println(compiler.Code)
+		compiler.RegAlloc()
 		fmt.Println(compiler.Code)
 		ret[i] = compiler.Serialize()
 	}
