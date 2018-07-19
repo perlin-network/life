@@ -2,7 +2,9 @@
 
 package compiler
 
-func (c *SSAFunctionCompiler) RegAlloc() {
+// FIXME: The current RegAlloc is based on wasm stack info and we probably
+// want a real one (in addition to this) with liveness analysis.
+func (c *SSAFunctionCompiler) RegAlloc() int {
 	regID := TyValueID(1)
 	valueRelocs := make(map[TyValueID]TyValueID)
 	for _, values := range c.StackValueSets {
@@ -32,6 +34,8 @@ func (c *SSAFunctionCompiler) RegAlloc() {
 			}
 		}
 	}
+
+	return int(regID)
 }
 
 func (ins *Instr) BranchTargets() []int {
