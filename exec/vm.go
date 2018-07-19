@@ -6,17 +6,21 @@ import (
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
+const DefaultCallStackSize = 512
+
 var LE = binary.LittleEndian
 
 type VirtualMachine struct {
 	Module *compiler.Module
 	FunctionCode [][]byte
 	CallStack []Frame
+	CurrentFrame int
 }
 
 type Frame struct {
 	FunctionID int
-	Regs [32]int64
+	Code []byte
+	Regs [32]int64 // Hmm... It should be rare for normal applications to use more than 32 regs.
 	Locals []int64
 	IP int
 	RecvReturnValue int64
@@ -31,7 +35,16 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 	return &VirtualMachine{
 		Module: m,
 		FunctionCode: m.CompileForInterpreter(),
+		CallStack: make([]Frame, DefaultCallStackSize),
+		CurrentFrame: -1,
 	}
+}
+
+func (vm *VirtualMachine) GetCurrentFrame() *Frame {
+	if vm.CurrentFrame >= len(vm.CallStack) {
+		vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
+	}
+	return &vm.CallStack[vm.CurrentFrame]
 }
 
 func (vm *VirtualMachine) Execute(functionID int) int64 {
@@ -40,58 +53,59 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 		panic("entry function must have no params")
 	}
 
-	vm.CallStack = append(vm.CallStack, Frame {
-		FunctionID: functionID,
-		Locals: make([]int64, len(functionInfo.Body.Locals)),
-	})
+	vm.CurrentFrame++
 
-	frame := &vm.CallStack[len(vm.CallStack) - 1]
-	code := vm.FunctionCode[frame.FunctionID]
+	frame := vm.GetCurrentFrame()
+	frame.FunctionID = functionID
+	frame.Locals = make([]int64, len(functionInfo.Body.Locals))
+	frame.Code = vm.FunctionCode[frame.FunctionID]
+	frame.IP = 0
+
 	var yielded int64
 
 	for {
-		valueID := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
-		ins := opcodes.Opcode(code[frame.IP + 4])
+		valueID := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
+		ins := opcodes.Opcode(frame.Code[frame.IP + 4])
 		frame.IP += 5
 
 		switch ins {
 		case opcodes.Nop:
 		case opcodes.I32Const:
-			val := LE.Uint32(code[frame.IP:frame.IP + 4])
+			val := LE.Uint32(frame.Code[frame.IP:frame.IP + 4])
 			frame.IP += 4
 			frame.Regs[valueID] = int64(val)
 		case opcodes.I32Add:
-			a := LE.Uint32(code[frame.IP:frame.IP + 4])
-			b := LE.Uint32(code[frame.IP + 4 : frame.IP + 8])
+			a := LE.Uint32(frame.Code[frame.IP:frame.IP + 4])
+			b := LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8])
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a + b)
 		case opcodes.Jmp:
-			target := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
-			yielded = frame.Regs[int(LE.Uint32(code[frame.IP + 4 : frame.IP + 8]))]
+			target := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
+			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8]))]
 			frame.IP = target
 		case opcodes.JmpIf:
-			target := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
-			cond := int(LE.Uint32(code[frame.IP + 4:frame.IP + 8]))
-			yieldedReg := int(LE.Uint32(code[frame.IP + 8 : frame.IP + 12]))
+			target := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
+			cond := int(LE.Uint32(frame.Code[frame.IP + 4:frame.IP + 8]))
+			yieldedReg := int(LE.Uint32(frame.Code[frame.IP + 8 : frame.IP + 12]))
 			frame.IP += 12
 			if frame.Regs[cond] != 0 {
 				yielded = frame.Regs[yieldedReg]
 				frame.IP = target
 			}
 		case opcodes.JmpTable:
-			targetCount := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			targetCount := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
 			frame.IP += 4
 
-			targetsRaw := code[frame.IP : frame.IP + 4 * targetCount]
+			targetsRaw := frame.Code[frame.IP : frame.IP + 4 * targetCount]
 			frame.IP += 4 * targetCount
 
-			defaultTarget := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			defaultTarget := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
 			frame.IP += 4
 
-			cond := int(LE.Uint32(code[frame.IP:frame.IP + 4]))
+			cond := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
 			frame.IP += 4
 
-			yielded = frame.Regs[int(LE.Uint32(code[frame.IP:frame.IP + 4]))]
+			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))]
 			frame.IP += 4
 
 			val := int(frame.Regs[cond])
@@ -101,30 +115,28 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 				frame.IP = defaultTarget
 			}
 		case opcodes.ReturnValue:
-			val := frame.Regs[int(LE.Uint32(code[frame.IP : frame.IP + 4]))]
-			vm.CallStack = vm.CallStack[:len(vm.CallStack) - 1]
-			if len(vm.CallStack) == 0 {
+			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))]
+			vm.CurrentFrame--
+			if vm.CurrentFrame == -1 {
 				return val
 			} else {
-				frame = &vm.CallStack[len(vm.CallStack) - 1]
-				code = vm.FunctionCode[frame.FunctionID]
+				frame = vm.GetCurrentFrame()
 				frame.RecvReturnValue = val
 			}
 		case opcodes.ReturnVoid:
-			vm.CallStack = vm.CallStack[:len(vm.CallStack) - 1]
-			if len(vm.CallStack) == 0 {
+			vm.CurrentFrame--
+			if vm.CurrentFrame == -1 {
 				return 0
 			} else {
-				frame = &vm.CallStack[len(vm.CallStack) - 1]
-				code = vm.FunctionCode[frame.FunctionID]
+				frame = vm.GetCurrentFrame()
 			}
 		case opcodes.GetLocal:
-			val := frame.Locals[int(LE.Uint32(code[frame.IP : frame.IP + 4]))]
+			val := frame.Locals[int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))]
 			frame.IP += 4
 			frame.Regs[valueID] = val
 		case opcodes.SetLocal:
-			id := int(LE.Uint32(code[frame.IP : frame.IP + 4]))
-			val := frame.Regs[int(LE.Uint32(code[frame.IP + 4: frame.IP + 8]))]
+			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))
+			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4: frame.IP + 8]))]
 			frame.IP += 8
 			frame.Locals[id] = val
 		case opcodes.Phi:
