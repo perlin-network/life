@@ -23,7 +23,7 @@ type Frame struct {
 	Regs [32]int64 // Hmm... It should be rare for normal applications to use more than 32 regs.
 	Locals []int64
 	IP int
-	RecvReturnValue int64
+	ReturnReg int
 }
 
 func NewVirtualMachine(code []byte) *VirtualMachine {
@@ -42,7 +42,8 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 
 func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	if vm.CurrentFrame >= len(vm.CallStack) {
-		vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
+		panic("call stack overflow")
+		//vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
 	}
 	return &vm.CallStack[vm.CurrentFrame]
 }
@@ -77,10 +78,19 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 4
 			frame.Regs[valueID] = int64(val)
 		case opcodes.I32Add:
-			a := LE.Uint32(frame.Code[frame.IP:frame.IP + 4])
-			b := LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8])
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8]))])
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a + b)
+		case opcodes.I32Eq:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8]))])
+			frame.IP += 8
+			if a == b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
 		case opcodes.Jmp:
 			target := int(LE.Uint32(frame.Code[frame.IP:frame.IP + 4]))
 			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4 : frame.IP + 8]))]
@@ -123,7 +133,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 				return val
 			} else {
 				frame = vm.GetCurrentFrame()
-				frame.RecvReturnValue = val
+				frame.Regs[frame.ReturnReg] = val
 			}
 		case opcodes.ReturnVoid:
 			vm.CurrentFrame--
@@ -141,6 +151,31 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP + 4: frame.IP + 8]))]
 			frame.IP += 8
 			frame.Locals[id] = val
+		case opcodes.Call:
+			functionID = int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))
+			frame.IP += 4
+			argCount := int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))
+			frame.IP += 4
+			argsRaw := frame.Code[frame.IP : frame.IP + 4 * argCount]
+			frame.IP += 4 * argCount
+
+			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
+
+			newLocals := make([]int64, argCount + len(functionInfo.Body.Locals))
+			for i := 0; i < argCount; i++ {
+				newLocals[i] = frame.Regs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
+			}
+
+			frame.ReturnReg = valueID
+
+			vm.CurrentFrame++
+			frame = vm.GetCurrentFrame()
+
+			frame.FunctionID = functionID
+			frame.Locals = newLocals
+			frame.Code = vm.FunctionCode[frame.FunctionID]
+			frame.IP = 0
+
 		case opcodes.Phi:
 			frame.Regs[valueID] = yielded
 		default:
