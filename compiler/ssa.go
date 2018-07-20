@@ -129,7 +129,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(int32))}, nil))
 			c.PushStack(retID)
 
-		case "i32.add":
+		case "i32.add", "i32.eq":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(2)))
 			c.PushStack(retID)
@@ -277,13 +277,45 @@ func (c *SSAFunctionCompiler) Compile() {
 				panic(fmt.Errorf("incorrect stack state at return: depth = %d", len(c.Stack)))
 			}
 
+		case "call":
+			targetID := int(ins.Immediates[0].(uint32))
+			targetInfo := &c.Module.FunctionIndexSpace[targetID]
+
+			params := c.PopStack(len(targetInfo.Sig.ParamTypes))
+			targetValueID := TyValueID(0)
+			if len(targetInfo.Sig.ReturnTypes) > 0 {
+				targetValueID = c.NextValueID()
+			}
+			c.Code = append(c.Code, buildInstr(targetValueID, "call", []int64{int64(targetID)}, params))
+			if targetValueID != 0 {
+				c.PushStack(targetValueID)
+			}
+
+		case "call_indirect":
+			typeID := int(ins.Immediates[0].(uint32))
+			sig := &c.Module.Types.Entries[typeID]
+
+			targetWithParams := c.PopStack(len(sig.ParamTypes) + 1)
+			targetValueID := TyValueID(0)
+			if len(sig.ReturnTypes) > 0 {
+				targetValueID = c.NextValueID()
+			}
+			c.Code = append(c.Code, buildInstr(targetValueID, "call_indirect", []int64{int64(typeID)}, targetWithParams))
+			if targetValueID != 0 {
+				c.PushStack(targetValueID)
+			}
+
 		default:
 			panic(ins.Op.Name)
 		}
 	}
 
 	c.FixupLocationRef(c.Locations[0])
-	c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
+	if len(c.Stack) != 0 {
+		c.Code = append(c.Code, buildInstr(0, "return", nil, c.PopStack(1)))
+	} else {
+		c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
+	}
 }
 
 func buildInstr(target TyValueID, op string, immediates []int64, values []TyValueID) Instr {

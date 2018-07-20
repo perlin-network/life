@@ -28,6 +28,10 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Add)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.eq":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32Eq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "jmp":
 			binary.Write(buf, binary.LittleEndian, opcodes.Jmp)
 
@@ -71,6 +75,22 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.SetLocal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "call":
+			binary.Write(buf, binary.LittleEndian, opcodes.Call)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Values)))
+			for _, v := range ins.Values {
+				binary.Write(buf, binary.LittleEndian, uint32(v))
+			}
+
+		case "call_indirect":
+			binary.Write(buf, binary.LittleEndian, opcodes.CallIndirect)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Values)))
+			for _, v := range ins.Values {
+				binary.Write(buf, binary.LittleEndian, uint32(v))
+			}
 			
 		default:
 			panic(ins.Op)

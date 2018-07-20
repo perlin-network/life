@@ -7,6 +7,7 @@ const (
 	Unreachable
 	I32Const
 	I32Add
+	I32Eq
 	Jmp
 	JmpIf
 	JmpTable
@@ -14,5 +15,7 @@ const (
 	ReturnVoid
 	GetLocal
 	SetLocal
+	Call
+	CallIndirect
 	Phi
 )
