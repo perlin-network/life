@@ -15,6 +15,7 @@ type VirtualMachine struct {
 	FunctionCode [][]byte
 	CallStack []Frame
 	CurrentFrame int
+	Table []uint32
 }
 
 type Frame struct {
@@ -32,11 +33,33 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		panic(err)
 	}
 
+	table := make([]uint32, 0)
+	if m.Base.Table != nil && len(m.Base.Table.Entries) > 0{
+		t := &m.Base.Table.Entries[0]
+
+		table = make([]uint32, int(t.Limits.Initial))
+		for i := 0; i < int(t.Limits.Initial); i++ {
+			table[i] = 0xffffffff
+		}
+
+		if m.Base.Elements != nil && len(m.Base.Elements.Entries) > 0 {
+			for _, e := range m.Base.Elements.Entries {
+				maybeOffset, err := m.Base.ExecInitExpr(e.Offset)
+				if err != nil {
+					panic(err)
+				}
+				offset := int(maybeOffset.(int32))
+				copy(table[offset:], e.Elems)
+			}
+		}
+	}
+
 	return &VirtualMachine{
 		Module: m,
 		FunctionCode: m.CompileForInterpreter(),
 		CallStack: make([]Frame, DefaultCallStackSize),
 		CurrentFrame: -1,
+		Table: table,
 	}
 }
 
@@ -160,6 +183,42 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 4 * argCount
 
 			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
+
+			newLocals := make([]int64, argCount + len(functionInfo.Body.Locals))
+			for i := 0; i < argCount; i++ {
+				newLocals[i] = frame.Regs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
+			}
+
+			frame.ReturnReg = valueID
+
+			vm.CurrentFrame++
+			frame = vm.GetCurrentFrame()
+
+			frame.FunctionID = functionID
+			frame.Locals = newLocals
+			frame.Code = vm.FunctionCode[frame.FunctionID]
+			frame.IP = 0
+
+		case opcodes.CallIndirect:
+			typeID := int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))
+			frame.IP += 4
+			argCount := int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4])) - 1
+			frame.IP += 4
+			argsRaw := frame.Code[frame.IP : frame.IP + 4 * argCount]
+			frame.IP += 4 * argCount
+			tableItemID := frame.Regs[int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))]
+			frame.IP += 4
+
+			sig := &vm.Module.Base.Types.Entries[typeID]
+
+			functionID = int(vm.Table[tableItemID])
+			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
+
+			// TODO: We are only checking CC here; Do we want strict typeck?
+			if len(functionInfo.Sig.ParamTypes) != len(sig.ParamTypes) ||
+				len(functionInfo.Sig.ReturnTypes) != len(sig.ReturnTypes) {
+				panic("type mismatch")
+			}
 
 			newLocals := make([]int64, argCount + len(functionInfo.Body.Locals))
 			for i := 0; i < argCount; i++ {
