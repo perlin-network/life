@@ -147,14 +147,18 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(math.Float64bits(ins.Immediates[0].(float64)))}, nil))
 			c.PushStack(retID)
 
-		case "i32.add", "i32.sub", "i32.mul", "i32.div_s", "i32.div_u", "i32.and", "i32.or", "i32.xor", "i32.shl", "i32.shr_s", "i32.shr_u", "i32.rotl", "i32.rotr", "i32.clz", "i32.ctz", "i32.popcnt", "i32.eqz", "i32.eq",
-			"i64.add", "i64.sub", "i64.mul", "i64.div_s", "i64.div_u", "i64.and", "i64.or", "i64.xor", "i64.shl", "i64.shr_s", "i64.shr_u", "i64.rotl", "i64.rotr", "i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz", "i64.eq",
+		case "i32.add", "i32.sub", "i32.mul", "i32.div_s", "i32.div_u", "i32.and", "i32.or", "i32.xor", "i32.shl", "i32.shr_s", "i32.shr_u", "i32.rotl", "i32.rotr", "i32.eq",
+			"i64.add", "i64.sub", "i64.mul", "i64.div_s", "i64.div_u", "i64.and", "i64.or", "i64.xor", "i64.shl", "i64.shr_s", "i64.shr_u", "i64.rotl", "i64.rotr", "i64.eq",
 			"f32.add", "f32.sub", "f32.mul", "f32.div", "f32.eq",
 			"f64.add", "f64.sub", "f64.mul", "f64.div", "f64.eq":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(2)))
 			c.PushStack(retID)
-
+		case "i32.clz", "i32.ctz", "i32.popcnt", "i32.eqz",
+			"i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
+			c.PushStack(retID)
 		case "drop":
 			c.PopStack(1)
 
