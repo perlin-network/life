@@ -103,7 +103,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i32.ne":
-			binary.Write(buf, binary.LittleEndian, opcodes.I32Neq)
+			binary.Write(buf, binary.LittleEndian, opcodes.I32Ne)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i32.lt_s":
@@ -220,7 +220,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i64.ne":
-			binary.Write(buf, binary.LittleEndian, opcodes.I64Neq)
+			binary.Write(buf, binary.LittleEndian, opcodes.I64Ne)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i64.lt_s":
@@ -314,7 +314,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f32.ne":
-			binary.Write(buf, binary.LittleEndian, opcodes.F32Neq)
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Ne)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f32.lt":
@@ -392,7 +392,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f64.ne":
-			binary.Write(buf, binary.LittleEndian, opcodes.F64Neq)
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Ne)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f64.lt":

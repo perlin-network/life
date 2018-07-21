@@ -26,7 +26,7 @@ const (
 	I32PopCnt
 	I32EqZ
 	I32Eq
-	I32Neq
+	I32Ne
 	I32LtS
 	I32LtU
 	I32LeS
@@ -57,7 +57,7 @@ const (
 	I64ShrS
 	I64ShrU
 	I64Eq
-	I64Neq
+	I64Ne
 	I64LtS
 	I64LtU
 	I64LeS
@@ -83,7 +83,7 @@ const (
 	F32Neg
 	F32CopySign
 	F32Eq
-	F32Neq
+	F32Ne
 	F32Lt
 	F32Le
 	F32Gt
@@ -105,7 +105,7 @@ const (
 	F64Neg
 	F64CopySign
 	F64Eq
-	F64Neq
+	F64Ne
 	F64Lt
 	F64Le
 	F64Gt
