@@ -192,6 +192,42 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a % b)
+		case opcodes.I32And:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a & b)
+		case opcodes.I32Or:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a | b)
+		case opcodes.I32Xor:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a ^ b)
+		case opcodes.I32Shl:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a << (b % 32))
+		case opcodes.I32ShrS:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a >> (b % 32))
+		case opcodes.I32ShrU:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a >> (b % 32))
 		case opcodes.I32Eq:
 			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
@@ -264,6 +300,42 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a % b)
+		case opcodes.I64And:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+
+			frame.IP += 8
+			frame.Regs[valueID] = a & b
+		case opcodes.I64Or:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+
+			frame.IP += 8
+			frame.Regs[valueID] = a | b
+		case opcodes.I64Xor:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+
+			frame.IP += 8
+			frame.Regs[valueID] = a ^ b
+		case opcodes.I64Shl:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = a << (b % 64)
+		case opcodes.I64ShrS:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = a >> (b % 64)
+		case opcodes.I64ShrU:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a >> (b % 64))
 		case opcodes.I64Eq:
 			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
