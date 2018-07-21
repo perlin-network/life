@@ -138,6 +138,40 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a + b)
+		case opcodes.I32Sub:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a - b)
+		case opcodes.I32Mul:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a * b)
+		case opcodes.I32Divs:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			if b == 0 {
+				panic("integer division by zero")
+			}
+
+			if a == math.MinInt32 && b == -1 {
+				panic("signed integer overflow")
+			}
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a / b)
+		case opcodes.I32Div:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			if b == 0 {
+				panic("integer division by zero")
+			}
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a / b)
 		case opcodes.I32Eq:
 			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
@@ -156,6 +190,40 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 			frame.Regs[valueID] = a + b
+		case opcodes.I64Sub:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			frame.Regs[valueID] = a - b
+		case opcodes.I64Mul:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			frame.Regs[valueID] = a * b
+		case opcodes.I64Divs:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+
+			if b == 0 {
+				panic("integer division by zero")
+			}
+
+			if a == math.MinInt64 && b == -1 {
+				panic("signed integer overflow")
+			}
+
+			frame.IP += 8
+			frame.Regs[valueID] = a / b
+		case opcodes.I64Div:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			if b == 0 {
+				panic("integer division by zero")
+			}
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(a / b)
 		case opcodes.I64Eq:
 			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
@@ -170,6 +238,21 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
 			frame.IP += 8
 			frame.Regs[valueID] = int64(math.Float32bits(a + b))
+		case opcodes.F32Sub:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(a - b))
+		case opcodes.F32Mul:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(a * b))
+		case opcodes.F32Div:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(a / b))
 		case opcodes.F32Eq:
 			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
@@ -184,6 +267,21 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
 			frame.IP += 8
 			frame.Regs[valueID] = int64(math.Float64bits(a + b))
+		case opcodes.F64Sub:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(a - b))
+		case opcodes.F64Mul:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(a * b))
+		case opcodes.F64Div:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(a / b))
 		case opcodes.F64Eq:
 			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
