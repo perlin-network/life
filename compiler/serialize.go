@@ -456,6 +456,15 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
+		case "get_global":
+			binary.Write(buf, binary.LittleEndian, opcodes.GetGlobal)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+
+		case "set_global":
+			binary.Write(buf, binary.LittleEndian, opcodes.SetGlobal)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
 		case "call":
 			binary.Write(buf, binary.LittleEndian, opcodes.Call)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
