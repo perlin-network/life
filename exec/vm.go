@@ -439,6 +439,49 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
 			frame.IP += 8
 			frame.Regs[valueID] = int64(math.Float32bits(a / b))
+		case opcodes.F32Sqrt:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Sqrt(float64(val)))))
+		case opcodes.F32Min:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Min(float64(a), float64(b)))))
+		case opcodes.F32Max:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Max(float64(a), float64(b)))))
+		case opcodes.F32Ceil:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Ceil(float64(val)))))
+		case opcodes.F32Floor:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Floor(float64(val)))))
+		case opcodes.F32Trunc:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Trunc(float64(val)))))
+		case opcodes.F32Nearest:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.RoundToEven(float64(val)))))
+		case opcodes.F32Abs:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Abs(float64(val)))))
+		case opcodes.F32Neg:
+			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(-val))
+		case opcodes.F32CopySign:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float32bits(float32(math.Copysign(float64(a), float64(b)))))
 		case opcodes.F32Eq:
 			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
@@ -468,6 +511,49 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
 			frame.IP += 8
 			frame.Regs[valueID] = int64(math.Float64bits(a / b))
+		case opcodes.F64Sqrt:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.Sqrt(val)))
+		case opcodes.F64Min:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(math.Min(a, b)))
+		case opcodes.F64Max:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(math.Max(a, b)))
+		case opcodes.F64Ceil:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.Ceil(val)))
+		case opcodes.F64Floor:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.Floor(val)))
+		case opcodes.F64Trunc:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.Trunc(val)))
+		case opcodes.F64Nearest:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.RoundToEven(val)))
+		case opcodes.F64Abs:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(math.Abs(val)))
+		case opcodes.F64Neg:
+			val := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(-val))
+		case opcodes.F64CopySign:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			frame.Regs[valueID] = int64(math.Float64bits(math.Copysign(a, b)))
 		case opcodes.F64Eq:
 			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))

@@ -52,12 +52,32 @@ const (
 	F32Sub
 	F32Mul
 	F32Div
+	F32Sqrt
+	F32Min
+	F32Max
+	F32Ceil
+	F32Floor
+	F32Trunc
+	F32Nearest
+	F32Abs
+	F32Neg
+	F32CopySign
 	F32Eq
 	F64Const
 	F64Add
 	F64Sub
 	F64Mul
 	F64Div
+	F64Sqrt
+	F64Min
+	F64Max
+	F64Ceil
+	F64Floor
+	F64Trunc
+	F64Nearest
+	F64Abs
+	F64Neg
+	F64CopySign
 	F64Eq
 	Jmp
 	JmpIf

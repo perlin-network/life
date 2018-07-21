@@ -149,13 +149,15 @@ func (c *SSAFunctionCompiler) Compile() {
 
 		case "i32.add", "i32.sub", "i32.mul", "i32.div_s", "i32.div_u", "i32.and", "i32.or", "i32.xor", "i32.shl", "i32.shr_s", "i32.shr_u", "i32.rotl", "i32.rotr", "i32.eq",
 			"i64.add", "i64.sub", "i64.mul", "i64.div_s", "i64.div_u", "i64.and", "i64.or", "i64.xor", "i64.shl", "i64.shr_s", "i64.shr_u", "i64.rotl", "i64.rotr", "i64.eq",
-			"f32.add", "f32.sub", "f32.mul", "f32.div", "f32.eq",
-			"f64.add", "f64.sub", "f64.mul", "f64.div", "f64.eq":
+			"f32.add", "f32.sub", "f32.mul", "f32.div", "f32.min", "f32.max", "f32.copysign", "f32.eq",
+			"f64.add", "f64.sub", "f64.mul", "f64.div", "f64.min", "f64.max", "f64.copysign", "f64.eq":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(2)))
 			c.PushStack(retID)
 		case "i32.clz", "i32.ctz", "i32.popcnt", "i32.eqz",
-			"i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz":
+			"i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz",
+			"f32.sqrt", "f32.ceil", "f32.floor", "f32.trunc", "f32.nearest", "f32.abs", "f32.neg",
+			"f64.sqrt", "f64.ceil", "f64.floor", "f64.trunc", "f64.nearest", "f64.abs", "f64.neg":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
 			c.PushStack(retID)
