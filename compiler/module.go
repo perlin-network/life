@@ -11,6 +11,11 @@ type Module struct {
 	Base *wasm.Module
 }
 
+type InterpreterCode struct {
+	NumRegs int
+	Bytes []byte
+}
+
 func LoadModule(raw []byte) (*Module, error) {
 	reader := bytes.NewReader(raw)
 
@@ -23,8 +28,8 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileForInterpreter() [][]byte {
-	ret := make([][]byte, len(m.Base.FunctionIndexSpace))
+func (m *Module) CompileForInterpreter() []InterpreterCode {
+	ret := make([]InterpreterCode, len(m.Base.FunctionIndexSpace))
 
 	for i, f := range m.Base.FunctionIndexSpace {
 		d, err := disasm.Disassemble(f, m.Base)
@@ -34,9 +39,12 @@ func (m *Module) CompileForInterpreter() [][]byte {
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.Compile()
 		fmt.Println(compiler.Code)
-		compiler.RegAlloc()
+		numRegs := compiler.RegAlloc()
 		fmt.Println(compiler.Code)
-		ret[i] = compiler.Serialize()
+		ret[i] = InterpreterCode {
+			NumRegs: numRegs,
+			Bytes: compiler.Serialize(),
+		}
 	}
 
 	return ret

@@ -12,7 +12,7 @@ var LE = binary.LittleEndian
 
 type VirtualMachine struct {
 	Module *compiler.Module
-	FunctionCode [][]byte
+	FunctionCode []compiler.InterpreterCode
 	CallStack []Frame
 	CurrentFrame int
 	Table []uint32
@@ -21,7 +21,7 @@ type VirtualMachine struct {
 type Frame struct {
 	FunctionID int
 	Code []byte
-	Regs [32]int64 // Hmm... It should be rare for normal applications to use more than 32 regs.
+	Regs []int64
 	Locals []int64
 	IP int
 	ReturnReg int
@@ -63,6 +63,16 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 	}
 }
 
+func (f *Frame) Init(functionID int, code compiler.InterpreterCode, numTotalLocals int) {
+	values := make([]int64, code.NumRegs + numTotalLocals)
+
+	f.FunctionID = functionID
+	f.Regs = values[:code.NumRegs]
+	f.Locals = values[code.NumRegs:]
+	f.Code = code.Bytes
+	f.IP = 0
+}
+
 func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	if vm.CurrentFrame >= len(vm.CallStack) {
 		panic("call stack overflow")
@@ -80,10 +90,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 	vm.CurrentFrame++
 
 	frame := vm.GetCurrentFrame()
-	frame.FunctionID = functionID
-	frame.Locals = make([]int64, len(functionInfo.Body.Locals))
-	frame.Code = vm.FunctionCode[frame.FunctionID]
-	frame.IP = 0
+	frame.Init(functionID, vm.FunctionCode[functionID], len(functionInfo.Body.Locals))
 
 	var yielded int64
 
@@ -184,20 +191,15 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
 
-			newLocals := make([]int64, argCount + len(functionInfo.Body.Locals))
-			for i := 0; i < argCount; i++ {
-				newLocals[i] = frame.Regs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
-			}
-
+			oldRegs := frame.Regs
 			frame.ReturnReg = valueID
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-
-			frame.FunctionID = functionID
-			frame.Locals = newLocals
-			frame.Code = vm.FunctionCode[frame.FunctionID]
-			frame.IP = 0
+			frame.Init(functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
+			for i := 0; i < argCount; i++ {
+				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
+			}
 
 		case opcodes.CallIndirect:
 			typeID := int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))
@@ -220,20 +222,15 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 				panic("type mismatch")
 			}
 
-			newLocals := make([]int64, argCount + len(functionInfo.Body.Locals))
-			for i := 0; i < argCount; i++ {
-				newLocals[i] = frame.Regs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
-			}
-
+			oldRegs := frame.Regs
 			frame.ReturnReg = valueID
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-
-			frame.FunctionID = functionID
-			frame.Locals = newLocals
-			frame.Code = vm.FunctionCode[frame.FunctionID]
-			frame.IP = 0
+			frame.Init(functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
+			for i := 0; i < argCount; i++ {
+				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
+			}
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = yielded
