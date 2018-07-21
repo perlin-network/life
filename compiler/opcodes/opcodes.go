@@ -26,6 +26,16 @@ const (
 	I32PopCnt
 	I32EqZ
 	I32Eq
+	I32Neq
+	I32LtS
+	I32LtU
+	I32LeS
+	I32LeU
+	I32GtS
+	I32GtU
+	I32GeS
+	I32GeU
+
 	I64Const
 	I64Add
 	I64Sub
@@ -47,6 +57,16 @@ const (
 	I64ShrS
 	I64ShrU
 	I64Eq
+	I64Neq
+	I64LtS
+	I64LtU
+	I64LeS
+	I64LeU
+	I64GtS
+	I64GtU
+	I64GeS
+	I64GeU
+
 	F32Const
 	F32Add
 	F32Sub

@@ -54,7 +54,6 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		for i := 0; i < int(t.Limits.Initial); i++ {
 			table[i] = 0xffffffff
 		}
-
 		if m.Base.Elements != nil && len(m.Base.Elements.Entries) > 0 {
 			for _, e := range m.Base.Elements.Entries {
 				maybeOffset, err := m.Base.ExecInitExpr(e.Offset)
@@ -275,6 +274,87 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			} else {
 				frame.Regs[valueID] = 0
 			}
+		case opcodes.I32Neq:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a != b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32LtS:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32LtU:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32LeS:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32LeU:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32GtS:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32GtU:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32GeS:
+			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a >= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I32GeU:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a >= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
 		case opcodes.I64Const, opcodes.F64Const:
 			val := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
 			frame.IP += 8
@@ -415,6 +495,87 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 			if a == b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64Neq:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			if a != b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64LtS:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64LtU:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64LeS:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64LeU:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64GtS:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64GtU:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64GeS:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+			if a >= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.I64GeU:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+			frame.IP += 8
+			if a >= b {
 				frame.Regs[valueID] = 1
 			} else {
 				frame.Regs[valueID] = 0
