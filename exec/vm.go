@@ -148,7 +148,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a * b)
-		case opcodes.I32Divs:
+		case opcodes.I32DivS:
 			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 
@@ -162,7 +162,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a / b)
-		case opcodes.I32Div:
+		case opcodes.I32DivU:
 			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 
@@ -200,7 +200,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 			frame.Regs[valueID] = a * b
-		case opcodes.I64Divs:
+		case opcodes.I64DivS:
 			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 
@@ -214,7 +214,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = a / b
-		case opcodes.I64Div:
+		case opcodes.I64DivU:
 			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 

@@ -9,15 +9,15 @@ const (
 	I32Add
 	I32Sub
 	I32Mul
-	I32Divs
-	I32Div
+	I32DivS
+	I32DivU
 	I32Eq
 	I64Const
 	I64Add
 	I64Sub
 	I64Mul
-	I64Divs
-	I64Div
+	I64DivS
+	I64DivU
 	I64Eq
 	F32Const
 	F32Add

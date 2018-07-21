@@ -39,11 +39,11 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i32.div_s":
-			binary.Write(buf, binary.LittleEndian, opcodes.I32Divs)
+			binary.Write(buf, binary.LittleEndian, opcodes.I32DivS)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
-		case "i32.div":
-			binary.Write(buf, binary.LittleEndian, opcodes.I32Div)
+		case "i32.div_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32DivU)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i32.eq":
@@ -68,11 +68,11 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i64.div_s":
-			binary.Write(buf, binary.LittleEndian, opcodes.I64Divs)
+			binary.Write(buf, binary.LittleEndian, opcodes.I64DivS)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
-		case "i64.div":
-			binary.Write(buf, binary.LittleEndian, opcodes.I64Div)
+		case "i64.div_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64DivU)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "i64.eq":
