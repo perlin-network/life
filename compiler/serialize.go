@@ -204,6 +204,39 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Div)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.sqrt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Sqrt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.min":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Min)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.max":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Max)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.ceil":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Ceil)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.floor":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Floor)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.trunc":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Trunc)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.nearest":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Nearest)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.abs":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Abs)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.neg":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Neg)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f32.copysign":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32CopySign)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f32.eq":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Eq)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
@@ -227,6 +260,39 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f64.div":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Div)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.sqrt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Sqrt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.min":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Min)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.max":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Max)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.ceil":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Ceil)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.floor":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Floor)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.trunc":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Trunc)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.nearest":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Nearest)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.abs":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Abs)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.neg":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Neg)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "f64.copysign":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64CopySign)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f64.eq":
