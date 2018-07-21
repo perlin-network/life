@@ -11,11 +11,19 @@ const DefaultCallStackSize = 512
 var LE = binary.LittleEndian
 
 type VirtualMachine struct {
+	Config VMConfig
 	Module *compiler.Module
 	FunctionCode []compiler.InterpreterCode
 	CallStack []Frame
 	CurrentFrame int
 	Table []uint32
+	NumValueSlots int
+}
+
+type VMConfig struct {
+	MaxTableSize int
+	MaxValueSlots int
+	MaxCallStackDepth int
 }
 
 type Frame struct {
@@ -63,8 +71,14 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 	}
 }
 
-func (f *Frame) Init(functionID int, code compiler.InterpreterCode, numTotalLocals int) {
-	values := make([]int64, code.NumRegs + numTotalLocals)
+func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode, numTotalLocals int) {
+	numValueSlots := code.NumRegs + numTotalLocals
+	if vm.Config.MaxValueSlots != 0 && vm.NumValueSlots + numValueSlots > vm.Config.MaxValueSlots {
+		panic("max value slot count exceeded")
+	}
+	vm.NumValueSlots += numValueSlots
+
+	values := make([]int64, numValueSlots)
 
 	f.FunctionID = functionID
 	f.Regs = values[:code.NumRegs]
@@ -73,7 +87,16 @@ func (f *Frame) Init(functionID int, code compiler.InterpreterCode, numTotalLoca
 	f.IP = 0
 }
 
+func (f *Frame) Destroy(vm *VirtualMachine) {
+	numValueSlots := len(f.Regs) + len(f.Locals)
+	vm.NumValueSlots -= numValueSlots
+}
+
 func (vm *VirtualMachine) GetCurrentFrame() *Frame {
+	if vm.Config.MaxCallStackDepth != 0 && vm.CurrentFrame >= vm.Config.MaxCallStackDepth {
+		panic("max call stack depth exceeded")
+	}
+
 	if vm.CurrentFrame >= len(vm.CallStack) {
 		panic("call stack overflow")
 		//vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
@@ -90,7 +113,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 	vm.CurrentFrame++
 
 	frame := vm.GetCurrentFrame()
-	frame.Init(functionID, vm.FunctionCode[functionID], len(functionInfo.Body.Locals))
+	frame.Init(vm, functionID, vm.FunctionCode[functionID], len(functionInfo.Body.Locals))
 
 	var yielded int64
 
@@ -158,6 +181,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			}
 		case opcodes.ReturnValue:
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP : frame.IP + 4]))]
+			frame.Destroy(vm)
 			vm.CurrentFrame--
 			if vm.CurrentFrame == -1 {
 				return val
@@ -166,6 +190,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 				frame.Regs[frame.ReturnReg] = val
 			}
 		case opcodes.ReturnVoid:
+			frame.Destroy(vm)
 			vm.CurrentFrame--
 			if vm.CurrentFrame == -1 {
 				return 0
@@ -196,7 +221,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-			frame.Init(functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
+			frame.Init(vm, functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
 			for i := 0; i < argCount; i++ {
 				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
 			}
@@ -227,7 +252,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-			frame.Init(functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
+			frame.Init(vm, functionID, vm.FunctionCode[functionID], argCount + len(functionInfo.Body.Locals))
 			for i := 0; i < argCount; i++ {
 				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i * 4 : i * 4 + 4]))]
 			}
