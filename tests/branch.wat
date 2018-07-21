@@ -9,7 +9,7 @@
         (block (result i32)
             (i32.const 42)
             (i32.const 1)
-            (br_if 0)
+            (br_if 1)
             (drop)
             (i32.const 11)
         )
