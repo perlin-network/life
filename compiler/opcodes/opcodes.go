@@ -11,6 +11,8 @@ const (
 	I32Mul
 	I32DivS
 	I32DivU
+	I32RemS
+	I32RemU
 	I32Eq
 	I64Const
 	I64Add
@@ -18,6 +20,8 @@ const (
 	I64Mul
 	I64DivS
 	I64DivU
+	I64RemS
+	I64RemU
 	I64Eq
 	F32Const
 	F32Add
