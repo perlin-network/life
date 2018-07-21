@@ -19,6 +19,12 @@ const (
 	I32Shl
 	I32ShrS
 	I32ShrU
+	I32Rotl
+	I32Rotr
+	I32Clz
+	I32Ctz
+	I32PopCnt
+	I32EqZ
 	I32Eq
 	I64Const
 	I64Add
@@ -28,6 +34,12 @@ const (
 	I64DivU
 	I64RemS
 	I64RemU
+	I64Rotl
+	I64Rotr
+	I64Clz
+	I64Ctz
+	I64PopCnt
+	I64EqZ
 	I64And
 	I64Or
 	I64Xor

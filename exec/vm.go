@@ -5,6 +5,8 @@ import (
 
 	"math"
 
+	"math/bits"
+
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
 )
@@ -228,6 +230,42 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a >> (b % 32))
+		case opcodes.I32Rotl:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(bits.RotateLeft32(a, int(b)))
+		case opcodes.I32Rotr:
+			a := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(bits.RotateLeft32(a, -int(b)))
+		case opcodes.I32Clz:
+			val := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.LeadingZeros32(val))
+		case opcodes.I32Ctz:
+			val := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.TrailingZeros32(val))
+		case opcodes.I32PopCnt:
+			val := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.OnesCount32(val))
+		case opcodes.I32EqZ:
+			val := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			if val == 0 {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
 		case opcodes.I32Eq:
 			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
@@ -336,6 +374,42 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			frame.IP += 8
 			frame.Regs[valueID] = int64(a >> (b % 64))
+		case opcodes.I64Rotl:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(bits.RotateLeft64(a, int(b)))
+		case opcodes.I64Rotr:
+			a := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			b := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
+
+			frame.IP += 8
+			frame.Regs[valueID] = int64(bits.RotateLeft64(a, -int(b)))
+		case opcodes.I64Clz:
+			val := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.LeadingZeros64(val))
+		case opcodes.I64Ctz:
+			val := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.TrailingZeros64(val))
+		case opcodes.I64PopCnt:
+			val := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			frame.Regs[valueID] = int64(bits.OnesCount64(val))
+		case opcodes.I64EqZ:
+			val := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+
+			frame.IP += 4
+			if val == 0 {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
 		case opcodes.I64Eq:
 			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
