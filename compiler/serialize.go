@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"math"
+
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
@@ -21,6 +23,8 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		switch ins.Op {
 		case "unreachable":
 			binary.Write(buf, binary.LittleEndian, opcodes.Unreachable)
+
+		// Int 32-bit
 		case "i32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Const)
 			binary.Write(buf, binary.LittleEndian, int32(ins.Immediates[0]))
@@ -32,6 +36,46 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Eq)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+
+		// Int 64-bit
+		case "i64.const":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64Const)
+			binary.Write(buf, binary.LittleEndian, int64(ins.Immediates[0]))
+		case "i64.add":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64Add)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.eq":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64Eq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+
+		// Float 32-bit
+		case "f32.const":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Const)
+			binary.Write(buf, binary.LittleEndian, math.Float32frombits(uint32(ins.Immediates[0])))
+		case "f32.add":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Add)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.eq":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Eq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+
+		// Float 64-bit
+		case "f64.const":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Const)
+			binary.Write(buf, binary.LittleEndian, math.Float64frombits(uint64(ins.Immediates[0])))
+		case "f64.add":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Add)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.eq":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Eq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+
 		case "jmp":
 			binary.Write(buf, binary.LittleEndian, opcodes.Jmp)
 
@@ -49,7 +93,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "jmp_table":
 			binary.Write(buf, binary.LittleEndian, opcodes.JmpTable)
-			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Immediates) - 1))
+			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Immediates)-1))
 
 			for _, v := range ins.Immediates {
 				reloc32Targets = append(reloc32Targets, buf.Len())
@@ -91,7 +135,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			for _, v := range ins.Values {
 				binary.Write(buf, binary.LittleEndian, uint32(v))
 			}
-			
+
 		default:
 			panic(ins.Op)
 		}
@@ -100,7 +144,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 	ret := buf.Bytes()
 
 	for _, t := range reloc32Targets {
-		insPos := binary.LittleEndian.Uint32(ret[t:t+4])
+		insPos := binary.LittleEndian.Uint32(ret[t : t+4])
 		binary.LittleEndian.PutUint32(ret[t:t+4], uint32(insRelocs[insPos]))
 	}
 
