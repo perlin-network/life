@@ -652,6 +652,51 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			} else {
 				frame.Regs[valueID] = 0
 			}
+		case opcodes.F32Neq:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a != b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F32Lt:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F32Le:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F32Gt:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F32Ge:
+			a := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a >= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
 		case opcodes.F64Add:
 			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
@@ -720,6 +765,51 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
 			frame.IP += 8
 			if a == b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F64Neq:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a != b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F64Lt:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a < b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F64Le:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a <= b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F64Gt:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a > b {
+				frame.Regs[valueID] = 1
+			} else {
+				frame.Regs[valueID] = 0
+			}
+		case opcodes.F64Ge:
+			a := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			b := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]))
+			frame.IP += 8
+			if a >= b {
 				frame.Regs[valueID] = 1
 			} else {
 				frame.Regs[valueID] = 0

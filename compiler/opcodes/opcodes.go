@@ -83,6 +83,12 @@ const (
 	F32Neg
 	F32CopySign
 	F32Eq
+	F32Neq
+	F32Lt
+	F32Le
+	F32Gt
+	F32Ge
+
 	F64Const
 	F64Add
 	F64Sub
@@ -99,6 +105,12 @@ const (
 	F64Neg
 	F64CopySign
 	F64Eq
+	F64Neq
+	F64Lt
+	F64Le
+	F64Gt
+	F64Ge
+
 	Jmp
 	JmpIf
 	JmpTable

@@ -102,6 +102,42 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Eq)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.ne":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32Neq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.lt_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32LtS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.lt_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32LtU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.le_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32LeS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.le_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32LeU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.gt_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32GtS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.gt_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32GtU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.ge_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32GeS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i32.ge_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32GeU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 		// Int 64-bit
 		case "i64.const":
@@ -183,6 +219,42 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Eq)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.ne":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64Neq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.lt_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64LtS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.lt_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64LtU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.le_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64LeS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.le_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64LeU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.gt_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64GtS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.gt_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64GtU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.ge_s":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64GeS)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "i64.ge_u":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64GeU)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 		// Float 32-bit
 		case "f32.const":
@@ -241,6 +313,26 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Eq)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.ne":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Neq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.lt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Lt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.le":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Le)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.gt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Gt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f32.ge":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32Ge)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 		// Float 64-bit
 		case "f64.const":
@@ -297,6 +389,26 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "f64.eq":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Eq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.ne":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Neq)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.lt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Lt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.le":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Le)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.gt":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Gt)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "f64.ge":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64Ge)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
