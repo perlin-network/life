@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"math"
-
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
@@ -53,7 +51,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		// Float 32-bit
 		case "f32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Const)
-			binary.Write(buf, binary.LittleEndian, math.Float32frombits(uint32(ins.Immediates[0])))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 		case "f32.add":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Add)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
@@ -66,7 +64,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		// Float 64-bit
 		case "f64.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Const)
-			binary.Write(buf, binary.LittleEndian, math.Float64frombits(uint64(ins.Immediates[0])))
+			binary.Write(buf, binary.LittleEndian, uint64(ins.Immediates[0]))
 		case "f64.add":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Add)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
