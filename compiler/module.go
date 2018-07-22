@@ -39,6 +39,7 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.Compile()
 		fmt.Println(compiler.Code)
+		fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
 		fmt.Println(compiler.Code)
 		ret[i] = InterpreterCode {
