@@ -15,11 +15,6 @@ const DefaultCallStackSize = 512
 
 var LE = binary.LittleEndian
 
-type GlobalEntry struct {
-	mutable bool
-	value   int64
-}
-
 type VirtualMachine struct {
 	Config        VMConfig
 	Module        *compiler.Module
@@ -27,7 +22,7 @@ type VirtualMachine struct {
 	CallStack     []Frame
 	CurrentFrame  int
 	Table         []uint32
-	Globals       []GlobalEntry
+	Globals       []int64
 	NumValueSlots int
 }
 
@@ -75,23 +70,22 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 
 	// Load global entries.
 
-	globals := make([]GlobalEntry, len(m.Base.GlobalIndexSpace))
+	globals := make([]int64, len(m.Base.GlobalIndexSpace))
 	for i, entry := range m.Base.GlobalIndexSpace {
 		value, err := m.Base.ExecInitExpr(entry.Init)
 		if err != nil {
 			panic(err)
 		}
 
-		globals[i] = GlobalEntry{mutable: entry.Type.Mutable}
 		switch value := value.(type) {
 		case int32:
-			globals[i].value = int64(value)
+			globals[i] = int64(value)
 		case int64:
-			globals[i].value = value
+			globals[i] = value
 		case float32:
-			globals[i].value = int64(math.Float32bits(value))
+			globals[i] = int64(math.Float32bits(value))
 		case float64:
-			globals[i].value = int64(math.Float64bits(value))
+			globals[i] = int64(math.Float64bits(value))
 		}
 	}
 
@@ -907,19 +901,14 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.IP += 8
 			frame.Locals[id] = val
 		case opcodes.GetGlobal:
-			entry := vm.Globals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			frame.Regs[valueID] = vm.Globals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
-			frame.Regs[valueID] = entry.value
 		case opcodes.SetGlobal:
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 
-			if !vm.Globals[id].mutable {
-				panic("global entry not mutable")
-			}
-
-			vm.Globals[id].value = val
+			vm.Globals[id] = val
 		case opcodes.Call:
 			functionID = int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
