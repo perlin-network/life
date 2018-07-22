@@ -22,6 +22,7 @@ type VirtualMachine struct {
 	CallStack     []Frame
 	CurrentFrame  int
 	Table         []uint32
+	Globals       []int64
 	NumValueSlots int
 }
 
@@ -46,6 +47,7 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		panic(err)
 	}
 
+	// Populate table elements.
 	table := make([]uint32, 0)
 	if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
 		t := &m.Base.Table.Entries[0]
@@ -66,12 +68,34 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		}
 	}
 
+	// Load global entries.
+
+	globals := make([]int64, len(m.Base.GlobalIndexSpace))
+	for i, entry := range m.Base.GlobalIndexSpace {
+		value, err := m.Base.ExecInitExpr(entry.Init)
+		if err != nil {
+			panic(err)
+		}
+
+		switch value := value.(type) {
+		case int32:
+			globals[i] = int64(value)
+		case int64:
+			globals[i] = value
+		case float32:
+			globals[i] = int64(math.Float32bits(value))
+		case float64:
+			globals[i] = int64(math.Float64bits(value))
+		}
+	}
+
 	return &VirtualMachine{
 		Module:       m,
 		FunctionCode: m.CompileForInterpreter(),
 		CallStack:    make([]Frame, DefaultCallStackSize),
 		CurrentFrame: -1,
 		Table:        table,
+		Globals:      globals,
 	}
 }
 
@@ -876,6 +900,15 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 			frame.Locals[id] = val
+		case opcodes.GetGlobal:
+			frame.Regs[valueID] = vm.Globals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			frame.IP += 4
+		case opcodes.SetGlobal:
+			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
+			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			frame.IP += 8
+
+			vm.Globals[id] = val
 		case opcodes.Call:
 			functionID = int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4

@@ -168,12 +168,12 @@ func (c *SSAFunctionCompiler) Compile() {
 		case "drop":
 			c.PopStack(1)
 
-		case "get_local":
+		case "get_local", "get_global":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, nil))
 			c.PushStack(retID)
 
-		case "set_local":
+		case "set_local", "set_global":
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, c.PopStack(1)))
 
 		case "block":

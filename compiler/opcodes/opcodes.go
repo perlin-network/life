@@ -118,6 +118,8 @@ const (
 	ReturnVoid
 	GetLocal
 	SetLocal
+	GetGlobal
+	SetGlobal
 	Call
 	CallIndirect
 	Phi
