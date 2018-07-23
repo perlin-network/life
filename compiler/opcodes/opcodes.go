@@ -111,15 +111,47 @@ const (
 	F64Gt
 	F64Ge
 
+	I32Load
+	I64Load
+	F32Load
+	F64Load
+
+	I32Store
+	I64Store
+	F32Store
+	F64Store
+
+	I32Load8S
+	I32Load16S
+	I64Load8S
+	I64Load16S
+	I64Load32S
+
+	I32Load8U
+	I32Load16U
+	I64Load8U
+	I64Load16U
+	I64Load32U
+
+	I32Store8
+	I32Store16
+	I64Store8
+	I64Store16
+	I64Store32
+
 	Jmp
 	JmpIf
 	JmpTable
 	ReturnValue
 	ReturnVoid
+
 	GetLocal
 	SetLocal
+	TeeLocal
+
 	GetGlobal
 	SetGlobal
+
 	Call
 	CallIndirect
 	Phi
