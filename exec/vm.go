@@ -870,8 +870,8 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			}
 		case opcodes.I32Load:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
-			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
-			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+			offset := int32(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
+			base := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
 			frame.IP += 12
 
@@ -880,10 +880,10 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 		case opcodes.I32Store:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 
-			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
-			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+			offset := int32(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
+			base := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
-			value := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
 
 			frame.IP += 16
 
