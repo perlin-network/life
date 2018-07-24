@@ -2,14 +2,19 @@ package exec
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"math"
 
 	"math/bits"
 
+	"github.com/go-interpreter/wagon/wasm"
+
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
 )
+
+type FunctionImport func(vm *VirtualMachine) int64
 
 const DefaultCallStackSize = 512
 const DefaultPageSize = 65536
@@ -20,6 +25,7 @@ type VirtualMachine struct {
 	Config        VMConfig
 	Module        *compiler.Module
 	FunctionCode  []compiler.InterpreterCode
+	FunctionImports []FunctionImport
 	CallStack     []Frame
 	CurrentFrame  int
 	Table         []uint32
@@ -28,6 +34,7 @@ type VirtualMachine struct {
 	NumValueSlots int
 	Yielded int64
 	InsideExecute bool
+	Delegate func()
 	Exited bool
 	ExitError interface{}
 	ReturnValue int64
@@ -48,7 +55,10 @@ type Frame struct {
 	ReturnReg  int
 }
 
-func NewVirtualMachine(code []byte) *VirtualMachine {
+func NewVirtualMachine(
+	code []byte,
+	funcImportResolver func(module, field string) FunctionImport,
+) *VirtualMachine {
 	m, err := compiler.LoadModule(code)
 	if err != nil {
 		panic(err)
@@ -123,9 +133,20 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		}
 	}
 
+	funcImports := make([]FunctionImport, 0)
+	if m.Base.Import != nil && funcImportResolver != nil {
+		for _, imp := range m.Base.Import.Entries {
+			if imp.Kind != wasm.ExternalFunction {
+				panic(fmt.Errorf("import kind not supported: %d", imp.Kind))
+			}
+			funcImports = append(funcImports, funcImportResolver(imp.ModuleName, imp.FieldName))
+		}
+	}
+
 	return &VirtualMachine{
 		Module:       m,
 		FunctionCode: m.CompileForInterpreter(),
+		FunctionImports: funcImports,
 		CallStack:    make([]Frame, DefaultCallStackSize),
 		CurrentFrame: -1,
 		Table:        table,
@@ -135,8 +156,8 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 	}
 }
 
-func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode, numTotalLocals int) {
-	numValueSlots := code.NumRegs + numTotalLocals
+func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode) {
+	numValueSlots := code.NumRegs + code.NumParams + code.NumLocals
 	if vm.Config.MaxValueSlots != 0 && vm.NumValueSlots+numValueSlots > vm.Config.MaxValueSlots {
 		panic("max value slot count exceeded")
 	}
@@ -178,8 +199,8 @@ func (vm *VirtualMachine) Ignite(functionID int) {
 		panic("call stack not empty; cannot ignite.")
 	}
 
-	functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
-	if len(functionInfo.Sig.ParamTypes) != 0 {
+	code := vm.FunctionCode[functionID]
+	if code.NumParams != 0 {
 		panic("entry function must have no params")
 	}
 
@@ -189,14 +210,17 @@ func (vm *VirtualMachine) Ignite(functionID int) {
 	vm.GetCurrentFrame().Init(
 		vm,
 		functionID,
-		vm.FunctionCode[functionID],
-		len(functionInfo.Body.Locals),
+		code,
 	)
 }
 
 func (vm *VirtualMachine) Execute() {
 	if vm.Exited == true {
 		panic("attempting to execute an exited vm")
+	}
+
+	if vm.Delegate != nil {
+		panic("delegate not cleared")
 	}
 
 	if vm.InsideExecute {
@@ -1027,14 +1051,12 @@ func (vm *VirtualMachine) Execute() {
 			argsRaw := frame.Code[frame.IP : frame.IP+4*argCount]
 			frame.IP += 4 * argCount
 
-			functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
-
 			oldRegs := frame.Regs
 			frame.ReturnReg = valueID
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-			frame.Init(vm, functionID, vm.FunctionCode[functionID], argCount+len(functionInfo.Body.Locals))
+			frame.Init(vm, functionID, vm.FunctionCode[functionID])
 			for i := 0; i < argCount; i++ {
 				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i*4:i*4+4]))]
 			}
@@ -1052,11 +1074,10 @@ func (vm *VirtualMachine) Execute() {
 			sig := &vm.Module.Base.Types.Entries[typeID]
 
 			functionID := int(vm.Table[tableItemID])
-			functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
+			code := vm.FunctionCode[functionID]
 
 			// TODO: We are only checking CC here; Do we want strict typeck?
-			if len(functionInfo.Sig.ParamTypes) != len(sig.ParamTypes) ||
-				len(functionInfo.Sig.ReturnTypes) != len(sig.ReturnTypes) {
+			if code.NumParams != len(sig.ParamTypes) || code.NumReturns != len(sig.ReturnTypes) {
 				panic("type mismatch")
 			}
 
@@ -1065,10 +1086,18 @@ func (vm *VirtualMachine) Execute() {
 
 			vm.CurrentFrame++
 			frame = vm.GetCurrentFrame()
-			frame.Init(vm, functionID, vm.FunctionCode[functionID], argCount+len(functionInfo.Body.Locals))
+			frame.Init(vm, functionID, code)
 			for i := 0; i < argCount; i++ {
 				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i*4:i*4+4]))]
 			}
+
+		case opcodes.InvokeImport:
+			importID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
+			frame.IP += 4
+			vm.Delegate = func() {
+				frame.Regs[valueID] = vm.FunctionImports[importID](vm)
+			}
+			return
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = vm.Yielded
