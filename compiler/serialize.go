@@ -412,6 +412,21 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
+		case "i32.wrap/i64":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32WrapI64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.extend_u/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64ExtendUI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.extend_s/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64ExtendSI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i32.reinterpret/f32", "i64.reinterpret/f64", "f32.reinterpret/i32", "f64.reinterpret/i64":
+			// nop
+
 		case "i32.load":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Load)
 

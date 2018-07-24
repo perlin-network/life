@@ -111,6 +111,10 @@ const (
 	F64Gt
 	F64Ge
 
+	I32WrapI64
+	I64ExtendUI32
+	I64ExtendSI32
+
 	I32Load
 	I64Load
 	F32Load
