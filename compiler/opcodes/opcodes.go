@@ -158,5 +158,7 @@ const (
 
 	Call
 	CallIndirect
+	InvokeImport
+
 	Phi
 )

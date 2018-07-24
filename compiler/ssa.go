@@ -19,6 +19,8 @@ type SSAFunctionCompiler struct {
 	Stack     []TyValueID
 	Locations []*Location
 
+	CallIndexOffset int
+
 	StackValueSets map[int][]TyValueID
 	UsedValueIDs   map[TyValueID]struct{}
 
@@ -330,11 +332,18 @@ func (c *SSAFunctionCompiler) Compile() {
 
 		case "call":
 			targetID := int(ins.Immediates[0].(uint32))
-			targetInfo := &c.Module.FunctionIndexSpace[targetID]
+			var targetSig *wasm.FunctionSig
 
-			params := c.PopStack(len(targetInfo.Sig.ParamTypes))
+			if targetID - c.CallIndexOffset >= 0 { // virtual function
+				targetSig = c.Module.FunctionIndexSpace[targetID - c.CallIndexOffset].Sig
+			} else { // import function
+				tyID := c.Module.Import.Entries[targetID].Type.(wasm.FuncImport).Type
+				targetSig = &c.Module.Types.Entries[int(tyID)]
+			}
+
+			params := c.PopStack(len(targetSig.ParamTypes))
 			targetValueID := TyValueID(0)
-			if len(targetInfo.Sig.ReturnTypes) > 0 {
+			if len(targetSig.ReturnTypes) > 0 {
 				targetValueID = c.NextValueID()
 			}
 			c.Code = append(c.Code, buildInstr(targetValueID, "call", []int64{int64(targetID)}, params))
