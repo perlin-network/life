@@ -14,6 +14,12 @@ func main() {
 	}
 
 	vm := exec.NewVirtualMachine(input)
-	ret := vm.Execute(0)
-	fmt.Println(ret)
+	vm.Ignite(0)
+	for !vm.Exited {
+		vm.Execute()
+	}
+	if vm.ExitError != nil {
+		panic(vm.ExitError)
+	}
+	fmt.Println(vm.ReturnValue)
 }
