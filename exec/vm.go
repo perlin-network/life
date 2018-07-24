@@ -26,6 +26,11 @@ type VirtualMachine struct {
 	Globals       []int64
 	Memory        []byte
 	NumValueSlots int
+	Yielded int64
+	InsideExecute bool
+	Exited bool
+	ExitError interface{}
+	ReturnValue int64
 }
 
 type VMConfig struct {
@@ -126,6 +131,7 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		Table:        table,
 		Globals:      globals,
 		Memory:       memory,
+		Exited: true,
 	}
 }
 
@@ -162,18 +168,51 @@ func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	return &vm.CallStack[vm.CurrentFrame]
 }
 
-func (vm *VirtualMachine) Execute(functionID int) int64 {
+// Init the first frame.
+func (vm *VirtualMachine) Ignite(functionID int) {
+	if vm.ExitError != nil {
+		panic("last execution exited with error; cannot ignite.")
+	}
+
+	if vm.CurrentFrame != -1 {
+		panic("call stack not empty; cannot ignite.")
+	}
+
 	functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
 	if len(functionInfo.Sig.ParamTypes) != 0 {
 		panic("entry function must have no params")
 	}
 
+	vm.Exited = false
+
 	vm.CurrentFrame++
+	vm.GetCurrentFrame().Init(
+		vm,
+		functionID,
+		vm.FunctionCode[functionID],
+		len(functionInfo.Body.Locals),
+	)
+}
+
+func (vm *VirtualMachine) Execute() {
+	if vm.Exited == true {
+		panic("attempting to execute an exited vm")
+	}
+
+	if vm.InsideExecute {
+		panic("vm execution is not re-entrant")
+	}
+	vm.InsideExecute = true
+
+	defer func() {
+		vm.InsideExecute = false
+		if err := recover(); err != nil {
+			vm.Exited = true
+			vm.ExitError = err
+		}
+	}()
 
 	frame := vm.GetCurrentFrame()
-	frame.Init(vm, functionID, vm.FunctionCode[functionID], len(functionInfo.Body.Locals))
-
-	var yielded int64
 
 	for {
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
@@ -907,7 +946,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			LE.PutUint32(vm.Memory[effective:effective+4], uint32(value))
 		case opcodes.Jmp:
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
-			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			vm.Yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP = target
 		case opcodes.JmpIf:
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
@@ -915,7 +954,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			yieldedReg := int(LE.Uint32(frame.Code[frame.IP+8 : frame.IP+12]))
 			frame.IP += 12
 			if frame.Regs[cond] != 0 {
-				yielded = frame.Regs[yieldedReg]
+				vm.Yielded = frame.Regs[yieldedReg]
 				frame.IP = target
 			}
 		case opcodes.JmpTable:
@@ -931,7 +970,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			cond := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
 
-			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			vm.Yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 
 			val := int(frame.Regs[cond])
@@ -945,7 +984,9 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.Destroy(vm)
 			vm.CurrentFrame--
 			if vm.CurrentFrame == -1 {
-				return val
+				vm.Exited = true
+				vm.ReturnValue = val
+				return
 			} else {
 				frame = vm.GetCurrentFrame()
 				frame.Regs[frame.ReturnReg] = val
@@ -954,7 +995,9 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			frame.Destroy(vm)
 			vm.CurrentFrame--
 			if vm.CurrentFrame == -1 {
-				return 0
+				vm.Exited = true
+				vm.ReturnValue = 0
+				return
 			} else {
 				frame = vm.GetCurrentFrame()
 			}
@@ -977,14 +1020,14 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			vm.Globals[id] = val
 		case opcodes.Call:
-			functionID = int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
+			functionID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
 			argCount := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
 			argsRaw := frame.Code[frame.IP : frame.IP+4*argCount]
 			frame.IP += 4 * argCount
 
-			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
+			functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
 
 			oldRegs := frame.Regs
 			frame.ReturnReg = valueID
@@ -1008,8 +1051,8 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 
 			sig := &vm.Module.Base.Types.Entries[typeID]
 
-			functionID = int(vm.Table[tableItemID])
-			functionInfo = &vm.Module.Base.FunctionIndexSpace[functionID]
+			functionID := int(vm.Table[tableItemID])
+			functionInfo := &vm.Module.Base.FunctionIndexSpace[functionID]
 
 			// TODO: We are only checking CC here; Do we want strict typeck?
 			if len(functionInfo.Sig.ParamTypes) != len(sig.ParamTypes) ||
@@ -1028,7 +1071,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			}
 
 		case opcodes.Phi:
-			frame.Regs[valueID] = yielded
+			frame.Regs[valueID] = vm.Yielded
 		default:
 			panic("unknown instruction")
 		}
