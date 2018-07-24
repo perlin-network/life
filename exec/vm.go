@@ -868,6 +868,22 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			} else {
 				frame.Regs[valueID] = 0
 			}
+
+		case opcodes.I32WrapI64:
+			v := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(v)
+
+		case opcodes.I64ExtendUI32:
+			v := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(v)
+
+		case opcodes.I64ExtendSI32:
+			v := int32(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(v)
+
 		case opcodes.I32Load:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			offset := int32(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
