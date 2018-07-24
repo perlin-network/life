@@ -12,6 +12,7 @@ import (
 )
 
 const DefaultCallStackSize = 512
+const DefaultPageSize = 65536
 
 var LE = binary.LittleEndian
 
@@ -23,6 +24,7 @@ type VirtualMachine struct {
 	CurrentFrame  int
 	Table         []uint32
 	Globals       []int64
+	Memory        []byte
 	NumValueSlots int
 }
 
@@ -69,7 +71,6 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 	}
 
 	// Load global entries.
-
 	globals := make([]int64, len(m.Base.GlobalIndexSpace))
 	for i, entry := range m.Base.GlobalIndexSpace {
 		value, err := m.Base.ExecInitExpr(entry.Init)
@@ -89,6 +90,34 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		}
 	}
 
+	// Load linear memory.
+	memory := make([]byte, 0)
+	if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
+		capacity := int(m.Base.Memory.Entries[0].Limits.Initial) * DefaultPageSize
+
+		// Initialize empty memory.
+		memory = make([]byte, capacity)
+		for i := 0; i < capacity; i++ {
+			memory[i] = 0
+		}
+
+		if m.Base.Data != nil && len(m.Base.Data.Entries) > 0 {
+			for _, e := range m.Base.Data.Entries {
+				_offset, err := m.Base.ExecInitExpr(e.Offset)
+				if err != nil {
+					panic(err)
+				}
+
+				offset, ok := _offset.(int32)
+				if !ok {
+					panic("linear memory offset is not varuint32")
+				}
+
+				copy(memory[int(offset):], e.Data)
+			}
+		}
+	}
+
 	return &VirtualMachine{
 		Module:       m,
 		FunctionCode: m.CompileForInterpreter(),
@@ -96,6 +125,7 @@ func NewVirtualMachine(code []byte) *VirtualMachine {
 		CurrentFrame: -1,
 		Table:        table,
 		Globals:      globals,
+		Memory:       memory,
 	}
 }
 
@@ -838,6 +868,27 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			} else {
 				frame.Regs[valueID] = 0
 			}
+		case opcodes.I32Load:
+			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+			offset := int32(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
+			base := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+
+			frame.IP += 12
+
+			effective := int(base + offset)
+			frame.Regs[valueID] = int64(LE.Uint32(vm.Memory[effective : effective+4]))
+		case opcodes.I32Store:
+			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+
+			offset := int32(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
+			base := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+
+			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+
+			frame.IP += 16
+
+			effective := int(base + offset)
+			LE.PutUint32(vm.Memory[effective:effective+4], uint32(value))
 		case opcodes.Jmp:
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
@@ -895,7 +946,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			val := frame.Locals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 			frame.Regs[valueID] = val
-		case opcodes.SetLocal:
+		case opcodes.SetLocal, opcodes.TeeLocal:
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8

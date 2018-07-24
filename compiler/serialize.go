@@ -22,7 +22,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		case "unreachable":
 			binary.Write(buf, binary.LittleEndian, opcodes.Unreachable)
 
-		// Int 32-bit
+			// Int 32-bit
 		case "i32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Const)
 			binary.Write(buf, binary.LittleEndian, int32(ins.Immediates[0]))
@@ -139,7 +139,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
-		// Int 64-bit
+			// Int 64-bit
 		case "i64.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Const)
 			binary.Write(buf, binary.LittleEndian, int64(ins.Immediates[0]))
@@ -256,7 +256,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
-		// Float 32-bit
+			// Float 32-bit
 		case "f32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Const)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
@@ -334,7 +334,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
-		// Float 64-bit
+			// Float 64-bit
 		case "f64.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Const)
 			binary.Write(buf, binary.LittleEndian, uint64(ins.Immediates[0]))
@@ -412,6 +412,19 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
+		case "i32.load":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32Load)
+
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
+		case "i32.store":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32Store)
+
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 		case "jmp":
 			binary.Write(buf, binary.LittleEndian, opcodes.Jmp)
 
@@ -447,19 +460,22 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			} else {
 				binary.Write(buf, binary.LittleEndian, opcodes.ReturnVoid)
 			}
+
 		case "get_local":
 			binary.Write(buf, binary.LittleEndian, opcodes.GetLocal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
-
 		case "set_local":
 			binary.Write(buf, binary.LittleEndian, opcodes.SetLocal)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+		case "tee_local":
+			binary.Write(buf, binary.LittleEndian, opcodes.TeeLocal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
 		case "get_global":
 			binary.Write(buf, binary.LittleEndian, opcodes.GetGlobal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
-
 		case "set_global":
 			binary.Write(buf, binary.LittleEndian, opcodes.SetGlobal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))

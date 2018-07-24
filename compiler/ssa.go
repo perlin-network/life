@@ -168,6 +168,15 @@ func (c *SSAFunctionCompiler) Compile() {
 		case "drop":
 			c.PopStack(1)
 
+		case "i32.load":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32)),
+				int64(ins.Immediates[1].(uint32))}, c.PopStack(1)))
+			c.PushStack(retID)
+		case "i32.store":
+			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32)),
+				int64(ins.Immediates[1].(uint32))}, c.PopStack(2)))
+
 		case "get_local", "get_global":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, nil))
@@ -175,6 +184,11 @@ func (c *SSAFunctionCompiler) Compile() {
 
 		case "set_local", "set_global":
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, c.PopStack(1)))
+
+		case "tee_local":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, []TyValueID{c.Stack[len(c.Stack)-1]}))
+			c.PushStack(retID)
 
 		case "block":
 			c.Locations = append(c.Locations, &Location{
