@@ -946,7 +946,7 @@ func (vm *VirtualMachine) Execute(functionID int) int64 {
 			val := frame.Locals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 			frame.Regs[valueID] = val
-		case opcodes.SetLocal, opcodes.TeeLocal:
+		case opcodes.SetLocal:
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
