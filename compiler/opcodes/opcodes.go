@@ -147,7 +147,7 @@ const (
 
 	GetLocal
 	SetLocal
-	TeeLocal
+	
 
 	GetGlobal
 	SetGlobal

@@ -468,10 +468,6 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.SetLocal)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
-		case "tee_local":
-			binary.Write(buf, binary.LittleEndian, opcodes.TeeLocal)
-			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
-			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
 		case "get_global":
 			binary.Write(buf, binary.LittleEndian, opcodes.GetGlobal)

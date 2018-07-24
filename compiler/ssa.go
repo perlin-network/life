@@ -186,9 +186,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, c.PopStack(1)))
 
 		case "tee_local":
-			retID := c.NextValueID()
-			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32))}, []TyValueID{c.Stack[len(c.Stack)-1]}))
-			c.PushStack(retID)
+			c.Code = append(c.Code, buildInstr(0, "set_local", []int64{int64(ins.Immediates[0].(uint32))}, []TyValueID{c.Stack[len(c.Stack)-1]}))
 
 		case "block":
 			c.Locations = append(c.Locations, &Location{
