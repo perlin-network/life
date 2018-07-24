@@ -161,7 +161,15 @@ func (c *SSAFunctionCompiler) Compile() {
 		case "i32.clz", "i32.ctz", "i32.popcnt", "i32.eqz",
 			"i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz",
 			"f32.sqrt", "f32.ceil", "f32.floor", "f32.trunc", "f32.nearest", "f32.abs", "f32.neg",
-			"f64.sqrt", "f64.ceil", "f64.floor", "f64.trunc", "f64.nearest", "f64.abs", "f64.neg":
+			"f64.sqrt", "f64.ceil", "f64.floor", "f64.trunc", "f64.nearest", "f64.abs", "f64.neg",
+			"i32.wrap/i64", "i64.extend_u/i32", "i64.extend_s/i32",
+			"i32.trunc_u/f32", "i32.trunc_u/f64", "i64.trunc_u/f32", "i64.trunc_u/f64",
+			"i32.trunc_s/f32", "i32.trunc_s/f64", "i64.trunc_s/f32", "i64.trunc_s/f64",
+			"f32.demote/f64", "f64.promote/f32",
+			"f32.convert_u/i32", "f32.convert_u/i64", "f64.convert_u/i32", "f64.convert_u/i64",
+			"f32.convert_s/i32", "f32.convert_s/i64", "f64.convert_s/i32", "f64.convert_s/i64",
+			"i32.reinterpret/f32", "i64.reinterpret/f64",
+			"f32.reinterpret/i32", "f64.reinterpret/i64":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
 			c.PushStack(retID)
