@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	entryFunctionIDFlag := flag.Int("entry", 0, "entry function id")
+	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
 	flag.Parse()
 
 	input, err := ioutil.ReadAll(os.Stdin)
@@ -26,7 +26,13 @@ func main() {
 		}
 		panic("unknown import")
 	})
-	vm.Ignite(*entryFunctionIDFlag)
+	if entryID, ok := vm.GetFunctionExport(*entryFunctionFlag); ok {
+		vm.Ignite(entryID)
+	} else {
+		fmt.Printf("Entry function %s not found; starting from 0.\n", *entryFunctionFlag)
+		vm.Ignite(0)
+	}
+
 	for !vm.Exited {
 		vm.Execute()
 		if vm.Delegate != nil {
