@@ -55,17 +55,38 @@ type Frame struct {
 	ReturnReg  int
 }
 
+type ImportResolver interface {
+	ResolveFunc(module, field string) FunctionImport
+	ResolveGlobal(module, field string) int64
+}
+
 func NewVirtualMachine(
 	code []byte,
-	funcImportResolver func(module, field string) FunctionImport,
+	impResolver ImportResolver,
 ) *VirtualMachine {
 	m, err := compiler.LoadModule(code)
 	if err != nil {
 		panic(err)
 	}
 
-	// Populate table elements.
 	table := make([]uint32, 0)
+	globals := make([]int64, 0)
+	funcImports := make([]FunctionImport, 0)
+
+	if m.Base.Import != nil && impResolver != nil {
+		for _, imp := range m.Base.Import.Entries {
+			switch imp.Kind {
+			case wasm.ExternalFunction:
+				funcImports = append(funcImports, impResolver.ResolveFunc(imp.ModuleName, imp.FieldName))
+			case wasm.ExternalGlobal:
+				globals = append(globals, impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName))
+			default:
+				panic(fmt.Errorf("import kind not supported: %d", imp.Kind))
+			}
+		}
+	}
+
+	// Populate table elements.
 	if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
 		t := &m.Base.Table.Entries[0]
 
@@ -86,8 +107,7 @@ func NewVirtualMachine(
 	}
 
 	// Load global entries.
-	globals := make([]int64, len(m.Base.GlobalIndexSpace))
-	for i, entry := range m.Base.GlobalIndexSpace {
+	for _, entry := range m.Base.GlobalIndexSpace {
 		value, err := m.Base.ExecInitExpr(entry.Init)
 		if err != nil {
 			panic(err)
@@ -95,13 +115,15 @@ func NewVirtualMachine(
 
 		switch value := value.(type) {
 		case int32:
-			globals[i] = int64(value)
+			globals = append(globals, int64(value))
 		case int64:
-			globals[i] = value
+			globals = append(globals, value)
 		case float32:
-			globals[i] = int64(math.Float32bits(value))
+			globals = append(globals, int64(math.Float32bits(value)))
 		case float64:
-			globals[i] = int64(math.Float64bits(value))
+			globals = append(globals, int64(math.Float64bits(value)))
+		default:
+			panic("got an impossible global value type")
 		}
 	}
 
@@ -130,16 +152,6 @@ func NewVirtualMachine(
 
 				copy(memory[int(offset):], e.Data)
 			}
-		}
-	}
-
-	funcImports := make([]FunctionImport, 0)
-	if m.Base.Import != nil && funcImportResolver != nil {
-		for _, imp := range m.Base.Import.Entries {
-			if imp.Kind != wasm.ExternalFunction {
-				panic(fmt.Errorf("import kind not supported: %d", imp.Kind))
-			}
-			funcImports = append(funcImports, funcImportResolver(imp.ModuleName, imp.FieldName))
 		}
 	}
 
