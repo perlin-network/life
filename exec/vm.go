@@ -189,6 +189,23 @@ func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	return &vm.CallStack[vm.CurrentFrame]
 }
 
+func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
+	if vm.Module.Base.Export == nil {
+		return -1, false
+	}
+
+	entry, ok := vm.Module.Base.Export.Entries[key]
+	if !ok {
+		return -1, false
+	}
+
+	if entry.Kind != wasm.ExternalFunction {
+		return -1, false
+	}
+
+	return int(entry.Index), true
+}
+
 // Init the first frame.
 func (vm *VirtualMachine) Ignite(functionID int) {
 	if vm.ExitError != nil {
