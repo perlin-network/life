@@ -22,22 +22,22 @@ const DefaultPageSize = 65536
 var LE = binary.LittleEndian
 
 type VirtualMachine struct {
-	Config        VMConfig
-	Module        *compiler.Module
-	FunctionCode  []compiler.InterpreterCode
+	Config          VMConfig
+	Module          *compiler.Module
+	FunctionCode    []compiler.InterpreterCode
 	FunctionImports []FunctionImport
-	CallStack     []Frame
-	CurrentFrame  int
-	Table         []uint32
-	Globals       []int64
-	Memory        []byte
-	NumValueSlots int
-	Yielded int64
-	InsideExecute bool
-	Delegate func()
-	Exited bool
-	ExitError interface{}
-	ReturnValue int64
+	CallStack       []Frame
+	CurrentFrame    int
+	Table           []uint32
+	Globals         []int64
+	Memory          []byte
+	NumValueSlots   int
+	Yielded         int64
+	InsideExecute   bool
+	Delegate        func()
+	Exited          bool
+	ExitError       interface{}
+	ReturnValue     int64
 }
 
 type VMConfig struct {
@@ -144,15 +144,15 @@ func NewVirtualMachine(
 	}
 
 	return &VirtualMachine{
-		Module:       m,
-		FunctionCode: m.CompileForInterpreter(),
+		Module:          m,
+		FunctionCode:    m.CompileForInterpreter(),
 		FunctionImports: funcImports,
-		CallStack:    make([]Frame, DefaultCallStackSize),
-		CurrentFrame: -1,
-		Table:        table,
-		Globals:      globals,
-		Memory:       memory,
-		Exited: true,
+		CallStack:       make([]Frame, DefaultCallStackSize),
+		CurrentFrame:    -1,
+		Table:           table,
+		Globals:         globals,
+		Memory:          memory,
+		Exited:          true,
 	}
 }
 

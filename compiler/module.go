@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/disasm"
+	"github.com/go-interpreter/wagon/wasm"
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
@@ -14,11 +14,11 @@ type Module struct {
 }
 
 type InterpreterCode struct {
-	NumRegs int
-	NumParams int
-	NumLocals int
+	NumRegs    int
+	NumParams  int
+	NumLocals  int
 	NumReturns int
-	Bytes []byte
+	Bytes      []byte
 }
 
 func LoadModule(raw []byte) (*Module, error) {
@@ -28,7 +28,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Module {
+	return &Module{
 		Base: m,
 	}, nil
 }
@@ -46,7 +46,7 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 			ty := &m.Base.Types.Entries[int(tyID)]
 
 			buf := &bytes.Buffer{}
-		
+
 			binary.Write(buf, binary.LittleEndian, uint32(1)) // value ID
 			binary.Write(buf, binary.LittleEndian, opcodes.InvokeImport)
 			binary.Write(buf, binary.LittleEndian, uint32(i))
@@ -61,12 +61,12 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 
 			code := buf.Bytes()
 
-			ret = append(ret, InterpreterCode {
-				NumRegs: 2,
-				NumParams: len(ty.ParamTypes),
-				NumLocals: 0,
+			ret = append(ret, InterpreterCode{
+				NumRegs:    2,
+				NumParams:  len(ty.ParamTypes),
+				NumLocals:  0,
 				NumReturns: len(ty.ReturnTypes),
-				Bytes: code,
+				Bytes:      code,
 			})
 		}
 	}
@@ -86,12 +86,12 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 		fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
 		fmt.Println(compiler.Code)
-		ret[numFuncImports + i] = InterpreterCode {
-			NumRegs: numRegs,
-			NumParams: len(f.Sig.ParamTypes),
-			NumLocals: len(f.Body.Locals),
+		ret[numFuncImports+i] = InterpreterCode{
+			NumRegs:    numRegs,
+			NumParams:  len(f.Sig.ParamTypes),
+			NumLocals:  len(f.Body.Locals),
 			NumReturns: len(f.Sig.ReturnTypes),
-			Bytes: compiler.Serialize(),
+			Bytes:      compiler.Serialize(),
 		}
 	}
 

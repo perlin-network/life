@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"os"
 	"fmt"
-	"io/ioutil"
 	"github.com/perlin-network/life/exec"
+	"io/ioutil"
+	"os"
 )
 
 func main() {

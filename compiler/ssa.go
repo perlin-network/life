@@ -334,8 +334,8 @@ func (c *SSAFunctionCompiler) Compile() {
 			targetID := int(ins.Immediates[0].(uint32))
 			var targetSig *wasm.FunctionSig
 
-			if targetID - c.CallIndexOffset >= 0 { // virtual function
-				targetSig = c.Module.FunctionIndexSpace[targetID - c.CallIndexOffset].Sig
+			if targetID-c.CallIndexOffset >= 0 { // virtual function
+				targetSig = c.Module.FunctionIndexSpace[targetID-c.CallIndexOffset].Sig
 			} else { // import function
 				tyID := c.Module.Import.Entries[targetID].Type.(wasm.FuncImport).Type
 				targetSig = &c.Module.Types.Entries[int(tyID)]

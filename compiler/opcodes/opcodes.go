@@ -151,7 +151,6 @@ const (
 
 	GetLocal
 	SetLocal
-	
 
 	GetGlobal
 	SetGlobal

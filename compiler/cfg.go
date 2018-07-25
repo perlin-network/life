@@ -5,13 +5,14 @@ type CFGraph struct {
 }
 
 type BasicBlock struct {
-	Code []Instr
-	JmpKind TyJmpKind
+	Code       []Instr
+	JmpKind    TyJmpKind
 	JmpTargets []int
 	JmpValueID TyValueID
 }
 
 type TyJmpKind uint8
+
 const (
 	JmpUncond TyJmpKind = iota
 	JmpEither
@@ -32,17 +33,17 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 			insLabels[int(ins.Immediates[0])] = nextLabel
 			nextLabel++
 
-			insLabels[i + 1] = nextLabel
+			insLabels[i+1] = nextLabel
 			nextLabel++
 		case "jmp_table":
 			for _, target := range ins.Immediates {
 				insLabels[int(target)] = nextLabel
 				nextLabel++
 			}
-			insLabels[i + 1] = nextLabel
+			insLabels[i+1] = nextLabel
 			nextLabel++
 		case "return":
-			insLabels[i + 1] = nextLabel
+			insLabels[i+1] = nextLabel
 			nextLabel++
 		}
 	}
@@ -64,7 +65,7 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 			currentBlock = nil
 		case "jmp_if":
 			currentBlock.JmpKind = JmpEither
-			currentBlock.JmpTargets = []int{insLabels[int(i + 1)], insLabels[int(ins.Immediates[0])]}
+			currentBlock.JmpTargets = []int{insLabels[int(i+1)], insLabels[int(ins.Immediates[0])]}
 			if len(ins.Values) > 0 {
 				currentBlock.JmpValueID = ins.Values[0]
 			}
