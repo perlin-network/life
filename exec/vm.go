@@ -276,6 +276,16 @@ func (vm *VirtualMachine) Execute() {
 		case opcodes.Nop:
 		case opcodes.Unreachable:
 			panic("wasm: unreachable executed")
+		case opcodes.Select:
+			a := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			b := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
+			c := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+			frame.IP += 12
+			if c != 0 {
+				frame.Regs[valueID] = a
+			} else {
+				frame.Regs[valueID] = b
+			}
 		case opcodes.I32Const, opcodes.F32Const:
 			val := LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			frame.IP += 4
