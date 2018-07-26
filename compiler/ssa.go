@@ -178,12 +178,14 @@ func (c *SSAFunctionCompiler) Compile() {
 		case "drop":
 			c.PopStack(1)
 
-		case "i32.load":
+		case "i32.load", "i64.load", "i32.load8_s", "i32.load16_s", "i64.load8_s", "i64.load16_s", "i64.load32_s",
+			"i32.load8_u", "i32.load16_u", "i64.load8_u", "i64.load16_u", "i64.load32_u",
+			"f32.load", "f64.load":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32)),
 				int64(ins.Immediates[1].(uint32))}, c.PopStack(1)))
 			c.PushStack(retID)
-		case "i32.store":
+		case "i32.store", "i32.store8", "i32.store16", "i64.store", "i64.store8", "i64.store16", "i64.store32", "f32.store", "f64.store":
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, []int64{int64(ins.Immediates[0].(uint32)),
 				int64(ins.Immediates[1].(uint32))}, c.PopStack(2)))
 
