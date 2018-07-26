@@ -32,6 +32,7 @@ type Location struct {
 	StackDepth      int
 	BrHead          bool // true for loops
 	PreserveTop     bool
+	LoopPreserveTop bool
 	FixupList       []FixupInfo
 
 	IfBlock bool
@@ -88,7 +89,7 @@ func (c *SSAFunctionCompiler) PushStack(values ...TyValueID) {
 }
 
 func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable bool) {
-	if loc.PreserveTop {
+	if loc.PreserveTop || loc.LoopPreserveTop {
 		// TODO: This might be inefficient.
 		if wasUnreachable {
 			c.Code = append(
@@ -114,7 +115,7 @@ func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable boo
 		c.Code[info.CodePos].Immediates[info.TablePos] = innerBrTarget
 	}
 
-	if loc.PreserveTop {
+	if loc.PreserveTop || loc.LoopPreserveTop /* why? */ {
 		retID := c.NextValueID()
 		c.Code = append(c.Code, buildInstr(retID, "phi", nil, nil))
 		c.PushStack(retID)
@@ -243,7 +244,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Locations = append(c.Locations, &Location{
 				CodePos:         len(c.Code),
 				StackDepth:      len(c.Stack),
-				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				LoopPreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
 				BrHead:          true,
 			})
 
@@ -275,10 +276,12 @@ func (c *SSAFunctionCompiler) Compile() {
 					c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, c.PopStack(1)))
 				} else {
 					c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
-					c.Stack = c.Stack[:loc.StackDepth] // unwind stack
 				}
 			} else {
 				c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
+			}
+			if wasUnreachable {
+				c.Stack = c.Stack[:loc.StackDepth] // unwind stack
 			}
 
 			c.Code[loc.CodePos+1].Immediates[0] = int64(len(c.Code))
@@ -298,10 +301,10 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 
 			if !wasUnreachable {
-				if (loc.PreserveTop && len(c.Stack) == loc.StackDepth+1) ||
-					(!loc.PreserveTop && len(c.Stack) == loc.StackDepth) {
+				if ((loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth+1) ||
+					(!(loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth) {
 				} else {
-					panic("inconsistent stack pattern")
+					panic(fmt.Errorf("inconsistent stack pattern: pt = %v, lpt = %v, ls = %d, sd = %d", loc.PreserveTop, loc.LoopPreserveTop, len(c.Stack), loc.StackDepth))
 				}
 			} else {
 				c.Stack = c.Stack[:loc.StackDepth]
