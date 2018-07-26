@@ -251,7 +251,7 @@ func (vm *VirtualMachine) PrintStackTrace() {
 }
 
 // Init the first frame.
-func (vm *VirtualMachine) Ignite(functionID int) {
+func (vm *VirtualMachine) Ignite(functionID int, params... int64) {
 	if vm.ExitError != nil {
 		panic("last execution exited with error; cannot ignite.")
 	}
@@ -261,18 +261,20 @@ func (vm *VirtualMachine) Ignite(functionID int) {
 	}
 
 	code := vm.FunctionCode[functionID]
-	if code.NumParams != 0 {
-		panic("entry function must have no params")
+	if code.NumParams != len(params) {
+		panic("param count mismatch")
 	}
 
 	vm.Exited = false
 
 	vm.CurrentFrame++
-	vm.GetCurrentFrame().Init(
+	frame := vm.GetCurrentFrame()
+	frame.Init(
 		vm,
 		functionID,
 		code,
 	)
+	copy(frame.Locals, params)
 }
 
 func (vm *VirtualMachine) Execute() {
@@ -1027,7 +1029,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 4
 			frame.Regs[valueID] = int64(v)
 
-		case opcodes.I32Load, opcodes.F32Load, opcodes.I64Load32U:
+		case opcodes.I32Load, opcodes.I64Load32U:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])

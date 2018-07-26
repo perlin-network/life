@@ -118,8 +118,6 @@ const (
 
 	I32Load
 	I64Load
-	F32Load
-	F64Load
 
 	I32Store
 	I64Store

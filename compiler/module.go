@@ -6,6 +6,7 @@ import (
 	//"fmt"
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
+	"github.com/go-interpreter/wagon/validate"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
 )
@@ -29,6 +30,12 @@ func LoadModule(raw []byte) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = validate.VerifyModule(m)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Module{
 		Base: m,
 	}, nil

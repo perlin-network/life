@@ -7,10 +7,10 @@ import (
 
 // Returns an error if any happened during execution of user code.
 // Panics on logical errors.
-func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int) (int64, error) {
+func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params... int64) (int64, error) {
 	count := 0
 
-	vm.Ignite(entryID)
+	vm.Ignite(entryID, params...)
 	for !vm.Exited {
 		vm.Execute()
 		if vm.Delegate != nil {
@@ -31,8 +31,8 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int) (int64, error) {
 
 // Returns an error if any happened during execution of user code.
 // Panics on logical errors.
-func (vm *VirtualMachine) Run(entryID int) (int64, error) {
-	vm.Ignite(entryID)
+func (vm *VirtualMachine) Run(entryID int, params... int64) (int64, error) {
+	vm.Ignite(entryID, params...)
 	for !vm.Exited {
 		vm.Execute()
 		if vm.Delegate != nil {
