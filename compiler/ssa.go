@@ -88,13 +88,20 @@ func (c *SSAFunctionCompiler) PushStack(values ...TyValueID) {
 	c.Stack = append(c.Stack, values...)
 }
 
-func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location) {
+func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable bool) {
 	if loc.PreserveTop {
 		// TODO: This might be inefficient.
-		c.Code = append(
-			c.Code,
-			buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, []TyValueID{c.PopStack(1)[0]}),
-		)
+		if wasUnreachable {
+			c.Code = append(
+				c.Code,
+				buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, []TyValueID{0}),
+			)
+		} else {
+			c.Code = append(
+				c.Code,
+				buildInstr(0, "jmp", []int64{int64(len(c.Code) + 1)}, c.PopStack(1)),
+			)
+		}
 	}
 
 	var innerBrTarget int64
@@ -121,22 +128,34 @@ func (c *SSAFunctionCompiler) Compile() {
 		StackDepth: 0,
 	})
 
-	unreachable := false
+	unreachableDepth := 0
 
 	for _, ins := range c.Source.Code {
 		//fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
-		if unreachable && ins.Op.Name != "end" {
-			continue
+		wasUnreachable := false
+
+		if unreachableDepth != 0 {
+			wasUnreachable = true
+			switch ins.Op.Name {
+			case "block", "loop", "if":
+				unreachableDepth++
+			case "end":
+				unreachableDepth--
+			}
+			if unreachableDepth == 1 && ins.Op.Name == "else" {
+				unreachableDepth--
+			}
+			if unreachableDepth != 0 {
+				continue
+			}
 		}
-		wasUnreachable := unreachable
-		unreachable = false
 
 		switch ins.Op.Name {
 		case "nop":
 
 		case "unreachable":
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, nil, nil))
-			unreachable = true
+			unreachableDepth = 1
 
 		case "select":
 			retID := c.NextValueID()
@@ -253,7 +272,12 @@ func (c *SSAFunctionCompiler) Compile() {
 			})
 
 			if loc.PreserveTop {
-				c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, c.PopStack(1)))
+				if !wasUnreachable {
+					c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, c.PopStack(1)))
+				} else {
+					c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
+					c.Stack = c.Stack[:loc.StackDepth] // unwind stack
+				}
 			} else {
 				c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, []TyValueID{0}))
 			}
@@ -280,8 +304,10 @@ func (c *SSAFunctionCompiler) Compile() {
 				} else {
 					panic("inconsistent stack pattern")
 				}
+			} else {
+				c.Stack = c.Stack[:loc.StackDepth]
 			}
-			c.FixupLocationRef(loc)
+			c.FixupLocationRef(loc, wasUnreachable)
 
 		case "br":
 			label := int(ins.Immediates[0].(uint32))
@@ -296,7 +322,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 			loc.FixupList = append(loc.FixupList, fixupInfo)
 			c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, brValues))
-			unreachable = true
+			unreachableDepth = 1
 
 		case "br_if":
 			brValues := []TyValueID{c.PopStack(1)[0], 0}
@@ -339,7 +365,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 
 			c.Code = append(c.Code, buildInstr(0, "jmp_table", brTargets, brValues))
-			unreachable = true
+			unreachableDepth = 1
 
 		case "return":
 			if len(c.Stack) == 1 {
@@ -349,7 +375,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			} else {
 				panic(fmt.Errorf("incorrect stack state at return: depth = %d", len(c.Stack)))
 			}
-			unreachable = true
+			unreachableDepth = 1
 
 		case "call":
 			targetID := int(ins.Immediates[0].(uint32))
@@ -401,7 +427,7 @@ func (c *SSAFunctionCompiler) Compile() {
 		}
 	}
 
-	c.FixupLocationRef(c.Locations[0])
+	c.FixupLocationRef(c.Locations[0], false)
 	if len(c.Stack) != 0 {
 		c.Code = append(c.Code, buildInstr(0, "return", nil, c.PopStack(1)))
 	} else {
