@@ -529,14 +529,14 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int32(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 		case "i32.store8":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Store8)
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int32(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "i32.store16":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Store16)
@@ -544,7 +544,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int32(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "i64.store8":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Store8)
@@ -552,7 +552,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int64(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "i64.store16":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Store16)
@@ -560,7 +560,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int64(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "i64.store32":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Store32)
@@ -568,7 +568,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int64(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "i64.store":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Store)
@@ -576,21 +576,21 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, int64(ins.Values[1]))      // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 		case "f32.store":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Store)
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, float32(ins.Values[1]))    // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 		case "f64.store":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Store)
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0])) // Memory alignment flags
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1])) // Memory offset
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))     // Memory base address
-			binary.Write(buf, binary.LittleEndian, float64(ins.Values[1]))    // Address of value to store
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))     // Address of value to store
 
 		case "jmp":
 			binary.Write(buf, binary.LittleEndian, opcodes.Jmp)

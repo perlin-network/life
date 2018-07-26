@@ -1003,6 +1003,40 @@ func (vm *VirtualMachine) Execute() {
 
 			effective := int(uint64(base) + uint64(offset))
 			frame.Regs[valueID] = int64(int16(LE.Uint32(vm.Memory[effective : effective+4])))
+		case opcodes.I32Store:
+			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
+			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+
+			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+
+			frame.IP += 16
+
+			effective := int(uint64(base) + uint64(offset))
+			LE.PutUint32(vm.Memory[effective:effective+4], uint32(value))
+		case opcodes.I32Store8:
+			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
+			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+
+			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+
+			frame.IP += 16
+
+			effective := int(uint64(base) + uint64(offset))
+			LE.PutUint32(vm.Memory[effective:effective+4], uint32(int8(value)))
+		case opcodes.I32Store16:
+			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
+			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
+
+			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+
+			frame.IP += 16
+
+			effective := int(uint64(base) + uint64(offset))
+			LE.PutUint32(vm.Memory[effective:effective+4], uint32(int16(value)))
+
 		case opcodes.I64Load, opcodes.F64Load:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
@@ -1039,40 +1073,7 @@ func (vm *VirtualMachine) Execute() {
 
 			effective := int(uint64(base) + uint64(offset))
 			frame.Regs[valueID] = int64(int32(LE.Uint64(vm.Memory[effective : effective+8])))
-		case opcodes.I32Store:
-			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
-			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
-			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
-
-			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
-
-			frame.IP += 16
-
-			effective := int(uint64(base) + uint64(offset))
-			LE.PutUint32(vm.Memory[effective:effective+4], uint32(value))
-		case opcodes.I32Store8:
-			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
-			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
-			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
-
-			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
-
-			frame.IP += 16
-
-			effective := int(uint64(base) + uint64(offset))
-			LE.PutUint32(vm.Memory[effective:effective+4], uint32(int8(value)))
-		case opcodes.I32Store16:
-			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
-			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
-			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
-
-			value := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
-
-			frame.IP += 16
-
-			effective := int(uint64(base) + uint64(offset))
-			LE.PutUint32(vm.Memory[effective:effective+4], uint32(int16(value)))
-		case opcodes.I64Store:
+		case opcodes.I64Store, opcodes.F64Store:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
@@ -1116,6 +1117,7 @@ func (vm *VirtualMachine) Execute() {
 
 			effective := int(uint64(base) + uint64(offset))
 			LE.PutUint64(vm.Memory[effective:effective+8], uint64(int32(value)))
+
 		case opcodes.Jmp:
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			vm.Yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
