@@ -32,7 +32,6 @@ type Location struct {
 	StackDepth      int
 	BrHead          bool // true for loops
 	PreserveTop     bool
-	LoopPreserveTop bool
 	FixupList       []FixupInfo
 
 	IfBlock bool
@@ -244,7 +243,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			c.Locations = append(c.Locations, &Location{
 				CodePos:         len(c.Code),
 				StackDepth:      len(c.Stack),
-				LoopPreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
 				BrHead:          true,
 			})
 
@@ -299,8 +298,8 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 
 			if !wasUnreachable {
-				if ((loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth+1) ||
-					(!(loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth) {
+				if (loc.PreserveTop && len(c.Stack) == loc.StackDepth+1) ||
+					(!loc.PreserveTop && len(c.Stack) == loc.StackDepth) {
 				} else {
 					panic("inconsistent stack pattern")
 				}
