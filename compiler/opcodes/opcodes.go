@@ -123,8 +123,6 @@ const (
 
 	I32Store
 	I64Store
-	F32Store
-	F64Store
 
 	I32Load8S
 	I32Load16S

@@ -52,6 +52,7 @@ func main() {
 	start := time.Now()
 	ret, err := vm.Run(entryID)
 	if err != nil {
+		vm.PrintStackTrace()
 		panic(err)
 	}
 	end := time.Now()

@@ -3,7 +3,7 @@ package compiler
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	//"fmt"
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/perlin-network/life/compiler/opcodes"
@@ -78,7 +78,7 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 	ret = append(ret, make([]InterpreterCode, len(m.Base.FunctionIndexSpace))...)
 
 	for i, f := range m.Base.FunctionIndexSpace {
-		fmt.Printf("Compiling function %d (%+v)\n", i, f.Sig)
+		//fmt.Printf("Compiling function %d (%+v)\n", i, f.Sig)
 		d, err := disasm.Disassemble(f, m.Base)
 		if err != nil {
 			panic(err)
