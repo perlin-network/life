@@ -37,23 +37,20 @@ func main() {
 		panic(err)
 	}
 
-	vm := exec.NewVirtualMachine(input, &Resolver{})
-	if entryID, ok := vm.GetFunctionExport(*entryFunctionFlag); ok {
-		vm.Ignite(entryID)
-	} else {
-		fmt.Printf("Entry function %s not found; starting from 0.\n", *entryFunctionFlag)
-		vm.Ignite(0)
+	vm, err := exec.NewVirtualMachine(input, &Resolver{})
+	if err != nil {
+		panic(err)
 	}
 
-	for !vm.Exited {
-		vm.Execute()
-		if vm.Delegate != nil {
-			vm.Delegate()
-			vm.Delegate = nil
-		}
+	entryID, ok := vm.GetFunctionExport(*entryFunctionFlag)
+	if !ok {
+		fmt.Printf("Entry function %s not found; starting from 0.\n", *entryFunctionFlag)
+		entryID = 0
 	}
-	if vm.ExitError != nil {
-		panic(vm.ExitError)
+
+	ret, err := vm.Run(entryID)
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println(vm.ReturnValue)
+	fmt.Println(ret)
 }

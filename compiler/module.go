@@ -7,6 +7,7 @@ import (
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/perlin-network/life/compiler/opcodes"
+	"github.com/perlin-network/life/utils"
 )
 
 type Module struct {
@@ -33,7 +34,9 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileForInterpreter() []InterpreterCode {
+func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr error) {
+	defer utils.CatchPanic(&retErr)
+
 	ret := make([]InterpreterCode, 0)
 
 	if m.Base.Import != nil {
@@ -96,5 +99,5 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 		}
 	}
 
-	return ret
+	return ret, nil
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
+	"github.com/perlin-network/life/utils"
 )
 
 type FunctionImport func(vm *VirtualMachine) int64
@@ -63,11 +64,18 @@ type ImportResolver interface {
 func NewVirtualMachine(
 	code []byte,
 	impResolver ImportResolver,
-) *VirtualMachine {
+) (_retVM *VirtualMachine, retErr error) {
 	m, err := compiler.LoadModule(code)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
+
+	functionCode, err := m.CompileForInterpreter()
+	if err != nil {
+		return nil, err
+	}
+
+	defer utils.CatchPanic(&retErr)
 
 	table := make([]uint32, 0)
 	globals := make([]int64, 0)
@@ -157,7 +165,7 @@ func NewVirtualMachine(
 
 	return &VirtualMachine{
 		Module:          m,
-		FunctionCode:    m.CompileForInterpreter(),
+		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
 		CallStack:       make([]Frame, DefaultCallStackSize),
 		CurrentFrame:    -1,
@@ -165,7 +173,7 @@ func NewVirtualMachine(
 		Globals:         globals,
 		Memory:          memory,
 		Exited:          true,
-	}
+	}, nil
 }
 
 func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode) {
