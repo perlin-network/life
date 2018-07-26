@@ -6,6 +6,7 @@ import (
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 type Resolver struct{}
@@ -48,9 +49,11 @@ func main() {
 		entryID = 0
 	}
 
+	start := time.Now()
 	ret, err := vm.Run(entryID)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(ret)
+	end := time.Now()
+	fmt.Printf("return value = %d, duration = %v\n", ret, end.Sub(start))
 }
