@@ -124,7 +124,7 @@ func (c *SSAFunctionCompiler) Compile() {
 	unreachable := false
 
 	for _, ins := range c.Source.Code {
-		fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
+		//fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
 		if unreachable && ins.Op.Name != "end" {
 			continue
 		}

@@ -86,10 +86,10 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.CallIndexOffset = numFuncImports
 		compiler.Compile()
-		fmt.Println(compiler.Code)
-		fmt.Printf("%+v\n", compiler.NewCFGraph())
+		//fmt.Println(compiler.Code)
+		//fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
-		fmt.Println(compiler.Code)
+		//fmt.Println(compiler.Code)
 		ret[numFuncImports+i] = InterpreterCode{
 			NumRegs:    numRegs,
 			NumParams:  len(f.Sig.ParamTypes),
