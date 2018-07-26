@@ -267,7 +267,14 @@ func (vm *VirtualMachine) Execute() {
 
 	frame := vm.GetCurrentFrame()
 
+	cycleCount := 0
+
 	for {
+		if cycleCount == 10000 {
+			return
+		}
+		cycleCount++
+
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
 		frame.IP += 5
