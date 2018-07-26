@@ -77,7 +77,9 @@ func (c *Config) Run(cfgPath string) error {
 				panic(err)
 			}
 		case "assert_return":
-			vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &Resolver{})
+			vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
+				MaxMemoryPages: 1024, // for memory trap tests
+			}, &Resolver{})
 			if err != nil {
 				panic(err)
 			}
@@ -152,6 +154,8 @@ func (c *Config) Run(cfgPath string) error {
 			fmt.Println("skipping assert_exhaustion")
 		case "assert_unlinkable":
 			fmt.Println("skipping assert_unlinkable")
+		case "assert_return_canonical_nan":
+			fmt.Println("skipping assert_return_canonical_nan")
 		default:
 			panic(cmd.Type)
 		}
