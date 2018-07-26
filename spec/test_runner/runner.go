@@ -156,6 +156,8 @@ func (c *Config) Run(cfgPath string) error {
 			fmt.Println("skipping assert_unlinkable")
 		case "assert_return_canonical_nan":
 			fmt.Println("skipping assert_return_canonical_nan")
+		case "assert_return_arithmetic_nan":
+			fmt.Println("skipping assert_return_arithmetic_nan")
 		default:
 			panic(cmd.Type)
 		}
