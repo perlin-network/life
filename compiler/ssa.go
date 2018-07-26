@@ -128,7 +128,9 @@ func (c *SSAFunctionCompiler) Compile() {
 		if unreachable && ins.Op.Name != "end" {
 			continue
 		}
+		wasUnreachable := unreachable
 		unreachable = false
+
 		switch ins.Op.Name {
 		case "nop":
 
@@ -272,10 +274,12 @@ func (c *SSAFunctionCompiler) Compile() {
 				})
 			}
 
-			if ((loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth+1) ||
-				(!(loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth) {
-			} else {
-				panic("inconsistent stack pattern")
+			if !wasUnreachable {
+				if ((loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth+1) ||
+					(!(loc.PreserveTop || loc.LoopPreserveTop) && len(c.Stack) == loc.StackDepth) {
+				} else {
+					panic("inconsistent stack pattern")
+				}
 			}
 			c.FixupLocationRef(loc)
 
