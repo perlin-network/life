@@ -75,6 +75,7 @@ func (m *Module) CompileForInterpreter() []InterpreterCode {
 	ret = append(ret, make([]InterpreterCode, len(m.Base.FunctionIndexSpace))...)
 
 	for i, f := range m.Base.FunctionIndexSpace {
+		fmt.Printf("Compiling function %d (%+v)\n", i, f.Sig)
 		d, err := disasm.Disassemble(f, m.Base)
 		if err != nil {
 			panic(err)

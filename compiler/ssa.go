@@ -121,13 +121,25 @@ func (c *SSAFunctionCompiler) Compile() {
 		StackDepth: 0,
 	})
 
+	unreachable := false
+
 	for _, ins := range c.Source.Code {
 		fmt.Printf("%s %d\n", ins.Op.Name, len(c.Stack))
+		if unreachable && ins.Op.Name != "end" {
+			continue
+		}
+		unreachable = false
 		switch ins.Op.Name {
 		case "nop":
 
 		case "unreachable":
 			c.Code = append(c.Code, buildInstr(0, ins.Op.Name, nil, nil))
+			unreachable = true
+
+		case "select":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(3)))
+			c.PushStack(retID)
 
 		case "i32.const":
 			retID := c.NextValueID()
@@ -278,6 +290,7 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 			loc.FixupList = append(loc.FixupList, fixupInfo)
 			c.Code = append(c.Code, buildInstr(0, "jmp", []int64{-1}, brValues))
+			unreachable = true
 
 		case "br_if":
 			brValues := []TyValueID{c.PopStack(1)[0], 0}
@@ -320,15 +333,17 @@ func (c *SSAFunctionCompiler) Compile() {
 			}
 
 			c.Code = append(c.Code, buildInstr(0, "jmp_table", brTargets, brValues))
+			unreachable = true
 
 		case "return":
 			if len(c.Stack) == 1 {
-				c.Code = append(c.Code, buildInstr(0, "return", nil, []TyValueID{c.Stack[0]}))
+				c.Code = append(c.Code, buildInstr(0, "return", nil, c.PopStack(1)))
 			} else if len(c.Stack) == 0 {
 				c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
 			} else {
 				panic(fmt.Errorf("incorrect stack state at return: depth = %d", len(c.Stack)))
 			}
+			unreachable = true
 
 		case "call":
 			targetID := int(ins.Immediates[0].(uint32))

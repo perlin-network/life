@@ -5,6 +5,7 @@ type Opcode byte
 const (
 	Nop Opcode = iota
 	Unreachable
+	Select
 	I32Const
 	I32Add
 	I32Sub

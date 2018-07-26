@@ -22,6 +22,12 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		case "unreachable":
 			binary.Write(buf, binary.LittleEndian, opcodes.Unreachable)
 
+		case "select":
+			binary.Write(buf, binary.LittleEndian, opcodes.Select)
+			for i := 0; i < 3; i++ {
+				binary.Write(buf, binary.LittleEndian, uint32(ins.Values[i]))
+			}
+
 			// Int 32-bit
 		case "i32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Const)
