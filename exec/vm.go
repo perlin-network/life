@@ -1078,7 +1078,7 @@ func (vm *VirtualMachine) Execute() {
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
-			value := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+			value := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))]
 
 			frame.IP += 16
 
@@ -1089,7 +1089,7 @@ func (vm *VirtualMachine) Execute() {
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
-			value := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+			value := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))]
 
 			frame.IP += 16
 
@@ -1100,7 +1100,7 @@ func (vm *VirtualMachine) Execute() {
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
-			value := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+			value := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))]
 
 			frame.IP += 16
 
@@ -1111,7 +1111,7 @@ func (vm *VirtualMachine) Execute() {
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
 
-			value := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))])
+			value := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))]
 
 			frame.IP += 16
 
