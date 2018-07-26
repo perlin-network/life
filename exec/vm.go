@@ -42,6 +42,7 @@ type VirtualMachine struct {
 }
 
 type VMConfig struct {
+	MaxMemoryPages int
 	MaxTableSize      int
 	MaxValueSlots     int
 	MaxCallStackDepth int
@@ -63,6 +64,7 @@ type ImportResolver interface {
 
 func NewVirtualMachine(
 	code []byte,
+	config VMConfig,
 	impResolver ImportResolver,
 ) (_retVM *VirtualMachine, retErr error) {
 	m, err := compiler.LoadModule(code)
@@ -97,6 +99,10 @@ func NewVirtualMachine(
 	// Populate table elements.
 	if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
 		t := &m.Base.Table.Entries[0]
+
+		if config.MaxTableSize != 0 && int(t.Limits.Initial) > config.MaxTableSize {
+			panic("max table size exceeded")
+		}
 
 		table = make([]uint32, int(t.Limits.Initial))
 		for i := 0; i < int(t.Limits.Initial); i++ {
@@ -138,7 +144,12 @@ func NewVirtualMachine(
 	// Load linear memory.
 	memory := make([]byte, 0)
 	if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
-		capacity := int(m.Base.Memory.Entries[0].Limits.Initial) * DefaultPageSize
+		initialLimit := int(m.Base.Memory.Entries[0].Limits.Initial)
+		if config.MaxMemoryPages != 0 && initialLimit > config.MaxMemoryPages {
+			panic("max memory exceeded")
+		}
+
+		capacity := initialLimit * DefaultPageSize
 
 		// Initialize empty memory.
 		memory = make([]byte, capacity)
@@ -165,6 +176,7 @@ func NewVirtualMachine(
 
 	return &VirtualMachine{
 		Module:          m,
+		Config: config,
 		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
 		CallStack:       make([]Frame, DefaultCallStackSize),
@@ -1273,6 +1285,21 @@ func (vm *VirtualMachine) Execute() {
 				frame.Regs[valueID] = vm.FunctionImports[importID](vm)
 			}
 			return
+
+		case opcodes.CurrentMemory:
+			frame.Regs[valueID] = int64(len(vm.Memory) / DefaultPageSize)
+
+		case opcodes.GrowMemory:
+			n := int(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))]))
+			frame.IP += 4
+
+			current := len(vm.Memory) / DefaultPageSize
+			if vm.Config.MaxMemoryPages == 0 || (current + n >= current && current + n <= vm.Config.MaxMemoryPages) {
+				frame.Regs[valueID] = int64(current)
+				vm.Memory = append(vm.Memory, make([]byte, n * DefaultPageSize)...)
+			} else {
+				frame.Regs[valueID] = -1
+			}
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = vm.Yielded

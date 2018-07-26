@@ -37,7 +37,7 @@ func main() {
 		panic(err)
 	}
 
-	vm, err := exec.NewVirtualMachine(input, &Resolver{})
+	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &Resolver{})
 	if err != nil {
 		panic(err)
 	}

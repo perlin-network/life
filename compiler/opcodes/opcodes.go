@@ -160,5 +160,8 @@ const (
 	CallIndirect
 	InvokeImport
 
+	CurrentMemory
+	GrowMemory
+
 	Phi
 )

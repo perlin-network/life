@@ -386,6 +386,16 @@ func (c *SSAFunctionCompiler) Compile() {
 				c.PushStack(targetValueID)
 			}
 
+		case "current_memory":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, nil))
+			c.PushStack(retID)
+
+		case "grow_memory":
+			retID := c.NextValueID()
+			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
+			c.PushStack(retID)
+
 		default:
 			panic(ins.Op.Name)
 		}

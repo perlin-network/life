@@ -666,6 +666,13 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 				binary.Write(buf, binary.LittleEndian, uint32(v))
 			}
 
+		case "current_memory":
+			binary.Write(buf, binary.LittleEndian, opcodes.CurrentMemory)
+
+		case "grow_memory":
+			binary.Write(buf, binary.LittleEndian, opcodes.GrowMemory)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
 		default:
 			panic(ins.Op)
 		}
