@@ -104,9 +104,9 @@ func (c *Config) Run(cfgPath string) error {
 				}
 				args := make([]int64, 0)
 				for _, arg := range cmd.Action.Args {
-					var val int64
+					var val uint64
 					fmt.Sscanf(arg.Value, "%d", &val)
-					args = append(args, val)
+					args = append(args, int64(val))
 				}
 				fmt.Printf("Entry = %d\n", entryID)
 				ret, err := localVM.Run(entryID, args...)
@@ -114,8 +114,9 @@ func (c *Config) Run(cfgPath string) error {
 					panic(err)
 				}
 				if len(cmd.Action.Expected) != 0 {
-					var exp int64
-					fmt.Sscanf(cmd.Action.Expected[0].Value, "%d", &exp)
+					var _exp uint64
+					fmt.Sscanf(cmd.Action.Expected[0].Value, "%d", &_exp)
+					exp := int64(_exp)
 					if cmd.Action.Expected[0].Type == "i32" || cmd.Action.Expected[0].Type == "f32" {
 						ret = int64(uint32(ret))
 						exp = int64(uint32(exp))
@@ -130,8 +131,9 @@ func (c *Config) Run(cfgPath string) error {
 					panic("export not found (global)")
 				}
 				val := localVM.Globals[globalID]
-				var exp int64
-				fmt.Sscanf(cmd.Expected[0].Value, "%d", &exp)
+				var _exp uint64
+				fmt.Sscanf(cmd.Expected[0].Value, "%d", &_exp)
+				exp := int64(_exp)
 				if cmd.Expected[0].Type == "i32" || cmd.Expected[0].Type == "f32" {
 					val = int64(uint32(val))
 					exp = int64(uint32(exp))
