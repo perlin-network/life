@@ -90,7 +90,6 @@ func (c *SSAFunctionCompiler) PushStack(values ...TyValueID) {
 
 func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable bool) {
 	if loc.PreserveTop || loc.LoopPreserveTop {
-		// TODO: This might be inefficient.
 		if wasUnreachable {
 			c.Code = append(
 				c.Code,

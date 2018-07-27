@@ -15,13 +15,18 @@ import (
 	"github.com/perlin-network/life/utils"
 )
 
+// The function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.
 type FunctionImport func(vm *VirtualMachine) int64
 
+// Default call stack size.
 const DefaultCallStackSize = 512
+
+// WebAssembly linear memory page size.
 const DefaultPageSize = 65536
 
 var LE = binary.LittleEndian
 
+// The virtual machine.
 type VirtualMachine struct {
 	Config          VMConfig
 	Module          *compiler.Module
@@ -41,6 +46,7 @@ type VirtualMachine struct {
 	ReturnValue     int64
 }
 
+// Virtual machine config.
 type VMConfig struct {
 	MaxMemoryPages int
 	MaxTableSize      int
@@ -48,6 +54,7 @@ type VMConfig struct {
 	MaxCallStackDepth int
 }
 
+// Call frame.
 type Frame struct {
 	FunctionID int
 	Code       []byte
@@ -57,11 +64,13 @@ type Frame struct {
 	ReturnReg  int
 }
 
+// Import resolver for resolving imports in a module.
 type ImportResolver interface {
 	ResolveFunc(module, field string) FunctionImport
 	ResolveGlobal(module, field string) int64
 }
 
+// Creates a virtual machine.
 func NewVirtualMachine(
 	code []byte,
 	config VMConfig,
@@ -188,6 +197,7 @@ func NewVirtualMachine(
 	}, nil
 }
 
+// Initializes a frame. Must be called on `call` and `call_indirect`.
 func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode) {
 	numValueSlots := code.NumRegs + code.NumParams + code.NumLocals
 	if vm.Config.MaxValueSlots != 0 && vm.NumValueSlots+numValueSlots > vm.Config.MaxValueSlots {
@@ -206,6 +216,7 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	//fmt.Printf("Enter function %d\n", functionID)
 }
 
+// Destroys a frame. Must be called on return.
 func (f *Frame) Destroy(vm *VirtualMachine) {
 	numValueSlots := len(f.Regs) + len(f.Locals)
 	vm.NumValueSlots -= numValueSlots
@@ -213,6 +224,7 @@ func (f *Frame) Destroy(vm *VirtualMachine) {
 	//fmt.Printf("Leave function %d\n", f.FunctionID)
 }
 
+// Returns the current frame.
 func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	if vm.Config.MaxCallStackDepth != 0 && vm.CurrentFrame >= vm.Config.MaxCallStackDepth {
 		panic("max call stack depth exceeded")
@@ -242,14 +254,17 @@ func (vm *VirtualMachine) getExport(key string, kind wasm.External) (int, bool) 
 	return int(entry.Index), true
 }
 
+// Returns the global export with the given name.
 func (vm *VirtualMachine) GetGlobalExport(key string) (int, bool) {
 	return vm.getExport(key, wasm.ExternalGlobal)
 }
 
+// Returns the function export with the given name.
 func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
 	return vm.getExport(key, wasm.ExternalFunction)
 }
 
+// Prints VM stack trace for debugging.
 func (vm *VirtualMachine) PrintStackTrace() {
 	fmt.Println("--- Begin stack trace ---")
 	for i := vm.CurrentFrame; i >= 0; i-- {
@@ -258,7 +273,7 @@ func (vm *VirtualMachine) PrintStackTrace() {
 	fmt.Println("--- End stack trace ---")
 }
 
-// Init the first frame.
+// Initializes the first frame.
 func (vm *VirtualMachine) Ignite(functionID int, params... int64) {
 	if vm.ExitError != nil {
 		panic("last execution exited with error; cannot ignite.")
@@ -285,6 +300,10 @@ func (vm *VirtualMachine) Ignite(functionID int, params... int64) {
 	copy(frame.Locals, params)
 }
 
+// Executes the virtual machine.
+// This function may return at any point and is guaranteed to return
+// at least once every 10000 instructions. Caller is responsible for
+// detecting VM status in a loop.
 func (vm *VirtualMachine) Execute() {
 	if vm.Exited == true {
 		panic("attempting to execute an exited vm")
@@ -337,7 +356,7 @@ func (vm *VirtualMachine) Execute() {
 			} else {
 				frame.Regs[valueID] = b
 			}
-		case opcodes.I32Const, opcodes.F32Const:
+		case opcodes.I32Const:
 			val := LE.Uint32(frame.Code[frame.IP : frame.IP+4])
 			frame.IP += 4
 			frame.Regs[valueID] = int64(val)
@@ -562,7 +581,7 @@ func (vm *VirtualMachine) Execute() {
 			} else {
 				frame.Regs[valueID] = 0
 			}
-		case opcodes.I64Const, opcodes.F64Const:
+		case opcodes.I64Const:
 			val := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
 			frame.IP += 8
 			frame.Regs[valueID] = int64(val)

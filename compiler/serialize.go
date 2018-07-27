@@ -9,6 +9,7 @@ import (
 
 // Instruction encoding:
 // Value ID (4 bytes) | Opcode (1 byte) | Operands
+// Types are erased in the generated code.
 func (c *SSAFunctionCompiler) Serialize() []byte {
 	buf := &bytes.Buffer{}
 	insRelocs := make([]int, len(c.Code))
@@ -29,7 +30,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			}
 
 			// Int 32-bit
-		case "i32.const":
+		case "i32.const", "f32.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I32Const)
 			binary.Write(buf, binary.LittleEndian, int32(ins.Immediates[0]))
 		case "i32.add":
@@ -146,7 +147,7 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 			// Int 64-bit
-		case "i64.const":
+		case "i64.const", "f64.const":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64Const)
 			binary.Write(buf, binary.LittleEndian, int64(ins.Immediates[0]))
 		case "i64.add":
@@ -263,9 +264,6 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 			// Float 32-bit
-		case "f32.const":
-			binary.Write(buf, binary.LittleEndian, opcodes.F32Const)
-			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
 		case "f32.add":
 			binary.Write(buf, binary.LittleEndian, opcodes.F32Add)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
@@ -341,9 +339,6 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 
 			// Float 64-bit
-		case "f64.const":
-			binary.Write(buf, binary.LittleEndian, opcodes.F64Const)
-			binary.Write(buf, binary.LittleEndian, uint64(ins.Immediates[0]))
 		case "f64.add":
 			binary.Write(buf, binary.LittleEndian, opcodes.F64Add)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))

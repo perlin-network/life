@@ -68,7 +68,6 @@ const (
 	I64GeS
 	I64GeU
 
-	F32Const
 	F32Add
 	F32Sub
 	F32Mul
@@ -90,7 +89,6 @@ const (
 	F32Gt
 	F32Ge
 
-	F64Const
 	F64Add
 	F64Sub
 	F64Mul
