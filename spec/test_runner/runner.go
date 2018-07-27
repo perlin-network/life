@@ -144,54 +144,9 @@ func (c *Config) Run(cfgPath string) error {
 			default:
 				panic(cmd.Action.Type)
 			}
-		case "assert_trap":
-			fmt.Println("skipping assert_trap")
-			/*
-			vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &Resolver{})
-			if err != nil {
-				panic(err)
-			}
-			switch cmd.Action.Type {
-			case "invoke":
-				entryID, ok := vm.GetFunctionExport(cmd.Action.Field)
-				if !ok {
-					panic("export not found")
-				}
-				args := make([]int64, 0)
-				for _, arg := range cmd.Action.Args {
-					var val int64
-					fmt.Sscanf(arg.Value, "%d", &val)
-					args = append(args, val)
-				}
-				_, err := vm.Run(entryID, args...)
-				if err == nil {
-					panic("expected error")
-				}
-			default:
-				panic(cmd.Action.Type)
-			}
-			*/
-		case "assert_malformed":
-			fmt.Println("skipping assert_malformed")
-			/*
-			targetBytes, err := ioutil.ReadFile(path.Join(dir, cmd.Filename))
-			if err != nil {
-				panic(err)
-			}
-			_, err = exec.NewVirtualMachine(targetBytes, exec.VMConfig{}, &Resolver{})
-			if err == nil {
-				panic("expected error")
-			}*/
-		case "assert_invalid":
-			fmt.Println("skipping assert_invalid")
-		case "assert_exhaustion":
-			fmt.Println("skipping assert_exhaustion")
-		case "assert_unlinkable":
-			fmt.Println("skipping assert_unlinkable")
-		case "assert_return_canonical_nan":
-			fmt.Println("skipping assert_return_canonical_nan")
-		case "assert_return_arithmetic_nan":
-			fmt.Println("skipping assert_return_arithmetic_nan")
+		case "assert_trap", "assert_malformed", "assert_invalid", "assert_exhaustion", "assert_unlinkable",
+			"assert_return_canonical_nan", "assert_return_arithmetic_nan":
+			fmt.Printf("skipping %s\n", cmd.Type)
 		default:
 			panic(cmd.Type)
 		}
