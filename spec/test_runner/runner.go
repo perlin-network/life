@@ -61,28 +61,24 @@ func LoadConfigFromFile(filename string) *Config {
 }
 
 func (c *Config) Run(cfgPath string) error {
-	var input []byte
+	var vm *exec.VirtualMachine
 
 	dir, _ := filepath.Split(cfgPath)
 
 	for _, cmd := range c.Commands {
 		switch cmd.Type {
 		case "module":
-			/*if input != nil {
-				panic("input != nil")
-			}*/
-			var err error
-			input, err = ioutil.ReadFile(path.Join(dir, cmd.Filename))
+			input, err := ioutil.ReadFile(path.Join(dir, cmd.Filename))
 			if err != nil {
 				panic(err)
 			}
-		case "assert_return":
-			vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
+			vm, err = exec.NewVirtualMachine(input, exec.VMConfig{
 				MaxMemoryPages: 1024, // for memory trap tests
 			}, &Resolver{})
 			if err != nil {
 				panic(err)
 			}
+		case "assert_return", "action":
 			switch cmd.Action.Type {
 			case "invoke":
 				entryID, ok := vm.GetFunctionExport(cmd.Action.Field)
