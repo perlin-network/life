@@ -225,7 +225,7 @@ func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	return &vm.CallStack[vm.CurrentFrame]
 }
 
-func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
+func (vm *VirtualMachine) getExport(key string, kind wasm.External) (int, bool) {
 	if vm.Module.Base.Export == nil {
 		return -1, false
 	}
@@ -235,11 +235,19 @@ func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
 		return -1, false
 	}
 
-	if entry.Kind != wasm.ExternalFunction {
+	if entry.Kind != kind {
 		return -1, false
 	}
 
 	return int(entry.Index), true
+}
+
+func (vm *VirtualMachine) GetGlobalExport(key string) (int, bool) {
+	return vm.getExport(key, wasm.ExternalGlobal)
+}
+
+func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
+	return vm.getExport(key, wasm.ExternalFunction)
 }
 
 func (vm *VirtualMachine) PrintStackTrace() {
