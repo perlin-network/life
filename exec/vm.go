@@ -213,7 +213,7 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.Code = code.Bytes
 	f.IP = 0
 
-	//fmt.Printf("Enter function %d\n", functionID)
+	//fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
 }
 
 // Destroys a frame. Must be called on return.
@@ -221,7 +221,7 @@ func (f *Frame) Destroy(vm *VirtualMachine) {
 	numValueSlots := len(f.Regs) + len(f.Locals)
 	vm.NumValueSlots -= numValueSlots
 
-	//fmt.Printf("Leave function %d\n", f.FunctionID)
+	//fmt.Printf("Leave function %d (%s)\n", f.FunctionID, vm.Module.FunctionNames[f.FunctionID])
 }
 
 // Returns the current frame.
@@ -268,7 +268,8 @@ func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
 func (vm *VirtualMachine) PrintStackTrace() {
 	fmt.Println("--- Begin stack trace ---")
 	for i := vm.CurrentFrame; i >= 0; i-- {
-		fmt.Printf("<%d> function %d\n", i, vm.CallStack[i].FunctionID)
+		functionID := vm.CallStack[i].FunctionID
+		fmt.Printf("<%d> [%d] %s\n", i, functionID, vm.Module.FunctionNames[functionID])
 	}
 	fmt.Println("--- End stack trace ---")
 }
@@ -340,7 +341,7 @@ func (vm *VirtualMachine) Execute() {
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
 		frame.IP += 5
 
-		//fmt.Printf("INS: [%d] %d\n", valueID, ins)
+		//fmt.Printf("INS: [%d] %s\n", valueID, ins.String())
 
 		switch ins {
 		case opcodes.Nop:
@@ -1210,6 +1211,7 @@ func (vm *VirtualMachine) Execute() {
 			} else {
 				frame = vm.GetCurrentFrame()
 				frame.Regs[frame.ReturnReg] = val
+				//fmt.Printf("Return value %d\n", val)
 			}
 		case opcodes.ReturnVoid:
 			frame.Destroy(vm)
@@ -1222,14 +1224,17 @@ func (vm *VirtualMachine) Execute() {
 				frame = vm.GetCurrentFrame()
 			}
 		case opcodes.GetLocal:
-			val := frame.Locals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
+			id := int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))
+			val := frame.Locals[id]
 			frame.IP += 4
 			frame.Regs[valueID] = val
+			//fmt.Printf("GetLocal %d = %d\n", id, val)
 		case opcodes.SetLocal:
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP += 8
 			frame.Locals[id] = val
+			//fmt.Printf("SetLocal %d = %d\n", id, val)
 		case opcodes.GetGlobal:
 			frame.Regs[valueID] = vm.Globals[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
@@ -1256,6 +1261,7 @@ func (vm *VirtualMachine) Execute() {
 			for i := 0; i < argCount; i++ {
 				frame.Locals[i] = oldRegs[int(LE.Uint32(argsRaw[i*4:i*4+4]))]
 			}
+			//fmt.Println("Call params =", frame.Locals[:argCount])
 
 		case opcodes.CallIndirect:
 			typeID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
