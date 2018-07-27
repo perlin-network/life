@@ -370,12 +370,10 @@ func (c *SSAFunctionCompiler) Compile() {
 			unreachableDepth = 1
 
 		case "return":
-			if len(c.Stack) == 1 {
+			if len(c.Stack) != 0 {
 				c.Code = append(c.Code, buildInstr(0, "return", nil, c.PopStack(1)))
-			} else if len(c.Stack) == 0 {
-				c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
 			} else {
-				panic(fmt.Errorf("incorrect stack state at return: depth = %d", len(c.Stack)))
+				c.Code = append(c.Code, buildInstr(0, "return", nil, nil))
 			}
 			unreachableDepth = 1
 
