@@ -3,7 +3,7 @@ package compiler
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	//"fmt"
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/wasm/leb128"
@@ -91,7 +91,7 @@ func LoadModule(raw []byte) (*Module, error) {
 					}
 				}
 			}
-			fmt.Printf("%d function names written\n", len(functionNames))
+			//fmt.Printf("%d function names written\n", len(functionNames))
 		}
 	}
 
