@@ -111,8 +111,27 @@ const (
 	F64Ge
 
 	I32WrapI64
+	I32TruncUF32
+	I32TruncUF64
+	I32TruncSF32
+	I32TruncSF64
+	I64TruncUF32
+	I64TruncUF64
+	I64TruncSF32
+	I64TruncSF64
 	I64ExtendUI32
 	I64ExtendSI32
+
+	F32DemoteF64
+	F64PromoteF32
+	F32ConvertSI32
+	F32ConvertSI64
+	F32ConvertUI32
+	F32ConvertUI64
+	F64ConvertSI32
+	F64ConvertSI64
+	F64ConvertUI32
+	F64ConvertUI64
 
 	I32Load
 	I64Load

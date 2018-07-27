@@ -417,12 +417,84 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.I32WrapI64)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
+		case "i32.trunc_s/f32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32TruncSF32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i32.trunc_s/f64":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32TruncSF64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i32.trunc_u/f32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32TruncUF32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i32.trunc_u/f64":
+			binary.Write(buf, binary.LittleEndian, opcodes.I32TruncUF64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.trunc_s/f32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64TruncSF32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.trunc_s/f64":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64TruncSF64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.trunc_u/f32":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64TruncUF32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "i64.trunc_u/f64":
+			binary.Write(buf, binary.LittleEndian, opcodes.I64TruncUF64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
 		case "i64.extend_u/i32":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64ExtendUI32)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
 		case "i64.extend_s/i32":
 			binary.Write(buf, binary.LittleEndian, opcodes.I64ExtendSI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f32.demote/f64":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32DemoteF64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f64.promote/f32":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64PromoteF32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f32.convert_s/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32ConvertSI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f32.convert_s/i64":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32ConvertSI64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f32.convert_u/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32ConvertUI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f32.convert_u/i64":
+			binary.Write(buf, binary.LittleEndian, opcodes.F32ConvertUI64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f64.convert_s/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64ConvertSI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f64.convert_s/i64":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64ConvertSI64)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f64.convert_u/i32":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64ConvertUI32)
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "f64.convert_u/i64":
+			binary.Write(buf, binary.LittleEndian, opcodes.F64ConvertUI64)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
 		case "i32.reinterpret/f32", "i64.reinterpret/f64", "f32.reinterpret/i32", "f64.reinterpret/i64":

@@ -48,7 +48,7 @@ type VirtualMachine struct {
 
 // Virtual machine config.
 type VMConfig struct {
-	MaxMemoryPages int
+	MaxMemoryPages    int
 	MaxTableSize      int
 	MaxValueSlots     int
 	MaxCallStackDepth int
@@ -185,7 +185,7 @@ func NewVirtualMachine(
 
 	return &VirtualMachine{
 		Module:          m,
-		Config: config,
+		Config:          config,
 		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
 		CallStack:       make([]Frame, DefaultCallStackSize),
@@ -275,7 +275,7 @@ func (vm *VirtualMachine) PrintStackTrace() {
 }
 
 // Initializes the first frame.
-func (vm *VirtualMachine) Ignite(functionID int, params... int64) {
+func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	if vm.ExitError != nil {
 		panic("last execution exited with error; cannot ignite.")
 	}
@@ -1047,6 +1047,76 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 4
 			frame.Regs[valueID] = int64(v)
 
+		case opcodes.I32TruncSF32, opcodes.I32TruncUF32:
+			v := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(int32(math.Trunc(float64(v))))
+
+		case opcodes.I32TruncSF64, opcodes.I32TruncUF64:
+			v := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(int32(math.Trunc(v)))
+
+		case opcodes.I64TruncSF32, opcodes.I64TruncUF32:
+			v := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Trunc(float64(v)))
+
+		case opcodes.I64TruncSF64, opcodes.I64TruncUF64:
+			v := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Trunc(v))
+
+		case opcodes.F32DemoteF64:
+			v := math.Float64frombits(uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
+
+		case opcodes.F64PromoteF32:
+			v := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(float64(v)))
+
+		case opcodes.F32ConvertSI32:
+			v := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
+
+		case opcodes.F32ConvertUI32:
+			v := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
+
+		case opcodes.F32ConvertSI64:
+			v := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
+
+		case opcodes.F32ConvertUI64:
+			v := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
+
+		case opcodes.F64ConvertSI32:
+			v := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(int32(math.Float64bits(float64(v))))
+
+		case opcodes.F64ConvertUI32:
+			v := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(int32(math.Float64bits(float64(v))))
+
+		case opcodes.F64ConvertSI64:
+			v := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(float64(v)))
+
+		case opcodes.F64ConvertUI64:
+			v := uint64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			frame.IP += 4
+			frame.Regs[valueID] = int64(math.Float64bits(float64(v)))
+
 		case opcodes.I64ExtendUI32:
 			v := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			frame.IP += 4
@@ -1224,7 +1294,7 @@ func (vm *VirtualMachine) Execute() {
 				frame = vm.GetCurrentFrame()
 			}
 		case opcodes.GetLocal:
-			id := int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))
+			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Locals[id]
 			frame.IP += 4
 			frame.Regs[valueID] = val
@@ -1305,13 +1375,13 @@ func (vm *VirtualMachine) Execute() {
 			frame.Regs[valueID] = int64(len(vm.Memory) / DefaultPageSize)
 
 		case opcodes.GrowMemory:
-			n := int(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))]))
+			n := int(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			frame.IP += 4
 
 			current := len(vm.Memory) / DefaultPageSize
-			if vm.Config.MaxMemoryPages == 0 || (current + n >= current && current + n <= vm.Config.MaxMemoryPages) {
+			if vm.Config.MaxMemoryPages == 0 || (current+n >= current && current+n <= vm.Config.MaxMemoryPages) {
 				frame.Regs[valueID] = int64(current)
-				vm.Memory = append(vm.Memory, make([]byte, n * DefaultPageSize)...)
+				vm.Memory = append(vm.Memory, make([]byte, n*DefaultPageSize)...)
 			} else {
 				frame.Regs[valueID] = -1
 			}
