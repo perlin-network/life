@@ -97,10 +97,14 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		//fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
 		//fmt.Println(compiler.Code)
+		numLocals := 0
+		for _, v := range f.Body.Locals {
+			numLocals += int(v.Count)
+		}
 		ret[numFuncImports+i] = InterpreterCode{
 			NumRegs:    numRegs,
 			NumParams:  len(f.Sig.ParamTypes),
-			NumLocals:  len(f.Body.Locals),
+			NumLocals:  numLocals,
 			NumReturns: len(f.Sig.ReturnTypes),
 			Bytes:      compiler.Serialize(),
 		}
