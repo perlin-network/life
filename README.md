@@ -36,7 +36,7 @@ Suppose we have already read in the wasm bytecode to `input`.
 
 Set up the virtual machine:
 ```go
-vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &Resolver{})
+vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{})
 if err != nil { // if the wasm bytecode is invalid
     panic(err)
 }
