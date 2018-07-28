@@ -154,7 +154,7 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			panic("Emscripten stack overflow")
 		}
 
-	case "___lock", "___unlock":
+	case "___lock", "___unlock", "___gxx_personality_v0":
 		return func(vm *exec.VirtualMachine) int64 {
 			return 0
 		}
@@ -198,6 +198,12 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 	case "___cxa_allocate_exception":
 		return func(vm *exec.VirtualMachine) int64 {
 			return r.malloc(vm, int(vm.GetCurrentFrame().Locals[0]))
+		}
+
+	case "___cxa_free_exception":
+		return func(vm *exec.VirtualMachine) int64 {
+			// TODO: Free memory denoted by pointer vm.GetCurrentFrame().Locals[0].
+			return 0
 		}
 
 	case "___cxa_begin_catch":
