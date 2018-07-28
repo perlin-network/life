@@ -214,7 +214,8 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.Code = code.Bytes
 	f.IP = 0
 
-	//fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
+	fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
+	fmt.Println(vm.GenerateCodeForFunction(functionID))
 }
 
 // Destroys a frame. Must be called on return.
