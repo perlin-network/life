@@ -52,6 +52,8 @@ type VMConfig struct {
 	MaxTableSize      int
 	MaxValueSlots     int
 	MaxCallStackDepth int
+	DefaultMemoryPages int
+	DefaultTableSize int
 }
 
 // Call frame.
@@ -99,10 +101,43 @@ func NewVirtualMachine(
 				funcImports = append(funcImports, impResolver.ResolveFunc(imp.ModuleName, imp.FieldName))
 			case wasm.ExternalGlobal:
 				globals = append(globals, impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName))
+			case wasm.ExternalMemory:
+				// TODO: Do we want a real import?
+				if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
+					panic("cannot import another memory while we already have one")
+				}
+				m.Base.Memory = &wasm.SectionMemories {
+					Entries: []wasm.Memory {
+						wasm.Memory {
+							Limits: wasm.ResizableLimits {
+								Initial: uint32(config.DefaultMemoryPages),
+							},
+						},
+					},
+				}
+			case wasm.ExternalTable:
+				// TODO: Do we want a real import?
+				if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
+					panic("cannot import another table while we already have one")
+				}
+				m.Base.Table = &wasm.SectionTables {
+					Entries: []wasm.Table {
+						wasm.Table {
+							Limits: wasm.ResizableLimits {
+								Initial: uint32(config.DefaultTableSize),
+							},
+						},
+					},
+				}
 			default:
 				panic(fmt.Errorf("import kind not supported: %d", imp.Kind))
 			}
 		}
+	}
+
+	// Load global entries.
+	for _, entry := range m.Base.GlobalIndexSpace {
+		globals = append(globals, execInitExpr(entry.Init, globals))
 	}
 
 	// Populate table elements.
@@ -119,34 +154,9 @@ func NewVirtualMachine(
 		}
 		if m.Base.Elements != nil && len(m.Base.Elements.Entries) > 0 {
 			for _, e := range m.Base.Elements.Entries {
-				maybeOffset, err := m.Base.ExecInitExpr(e.Offset)
-				if err != nil {
-					panic(err)
-				}
-				offset := int(maybeOffset.(int32))
+				offset := int(execInitExpr(e.Offset, globals))
 				copy(table[offset:], e.Elems)
 			}
-		}
-	}
-
-	// Load global entries.
-	for _, entry := range m.Base.GlobalIndexSpace {
-		value, err := m.Base.ExecInitExpr(entry.Init)
-		if err != nil {
-			panic(err)
-		}
-
-		switch value := value.(type) {
-		case int32:
-			globals = append(globals, int64(value))
-		case int64:
-			globals = append(globals, value)
-		case float32:
-			globals = append(globals, int64(math.Float32bits(value)))
-		case float64:
-			globals = append(globals, int64(math.Float64bits(value)))
-		default:
-			panic("got an impossible global value type")
 		}
 	}
 
@@ -168,16 +178,7 @@ func NewVirtualMachine(
 
 		if m.Base.Data != nil && len(m.Base.Data.Entries) > 0 {
 			for _, e := range m.Base.Data.Entries {
-				_offset, err := m.Base.ExecInitExpr(e.Offset)
-				if err != nil {
-					panic(err)
-				}
-
-				offset, ok := _offset.(int32)
-				if !ok {
-					panic("linear memory offset is not varuint32")
-				}
-
+				offset := int(execInitExpr(e.Offset, globals))
 				copy(memory[int(offset):], e.Data)
 			}
 		}
