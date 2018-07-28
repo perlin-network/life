@@ -13,11 +13,27 @@ import (
 type Resolver struct{}
 
 func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
-	panic("ResolveFunc not supported")
+	if module != "spectest" {
+		panic("module != spectest")
+	}
+	switch field {
+	case "print_i32":
+		return func(vm *exec.VirtualMachine) int64 { return 0 }
+	default:
+		panic(fmt.Errorf("func %s not found", field))
+	}
 }
 
 func (r *Resolver) ResolveGlobal(module, field string) int64 {
-	panic("ResolveGlobal not supported")
+	if module != "spectest" {
+		panic("module != spectest")
+	}
+	switch field {
+	case "global_i32":
+		return 0
+	default:
+		panic(fmt.Errorf("global %s not found", field))
+	}
 }
 
 type Config struct {
