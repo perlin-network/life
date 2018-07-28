@@ -11,7 +11,9 @@ import (
 	"strings"
 )
 
-type Resolver struct{}
+type Resolver struct {
+	tempRet0 int64
+}
 
 func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 	fmt.Printf("Resolve func: %s %s\n", module, field)
@@ -63,6 +65,22 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			copy(vm.Memory[dest:], vm.Memory[src:src + num])
 			return int64(dest)
 		}
+
+	case "abort":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("Emscripten abort")
+		}
+
+	case "setTempRet0":
+		return func(vm *exec.VirtualMachine) int64 {
+			r.tempRet0 = vm.GetCurrentFrame().Locals[0]
+			return 0
+		}
+
+	case "getTempRet0":
+		return func(vm *exec.VirtualMachine) int64 {
+			return r.tempRet0
+		}
 	
 	default:
 		if strings.HasPrefix(field, "nullFunc_") {
@@ -73,6 +91,11 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 		if strings.HasPrefix(field, "___syscall") {
 			return func(vm *exec.VirtualMachine) int64 {
 				panic(fmt.Errorf("syscall %s not supported", field))
+			}
+		}
+		if strings.HasPrefix(field, "jsCall_") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("jsCall %s not supported", field))
 			}
 		}
 		panic(fmt.Errorf("unknown field: %s", field))
@@ -101,6 +124,10 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 		case "STACK_MAX":
 			return 4096 + 1048576
 		case "ABORT":
+			return 0
+		case "gb":
+			return 1024
+		case "fb":
 			return 0
 		default:
 			panic(fmt.Errorf("unknown field: %s", field))
