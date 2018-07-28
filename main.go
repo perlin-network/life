@@ -50,6 +50,16 @@ func main() {
 	}
 
 	start := time.Now()
+
+	if vm.Module.Base.Start != nil {
+		startID := int(vm.Module.Base.Start.Index)
+		_, err := vm.Run(startID)
+		if err != nil {
+			vm.PrintStackTrace()
+			panic(err)
+		}
+	}
+
 	ret, err := vm.Run(entryID)
 	if err != nil {
 		vm.PrintStackTrace()
