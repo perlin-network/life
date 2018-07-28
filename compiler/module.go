@@ -13,7 +13,7 @@ import (
 )
 
 type Module struct {
-	Base *wasm.Module
+	Base          *wasm.Module
 	FunctionNames map[int]string
 }
 
@@ -96,7 +96,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}
 
 	return &Module{
-		Base: m,
+		Base:          m,
 		FunctionNames: functionNames,
 	}, nil
 }

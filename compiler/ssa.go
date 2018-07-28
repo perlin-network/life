@@ -182,7 +182,7 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 			c.PushStack(retID)
 
 		case "i32.add", "i32.sub", "i32.mul", "i32.div_s", "i32.div_u", "i32.rem_s", "i32.rem_u", "i32.and", "i32.or", "i32.xor", "i32.shl", "i32.shr_s", "i32.shr_u", "i32.rotl", "i32.rotr",
-			"i32.eq", "i32.ne", "i32.lt_s", "i32.lt_u", "i32.le_s", "i32.le_u", "i32.gt_s", "i32.gt_u", /*"i32.ge_s", */"i32.ge_u",
+			"i32.eq", "i32.ne", "i32.lt_s", "i32.lt_u", "i32.le_s", "i32.le_u", "i32.gt_s", "i32.gt_u" /*"i32.ge_s", */, "i32.ge_u",
 			"i64.add", "i64.sub", "i64.mul", "i64.div_s", "i64.div_u", "i64.rem_s", "i64.rem_u", "i64.and", "i64.or", "i64.xor", "i64.shl", "i64.shr_s", "i64.shr_u", "i64.rotl", "i64.rotr",
 			"i64.eq", "i64.ne", "i64.lt_s", "i64.lt_u", "i64.le_s", "i64.le_u", "i64.gt_s", "i64.gt_u", "i64.ge_s", "i64.ge_u",
 			"f32.add", "f32.sub", "f32.mul", "f32.div", "f32.min", "f32.max", "f32.copysign",
