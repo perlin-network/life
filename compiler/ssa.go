@@ -121,7 +121,7 @@ func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable boo
 	}
 }
 
-func (c *SSAFunctionCompiler) Compile() {
+func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 	c.Locations = append(c.Locations, &Location{
 		CodePos:    0,
 		StackDepth: 0,
@@ -394,8 +394,8 @@ func (c *SSAFunctionCompiler) Compile() {
 			if targetID-c.CallIndexOffset >= 0 { // virtual function
 				targetSig = c.Module.FunctionIndexSpace[targetID-c.CallIndexOffset].Sig
 			} else { // import function
-				tyID := c.Module.Import.Entries[targetID].Type.(wasm.FuncImport).Type
-				targetSig = &c.Module.Types.Entries[int(tyID)]
+				tyID := importTypeIDs[targetID]
+				targetSig = &c.Module.Types.Entries[tyID]
 			}
 
 			params := c.PopStack(len(targetSig.ParamTypes))
