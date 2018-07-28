@@ -363,7 +363,7 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 		case "ABORT":
 			return 0
 		case "gb":
-			return 1024
+			return GLOBAL_BASE
 		case "fb":
 			return 0
 		default:
