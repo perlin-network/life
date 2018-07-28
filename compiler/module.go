@@ -7,7 +7,7 @@ import (
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
 	"github.com/go-interpreter/wagon/wasm/leb128"
-	"github.com/go-interpreter/wagon/validate"
+	//"github.com/go-interpreter/wagon/validate"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
 )
@@ -33,10 +33,10 @@ func LoadModule(raw []byte) (*Module, error) {
 		return nil, err
 	}
 
-	err = validate.VerifyModule(m)
+	/*err = validate.VerifyModule(m)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	functionNames := make(map[int]string)
 
@@ -105,6 +105,7 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 	defer utils.CatchPanic(&retErr)
 
 	ret := make([]InterpreterCode, 0)
+	importTypeIDs := make([]int, 0)
 
 	if m.Base.Import != nil {
 		for i := 0; i < len(m.Base.Import.Entries); i++ {
@@ -138,6 +139,7 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 				NumReturns: len(ty.ReturnTypes),
 				Bytes:      code,
 			})
+			importTypeIDs = append(importTypeIDs, int(tyID))
 		}
 	}
 
@@ -152,7 +154,7 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		}
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.CallIndexOffset = numFuncImports
-		compiler.Compile()
+		compiler.Compile(importTypeIDs)
 		//fmt.Println(compiler.Code)
 		//fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
