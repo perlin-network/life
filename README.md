@@ -1,6 +1,6 @@
 # Life
 
-**life** is an secure & fast WebAssembly VM built for decentralized applications, written in [Go](https://golang.org/) by Perlin Network.
+**life** is a secure & fast WebAssembly VM built for decentralized applications, written in [Go](https://golang.org/) by Perlin Network.
 
 ## Features
 
