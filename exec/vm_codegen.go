@@ -269,6 +269,32 @@ case 0:
 			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
 			c.program += fmt.Sprintf("goto I%d;\n", target)
 			c.program += "}\n"
+		case opcodes.JmpTable:
+			targetCount := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
+			c.ip += 4
+
+			targetsRaw := c.code.Bytes[c.ip : c.ip+4*targetCount]
+			c.ip += 4 * targetCount
+
+			defaultTarget := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
+			c.ip += 4
+
+			condReg := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
+			c.checkReg(condReg)
+			c.ip += 4
+
+			yieldReg := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
+			c.checkReg(yieldReg)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
+			c.program += fmt.Sprintf("switch(regs[%d]) {\n", condReg)
+			for i := 0; i < targetCount; i++ {
+				target := int(LE.Uint32(targetsRaw[i * 4 : i * 4 + 4]))
+				c.program += fmt.Sprintf("case %d: goto I%d;\n", i, target)
+			}
+			c.program += fmt.Sprintf("default: goto I%d;\n", defaultTarget)
+			c.program += "}"
 		case opcodes.Phi:
 			fmt.Sprintf("regs[%d] = *yielded\n", valueID)
 		default:
