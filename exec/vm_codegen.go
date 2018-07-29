@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"math"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/compiler"
 )
@@ -48,6 +49,17 @@ func (c *jitContext) writeSI32Op(valueID int, op string) {
 	c.checkReg(b)
 
 	c.ip += 8
+
+	if op == "/" || op == "%" {
+		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
+		c.program += fmt.Sprintf("if((i32) regs[%d] == %d && (i32) regs[%d] == -1)", a, math.MinInt32, b)
+		if op == "/" {
+			c.program += "return -5;"
+		} else {
+			c.program += fmt.Sprintf("regs[%d] = 0; else ", valueID)
+		}
+	}
+
 	c.program += fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] %s (i32) regs[%d]);\n", valueID, a, op, b)
 }
 
@@ -58,6 +70,11 @@ func (c *jitContext) writeUI32Op(valueID int, op string) {
 	c.checkReg(b)
 
 	c.ip += 8
+
+	if op == "/" || op == "%" {
+		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
+	}
+
 	c.program += fmt.Sprintf("regs[%d] = (i64)((u32) regs[%d] %s (u32) regs[%d]);\n", valueID, a, op, b)
 }
 
@@ -68,6 +85,17 @@ func (c *jitContext) writeSI64Op(valueID int, op string) {
 	c.checkReg(b)
 
 	c.ip += 8
+
+	if op == "/" || op == "%" {
+		c.program += fmt.Sprintf("if(regs[%d] == 0) return -5;\n", b)
+		c.program += fmt.Sprintf("if(regs[%d] == %d && regs[%d] == -1)", a, math.MinInt64, b)
+		if op == "/" {
+			c.program += "return -5;"
+		} else {
+			c.program += fmt.Sprintf("regs[%d] = 0; else ", valueID)
+		}
+	}
+
 	c.program += fmt.Sprintf("regs[%d] = regs[%d] %s regs[%d];\n", valueID, a, op, b)
 }
 
@@ -78,6 +106,11 @@ func (c *jitContext) writeUI64Op(valueID int, op string) {
 	c.checkReg(b)
 
 	c.ip += 8
+
+	if op == "/" || op == "%" {
+		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
+	}
+
 	c.program += fmt.Sprintf("regs[%d] = (u64) regs[%d] %s (u64) regs[%d];\n", valueID, a, op, b)
 }
 
@@ -169,8 +202,73 @@ case 0:
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I32Add:
 			c.writeUI32Op(valueID, "+")
+		case opcodes.I32Sub:
+			c.writeUI32Op(valueID, "-")
+		case opcodes.I32Mul:
+			c.writeUI32Op(valueID, "*")
+		case opcodes.I32DivU:
+			c.writeUI32Op(valueID, "/")
+		case opcodes.I32DivS:
+			c.writeSI32Op(valueID, "/")
+		case opcodes.I32RemU:
+			c.writeUI32Op(valueID, "%")
+		case opcodes.I32RemS:
+			c.writeSI32Op(valueID, "%")
+		case opcodes.I32And:
+			c.writeUI32Op(valueID, "&")
+		case opcodes.I32Or:
+			c.writeUI32Op(valueID, "|")
 		case opcodes.I32Eq:
 			c.writeUI32Op(valueID, "==")
+		case opcodes.I32Ne:
+			c.writeUI32Op(valueID, "!=")
+		case opcodes.I32LtU:
+			c.writeUI32Op(valueID, "<")
+		case opcodes.I32LtS:
+			c.writeSI32Op(valueID, "<")
+		case opcodes.I32LeU:
+			c.writeUI32Op(valueID, "<=")
+		case opcodes.I32LeS:
+			c.writeSI32Op(valueID, "<=")
+		case opcodes.I32GtU:
+			c.writeUI32Op(valueID, ">")
+		case opcodes.I32GtS:
+			c.writeSI32Op(valueID, ">")
+		case opcodes.I32GeU:
+			c.writeUI32Op(valueID, ">=")
+		case opcodes.I32GeS:
+			c.writeSI32Op(valueID, ">=")
+		case opcodes.I32EqZ:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+
+			c.ip += 4
+
+			c.program += fmt.Sprintf("regs[%d] = (i64) ((u32) regs[%d] == 0);\n", valueID, a)
+		case opcodes.I32Shl:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) << (((u32) regs[%d]) %% 32));\n", valueID, a, b)
+		case opcodes.I32ShrU:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) >> (((u32) regs[%d]) %% 32));\n", valueID, a, b)
+		case opcodes.I32ShrS:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((i32) regs[%d]) >> (((i32) regs[%d]) %% 32));\n", valueID, a, b)
 		case opcodes.I64Const:
 			imm := int64(LE.Uint64(c.code.Bytes[c.ip:c.ip+8]))
 			c.ip += 8
