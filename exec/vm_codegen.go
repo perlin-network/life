@@ -126,22 +126,9 @@ case 0:
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I64Add:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
-			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
-			c.checkReg(b)
-
-			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = regs[%d] + regs[%d];\n", valueID, a, b)
+			c.writeUI64Op(valueID, "+")
 		case opcodes.I64Eq:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
-			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
-			c.checkReg(b)
-
-			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(regs[%d] == regs[%d]);", valueID, a, b)
-		
+			c.writeUI64Op(valueID, "==")
 		case opcodes.GetLocal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkLocal(id)
