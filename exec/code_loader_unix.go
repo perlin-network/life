@@ -31,6 +31,7 @@ import (
 	"crypto/rand"
 	"unsafe"
 	"os"
+	"runtime"
 )
 
 var entryName = C.CString("run")
@@ -41,7 +42,7 @@ type DynamicModule struct {
 	entry unsafe.Pointer
 }
 
-func (m *DynamicModule) Destroy() {
+func (m *DynamicModule) unsafeCleanup() {
 	C.dlclose(m.dlHandle)
 	C.close(m.shmFd)
 }
@@ -114,9 +115,14 @@ func CompileDynamicModule(source string) *DynamicModule {
 		panic("dlsym failed")
 	}
 
-	return &DynamicModule {
+	dm := &DynamicModule {
 		shmFd: shmFd,
 		dlHandle: dlHandle,
 		entry: entry,
 	}
+
+	runtime.SetFinalizer(dm, func(dm *DynamicModule) {
+		dm.unsafeCleanup()
+	})
+	return dm
 }
