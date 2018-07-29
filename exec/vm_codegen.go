@@ -81,16 +81,16 @@ typedef long long i64;
 typedef int i32;
 typedef unsigned long long u64;
 typedef unsigned int u32;
-	`
+`
 
 	// Returns -1 for done. The return value should have already be written in ret.
 	// Return >= 0 for continuation. In this case, the instruction location should be
 	// written in `ret` and only the current instruction will get interpreted.
 	c.program += `
 i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
-	switch(continuation) {
-	case 0:
-	`
+switch(continuation) {
+case 0:
+`
 
 	c.cont = 1
 	c.ip = 0
@@ -194,6 +194,7 @@ i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
 		case opcodes.Phi:
 			fmt.Sprintf("regs[%d] = *yielded\n", valueID)
 		default:
+			fmt.Printf("unsupported op: %s\n", ins.String())
 			return false
 		}
 	}

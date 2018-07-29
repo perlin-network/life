@@ -219,13 +219,15 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.IP = 0
 	f.Continuation = 0
 
-	fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
+	//fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
 	{
 		code := &vm.FunctionCode[functionID]
 		if !code.JITDone {
 			if len(code.Bytes) > JITCodeSizeThreshold {
 				if !vm.GenerateCodeForFunction(functionID) {
 					fmt.Printf("codegen for function %d failed\n", functionID)
+				} else {
+					fmt.Printf("codegen for function %d succeeded\n", functionID)
 				}
 			}
 			code.JITDone = true
@@ -362,7 +364,7 @@ func (vm *VirtualMachine) Execute() {
 			if status < 0 {
 				panic(fmt.Errorf("status = %d", status))
 			}
-			fmt.Printf("JIT: continuation = %d, ip = %d\n", status, int(fRetVal))
+			//fmt.Printf("JIT: continuation = %d, ip = %d\n", status, int(fRetVal))
 			frame.Continuation = status
 			frame.IP = int(fRetVal)
 		}
