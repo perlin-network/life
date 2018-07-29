@@ -148,6 +148,7 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 
 func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
+	jitFlag := flag.Bool("jit", false, "enable jit")
 	flag.Parse()
 
 	input, err := ioutil.ReadAll(os.Stdin)
@@ -156,6 +157,7 @@ func main() {
 	}
 
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
+		EnableJIT: *jitFlag,
 		DefaultMemoryPages: 128,
 		DefaultTableSize: 65536,
 	}, &Resolver{})
