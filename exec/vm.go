@@ -24,7 +24,7 @@ const DefaultCallStackSize = 512
 // WebAssembly linear memory page size.
 const DefaultPageSize = 65536
 
-const JITCodeSizeThreshold = 0
+const JITCodeSizeThreshold = 30
 
 var LE = binary.LittleEndian
 
