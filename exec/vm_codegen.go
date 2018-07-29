@@ -196,6 +196,18 @@ case 0:
 		case opcodes.Unreachable:
 			c.program += "return -2;\n"
 
+		case opcodes.Select:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+			condReg := int(LE.Uint32(c.code.Bytes[c.ip + 8 : c.ip + 12]))
+			c.checkReg(condReg)
+
+			c.ip += 12
+
+			c.program += fmt.Sprintf("regs[%d] = regs[%d] ? regs[%d] : regs[%d];", valueID, condReg, a, b)
+
 		case opcodes.I32Const:
 			imm := int64(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
 			c.ip += 4
@@ -218,6 +230,8 @@ case 0:
 			c.writeUI32Op(valueID, "&")
 		case opcodes.I32Or:
 			c.writeUI32Op(valueID, "|")
+		case opcodes.I32Xor:
+			c.writeUI32Op(valueID, "^")
 		case opcodes.I32Eq:
 			c.writeUI32Op(valueID, "==")
 		case opcodes.I32Ne:
