@@ -50,6 +50,7 @@ type VirtualMachine struct {
 
 // Virtual machine config.
 type VMConfig struct {
+	EnableJIT bool
 	MaxMemoryPages    int
 	MaxTableSize      int
 	MaxValueSlots     int
@@ -220,7 +221,7 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.Continuation = 0
 
 	//fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
-	{
+	if vm.Config.EnableJIT {
 		code := &vm.FunctionCode[functionID]
 		if !code.JITDone {
 			if len(code.Bytes) > JITCodeSizeThreshold {
