@@ -25,20 +25,62 @@ func (c *jitContext) writeFallback() {
 
 func (c *jitContext) checkLocal(id int) {
 	if id < 0 || id >= c.code.NumParams + c.code.NumLocals {
-		panic("local out of bounds")
+		panic(fmt.Errorf("local out of bounds: id = %d, n = %d", id, c.code.NumParams + c.code.NumLocals))
 	}
 }
 
 func (c *jitContext) checkReg(id int) {
 	if id < 0 || id >= c.code.NumRegs {
-		panic("reg out of bounds")
+		panic(fmt.Errorf("reg out of bounds: id = %d, n = %d", id, c.code.NumRegs))
 	}
+}
+
+func (c *jitContext) writeSI32Op(valueID int, op string) {
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	c.checkReg(a)
+	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	c.checkReg(b)
+
+	c.ip += 8
+	c.program += fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] %s (i32) regs[%d]);\n", valueID, a, op, b)
+}
+
+func (c *jitContext) writeUI32Op(valueID int, op string) {
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	c.checkReg(a)
+	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	c.checkReg(b)
+
+	c.ip += 8
+	c.program += fmt.Sprintf("regs[%d] = (i64)((u32) regs[%d] %s (u32) regs[%d]);\n", valueID, a, op, b)
+}
+
+func (c *jitContext) writeSI64Op(valueID int, op string) {
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	c.checkReg(a)
+	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	c.checkReg(b)
+
+	c.ip += 8
+	c.program += fmt.Sprintf("regs[%d] = regs[%d] %s regs[%d];\n", valueID, a, op, b)
+}
+
+func (c *jitContext) writeUI64Op(valueID int, op string) {
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	c.checkReg(a)
+	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	c.checkReg(b)
+
+	c.ip += 8
+	c.program += fmt.Sprintf("regs[%d] = (u64) regs[%d] %s (u64) regs[%d];\n", valueID, a, op, b)
 }
 
 func (c *jitContext) Generate() bool {
 	c.program = `
 typedef long long i64;
 typedef int i32;
+typedef unsigned long long u64;
+typedef unsigned int u32;
 	`
 
 	// Returns -1 for done. The return value should have already be written in ret.
@@ -76,21 +118,9 @@ i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I32Add:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
-			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
-			c.checkReg(b)
-
-			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] + (i32) regs[%d]);\n", valueID, a, b)
+			c.writeUI32Op(valueID, "+")
 		case opcodes.I32Eq:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
-			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
-			c.checkReg(b)
-
-			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] == (i32) regs[%d]);", valueID, a, b)
+			c.writeUI32Op(valueID, "==")
 		case opcodes.I64Const:
 			imm := int64(LE.Uint64(c.code.Bytes[c.ip:c.ip+8]))
 			c.ip += 8
@@ -132,18 +162,11 @@ i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
 		case opcodes.ReturnValue:
 			c.ip += 4
 			c.writeFallback()
-		case opcodes.Call:
+		case opcodes.Call, opcodes.CallIndirect:
 			c.ip += 4
 			argCount := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
 			c.ip += 4
 			c.ip += 4 * argCount
-			c.writeFallback()
-		case opcodes.CallIndirect:
-			c.ip += 4
-			argCount := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
-			c.ip += 4
-			c.ip += 4 * argCount
-			c.ip += 4 // table item id
 			c.writeFallback()
 		case opcodes.Jmp:
 			target := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
@@ -181,7 +204,7 @@ i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
 	return -3; // invalid
 }
 	`
-	fmt.Println(c.program)
+	//fmt.Println(c.program)
 	c.code.JITInfo = CompileDynamicModule(c.program)
 	return true
 }

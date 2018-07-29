@@ -217,6 +217,7 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.Locals = values[code.NumRegs:]
 	f.Code = code.Bytes
 	f.IP = 0
+	f.Continuation = 0
 
 	fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
 	{
