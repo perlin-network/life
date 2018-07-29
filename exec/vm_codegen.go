@@ -160,14 +160,14 @@ typedef unsigned long long u64;
 	// written in `ret` and only the current instruction will get interpreted.
 	c.program += `
 i32 run(
-	i64 *regs,
-	i64 *locals,
-	i64 *globals,
-	u8 *memory,
+	i64 * restrict regs,
+	i64 * restrict locals,
+	i64 * restrict globals,
+	u8 * restrict memory,
 	i64 memory_len,
-	i64 *yielded,
+	i64 * restrict yielded,
 	i32 continuation,
-	i64 *ret
+	i64 * restrict ret
 ) {
 unsigned long tempPtr0;
 
