@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"os"
-	"fmt"
-	"path/filepath"
 	"path"
-	"github.com/perlin-network/life/exec"
+	"path/filepath"
 )
 
 type Resolver struct{}
@@ -37,34 +37,33 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 }
 
 type Config struct {
-	SourceFilename string `json:"source_filename"`
-	Commands []Command `json:"commands"`
+	SourceFilename string    `json:"source_filename"`
+	Commands       []Command `json:"commands"`
 }
 
 type Command struct {
-	Type string `json:"type"`
-	Line int `json:"line"`
-	Filename string `json:"filename"`
-	Name string `json:"name"`
-	Action CmdAction `json:"action"`
-	Text string `json:"text"`
-	ModuleType string `json:"module_type"`
-	Expected []ValueInfo `json:"expected"`
+	Type       string      `json:"type"`
+	Line       int         `json:"line"`
+	Filename   string      `json:"filename"`
+	Name       string      `json:"name"`
+	Action     CmdAction   `json:"action"`
+	Text       string      `json:"text"`
+	ModuleType string      `json:"module_type"`
+	Expected   []ValueInfo `json:"expected"`
 }
 
 type CmdAction struct {
-	Type string `json:"type"`
-	Module string `json:"module"`
-	Field string `json:"field"`
-	Args []ValueInfo `json:"args"`
+	Type     string      `json:"type"`
+	Module   string      `json:"module"`
+	Field    string      `json:"field"`
+	Args     []ValueInfo `json:"args"`
 	Expected []ValueInfo `json:"expected"`
 }
 
 type ValueInfo struct {
-	Type string `json:"type"`
+	Type  string `json:"type"`
 	Value string `json:"value"`
 }
-
 
 func LoadConfigFromFile(filename string) *Config {
 	raw, err := ioutil.ReadFile(filename)

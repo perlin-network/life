@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	//"fmt"
-	"io"
 	"github.com/go-interpreter/wagon/wasm/leb128"
 	ops "github.com/go-interpreter/wagon/wasm/operators"
+	"io"
 )
 
 func readU32(r io.Reader) (uint32, error) {
@@ -26,7 +26,6 @@ func readU64(r io.Reader) (uint64, error) {
 	}
 	return binary.LittleEndian.Uint64(buf[:]), nil
 }
-
 
 // Executes an init expr.
 func execInitExpr(expr []byte, globals []int64) int64 {
@@ -78,5 +77,5 @@ func execInitExpr(expr []byte, globals []int64) int64 {
 		}
 	}
 
-	return stack[len(stack) - 1]
+	return stack[len(stack)-1]
 }
