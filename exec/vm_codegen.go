@@ -35,6 +35,12 @@ func (c *jitContext) checkReg(id int) {
 	}
 }
 
+func (c *jitContext) checkGlobal(id int) {
+	if id < 0 || id >= len(c.vm.Globals) {
+		panic(fmt.Errorf("global out of bounds: id = %d, n = %d", id, len(c.vm.Globals)))
+	}
+}
+
 func (c *jitContext) writeSI32Op(valueID int, op string) {
 	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
 	c.checkReg(a)
@@ -81,13 +87,23 @@ typedef long long i64;
 typedef int i32;
 typedef unsigned long long u64;
 typedef unsigned int u32;
+typedef unsigned char u8;
 `
 
 	// Returns -1 for done. The return value should have already be written in ret.
 	// Return >= 0 for continuation. In this case, the instruction location should be
 	// written in `ret` and only the current instruction will get interpreted.
 	c.program += `
-i32 run(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
+i32 run(
+	i64 *regs,
+	i64 *locals,
+	i64 *globals,
+	u8 *memory,
+	i64 memory_len,
+	i64 *yielded,
+	i32 continuation,
+	i64 *ret
+) {
 switch(continuation) {
 case 0:
 `
@@ -144,6 +160,21 @@ case 0:
 
 			c.ip += 8
 			c.program += fmt.Sprintf("locals[%d] = regs[%d];\n", id, val)
+		case opcodes.GetGlobal:
+			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
+			c.checkGlobal(id)
+
+			c.ip += 4
+			c.program += fmt.Sprintf("regs[%d] = globals[%d];\n", valueID, id)
+		case opcodes.SetGlobal:
+			id := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
+			c.checkGlobal(id)
+
+			val := int(LE.Uint32(c.code.Bytes[c.ip+4:c.ip+8]))
+			c.checkReg(val)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("globals[%d] = regs[%d];\n", id, val)
 		case opcodes.ReturnVoid:
 			c.writeFallback()
 		case opcodes.ReturnValue:

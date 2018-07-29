@@ -11,14 +11,46 @@ package exec
 
 typedef long long i64;
 typedef int i32;
-typedef i32 (*EntryFunc)(i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret);
+typedef unsigned long long u64;
+typedef unsigned int u32;
+typedef unsigned char u8;
+
+typedef i32 (*EntryFunc)(
+	i64 *regs,
+	i64 *locals,
+	i64 *globals,
+	u8 *memory,
+	i64 memory_len,
+	i64 *yielded,
+	i32 continuation,
+	i64 *ret
+);
 
 static int memfd_create(const char *name, unsigned int flags) {
 	return syscall(__NR_memfd_create, name, flags);
 }
-static i32 invoke_entry(void *entry, i64 *regs, i64 *locals, i64 *yielded, i32 continuation, i64 *ret) {
+static i32 invoke_entry(
+	void *entry,
+	i64 *regs,
+	i64 *locals,
+	i64 *globals,
+	u8 *memory,
+	i64 memory_len,
+	i64 *yielded,
+	i32 continuation,
+	i64 *ret
+) {
 	EntryFunc f = entry;
-	return f(regs, locals, yielded, continuation, ret);
+	return f(
+		regs,
+		locals,
+		globals,
+		memory,
+		memory_len,
+		yielded,
+		continuation,
+		ret
+	);
 }
 */
 import "C"
@@ -52,6 +84,8 @@ func (m *DynamicModule) Run(vm *VirtualMachine, ret *int64) int32 {
 
 	var regs *C.i64
 	var locals *C.i64
+	var globals *C.i64
+	var memory *C.u8
 
 	if len(frame.Regs) > 0 {
 		regs = (*C.i64)(&frame.Regs[0])
@@ -59,10 +93,19 @@ func (m *DynamicModule) Run(vm *VirtualMachine, ret *int64) int32 {
 	if len(frame.Locals) > 0 {
 		locals = (*C.i64)(&frame.Locals[0])
 	}
+	if len(vm.Globals) > 0 {
+		globals = (*C.i64)(&vm.Globals[0])
+	}
+	if len(vm.Memory) > 0 {
+		memory = (*C.u8)(&vm.Memory[0])
+	}
 	return int32(C.invoke_entry(
 		m.entry,
 		regs,
 		locals,
+		globals,
+		memory,
+		C.i64(len(vm.Memory)),
 		(*C.i64)(&vm.Yielded),
 		(C.i32)(frame.Continuation),
 		(*C.i64)(ret),
