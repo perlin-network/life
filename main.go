@@ -159,9 +159,14 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			return 0
 		}
 
-	case "___setErrNo":
+	case "___setErrNo", "___map_file":
 		return func(vm *exec.VirtualMachine) int64 {
 			panic("setErrNo not implemented")
+		}
+
+	case "_abort":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("_abort not implemented")
 		}
 
 	case "_emscripten_memcpy_big":
@@ -177,6 +182,36 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 	case "_llvm_eh_typeid_for":
 		return func(vm *exec.VirtualMachine) int64 {
 			return vm.GetCurrentFrame().Locals[0]
+		}
+
+	case "_llvm_stackrestore", "_llvm_stacksave", "_llvm_trap":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("llvm not implemented")
+		}
+
+	case "_localtime_r", "_sysconf", "_strftime", "_strftime_l", "_time", "___clock_gettime", "_setitimer", "_clock_gettime", "_endgrent", "_getgrent", "_setgrent", "_gmtime_r":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("time not implemented")
+		}
+
+	case "_inet_addr", "_res_query", "_getnameinfo", "_setgroups", "g$___dso_handle":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("net not implemented")
+		}
+
+	case "_execl", "_fork", "_kill", "_nanosleep", "___wait", "_waitpid", "__exit":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("proc/thread not implemented")
+		}
+
+	case "___block_all_sigs", "_sigfillset", "___restore_sigs", "___clone":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("sigs not implemented")
+		}
+
+	case "___cxa_current_primary_exception", "___cxa_decrement_exception_refcount", "___cxa_increment_exception_refcount", "___cxa_rethrow_primary_exception", "___muldc3", "___mulsc3":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("etc. exception bits not implemented")
 		}
 
 	case "abort":
@@ -239,6 +274,11 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			}
 
 			return 0
+		}
+
+	case "___cxa_uncaught_exception":
+		return func(vm *exec.VirtualMachine) int64 {
+			return int64(r.Exceptions.Uncaught)
 		}
 
 	case "___cxa_find_matching_catch_3":
@@ -304,6 +344,8 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			}
 			r.Exceptions.Last = ptr
 
+			r.Exceptions.Uncaught++
+
 			return 0
 		}
 
@@ -318,6 +360,23 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			}
 
 			panic(ptr)
+		}
+
+	case "___buildEnvironment":
+		// Should print out the build environment for debugging. Return nothing for now.
+		return func(vm *exec.VirtualMachine) int64 {
+			return 0
+		}
+
+	case "_getenv":
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("_getenv not implemented yet")
+		}
+
+	case "___cxa_pure_virtual":
+		// Pure functions should never be called.
+		return func(vm *exec.VirtualMachine) int64 {
+			panic("Pure virtual function called!")
 		}
 
 	default:
@@ -341,6 +400,39 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 				panic(fmt.Errorf("jsCall %s not supported", field))
 			}
 		}
+		if strings.HasPrefix(field, "_TVM") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("tvm call %s not supported", field))
+			}
+		}
+
+		// File handling
+		if strings.HasPrefix(field, "__ZN3tvm7r") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("tvm file call %s not supported", field))
+			}
+		}
+
+		// Threading
+		if strings.HasPrefix(field, "___cxa_thread") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("c++ thread %s not supported", field))
+			}
+		}
+
+		if strings.HasPrefix(field, "_pthread") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("_pthread %s not supported", field))
+			}
+		}
+
+		// _dl (?)
+		if strings.HasPrefix(field, "_dl") {
+			return func(vm *exec.VirtualMachine) int64 {
+				panic(fmt.Errorf("_dl %s not supported", field))
+			}
+		}
+
 		panic(fmt.Errorf("unknown field: %s", field))
 	}
 }
@@ -368,6 +460,8 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 			return STACK_MAX
 		case "ABORT":
 			return 0
+		case "___dso_handle":
+			return STATICTOP
 		case "gb":
 			return GLOBAL_BASE
 		case "fb":

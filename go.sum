@@ -1,0 +1,5 @@
+github.com/go-interpreter/wagon v0.0.0-20180704133525-eb215a7f4db3 h1:QnO/B3yzKigXdu4D+fw1GKqlMs587ptDFOZSgQLns40=
+github.com/go-interpreter/wagon v0.0.0-20180704133525-eb215a7f4db3/go.mod h1:zHOMvbitcZek8oshsMO5VpyBjWjV9X8cn8WTZwdebpM=
+github.com/losfair/wagon v0.0.0-20180728113404-cb36afb55e21 h1:t4/YpZChvrgyDGV5pb09nCZgIqqBCBJZ7snu3lhOkSc=
+github.com/losfair/wagon v0.0.0-20180728113404-cb36afb55e21/go.mod h1:zHOMvbitcZek8oshsMO5VpyBjWjV9X8cn8WTZwdebpM=
+github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
