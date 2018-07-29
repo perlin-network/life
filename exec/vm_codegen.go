@@ -81,13 +81,29 @@ func (c *jitContext) writeUI64Op(valueID int, op string) {
 	c.program += fmt.Sprintf("regs[%d] = (u64) regs[%d] %s (u64) regs[%d];\n", valueID, a, op, b)
 }
 
+func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
+	offset := LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8])
+
+	base := int(LE.Uint32(c.code.Bytes[c.ip+8:c.ip+12]))
+	c.checkReg(base)
+
+	c.ip += 12
+
+	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];", offset, base)
+	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;")
+	c.program += fmt.Sprintf("regs[%d] = (i64) *(%s*)((unsigned long) memory + tempPtr0);", valueID, ty)
+}
+
 func (c *jitContext) Generate() bool {
 	c.program = `
-typedef long long i64;
+typedef char i8;
+typedef short i16;
 typedef int i32;
-typedef unsigned long long u64;
-typedef unsigned int u32;
+typedef long long i64;
 typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef unsigned long long u64;
 `
 
 	// Returns -1 for done. The return value should have already be written in ret.
@@ -104,6 +120,8 @@ i32 run(
 	i32 continuation,
 	i64 *ret
 ) {
+unsigned long tempPtr0;
+
 switch(continuation) {
 case 0:
 `
@@ -175,6 +193,22 @@ case 0:
 
 			c.ip += 8
 			c.program += fmt.Sprintf("globals[%d] = regs[%d];\n", id, val)
+		case opcodes.I32Load:
+			c.writeMemoryLoad(valueID, "u32")
+		case opcodes.I64Load:
+			c.writeMemoryLoad(valueID, "u64")
+		case opcodes.I32Load8U, opcodes.I64Load8U:
+			c.writeMemoryLoad(valueID, "u8")
+		case opcodes.I32Load8S, opcodes.I64Load8S:
+			c.writeMemoryLoad(valueID, "i8")
+		case opcodes.I32Load16U, opcodes.I64Load16U:
+			c.writeMemoryLoad(valueID, "u16")
+		case opcodes.I32Load16S, opcodes.I64Load16S:
+			c.writeMemoryLoad(valueID, "i16")
+		case opcodes.I64Load32U:
+			c.writeMemoryLoad(valueID, "u32")
+		case opcodes.I64Load32S:
+			c.writeMemoryLoad(valueID, "i32")
 		case opcodes.ReturnVoid:
 			c.writeFallback()
 		case opcodes.ReturnValue:
