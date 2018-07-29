@@ -89,9 +89,25 @@ func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
 
 	c.ip += 12
 
-	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];", offset, base)
-	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;")
-	c.program += fmt.Sprintf("regs[%d] = (i64) *(%s*)((unsigned long) memory + tempPtr0);", valueID, ty)
+	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base)
+	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n")
+	c.program += fmt.Sprintf("regs[%d] = (i64) *(%s*)((unsigned long) memory + tempPtr0);\n", valueID, ty)
+}
+
+func (c *jitContext) writeMemoryStore(ty string) {
+	offset := LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8])
+
+	base := int(LE.Uint32(c.code.Bytes[c.ip+8:c.ip+12]))
+	c.checkReg(base)
+
+	value := int(LE.Uint32(c.code.Bytes[c.ip+12:c.ip+16]))
+	c.checkReg(value)
+
+	c.ip += 16
+
+	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base)
+	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n")
+	c.program += fmt.Sprintf("*(%s*)((unsigned long) memory + tempPtr0) = (%s) regs[%d];\n", ty, ty, value)
 }
 
 func (c *jitContext) Generate() bool {
@@ -209,6 +225,16 @@ case 0:
 			c.writeMemoryLoad(valueID, "u32")
 		case opcodes.I64Load32S:
 			c.writeMemoryLoad(valueID, "i32")
+		case opcodes.I32Store:
+			c.writeMemoryStore("u32")
+		case opcodes.I64Store:
+			c.writeMemoryStore("u64")
+		case opcodes.I32Store8, opcodes.I64Store8:
+			c.writeMemoryStore("u8")
+		case opcodes.I32Store16, opcodes.I64Store16:
+			c.writeMemoryStore("u16")
+		case opcodes.I64Store32:
+			c.writeMemoryStore("u32")
 		case opcodes.ReturnVoid:
 			c.writeFallback()
 		case opcodes.ReturnValue:
