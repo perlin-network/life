@@ -24,6 +24,8 @@ const DefaultCallStackSize = 512
 // WebAssembly linear memory page size.
 const DefaultPageSize = 65536
 
+const JITCodeSizeThreshold = 0
+
 var LE = binary.LittleEndian
 
 // The virtual machine.
@@ -60,10 +62,12 @@ type VMConfig struct {
 type Frame struct {
 	FunctionID int
 	Code       []byte
+	JITInfo interface{}
 	Regs       []int64
 	Locals     []int64
 	IP         int
 	ReturnReg  int
+	Continuation int32
 }
 
 // Import resolver for resolving imports in a module.
@@ -215,7 +219,18 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.IP = 0
 
 	fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
-	fmt.Println(vm.GenerateCodeForFunction(functionID))
+	{
+		code := &vm.FunctionCode[functionID]
+		if !code.JITDone {
+			if len(code.Bytes) > JITCodeSizeThreshold {
+				if !vm.GenerateCodeForFunction(functionID) {
+					fmt.Printf("codegen for function %d failed\n", functionID)
+				}
+			}
+			code.JITDone = true
+		}
+		f.JITInfo = code.JITInfo
+	}
 }
 
 // Destroys a frame. Must be called on return.
@@ -338,6 +353,18 @@ func (vm *VirtualMachine) Execute() {
 			return
 		}
 		cycleCount++
+
+		if frame.JITInfo != nil {
+			dm := frame.JITInfo.(*DynamicModule)
+			var fRetVal int64
+			status := dm.Run(vm, &fRetVal)
+			if status < 0 {
+				panic(fmt.Errorf("status = %d", status))
+			}
+			fmt.Printf("JIT: continuation = %d, ip = %d\n", status, int(fRetVal))
+			frame.Continuation = status
+			frame.IP = int(fRetVal)
+		}
 
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
