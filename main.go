@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
-	"os"
 	"time"
 	"math"
 	"strings"
@@ -151,7 +150,7 @@ func main() {
 	jitFlag := flag.Bool("jit", false, "enable jit")
 	flag.Parse()
 
-	input, err := ioutil.ReadAll(os.Stdin)
+	input, err := ioutil.ReadFile(flag.Arg(0))
 	if err != nil {
 		panic(err)
 	}
