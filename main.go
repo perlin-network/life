@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
-	"os"
 	"time"
 	"math"
 	"strings"
@@ -148,14 +147,16 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 
 func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
+	jitFlag := flag.Bool("jit", false, "enable jit")
 	flag.Parse()
 
-	input, err := ioutil.ReadAll(os.Stdin)
+	input, err := ioutil.ReadFile(flag.Arg(0))
 	if err != nil {
 		panic(err)
 	}
 
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
+		EnableJIT: *jitFlag,
 		DefaultMemoryPages: 128,
 		DefaultTableSize: 65536,
 	}, &Resolver{})

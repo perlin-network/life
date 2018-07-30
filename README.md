@@ -60,6 +60,144 @@ if err != nil {
 fmt.Printf("return value = %d\n", ret)
 ```
 
+## Benchmark
+
+We benchmarked **life** and a few other WebAssembly implementation in different languages.
+
+![Benchmark Result](media/bench.png)
+
+### Pollard Rho Factoring (128-bit)
+
+Test case: `pollard_rho_128`
+
+Life (JIT enabled):
+
+```
+return value = 2635722126511989555, duration = 1.423329989s
+
+real	0m1.672s
+user	0m1.549s
+sys	0m0.234s
+```
+
+Life (Interpreter only):
+
+```
+return value = 2635722126511989555, duration = 1.944211748s
+
+real	0m2.178s
+user	0m2.263s
+sys	0m0.012s
+```
+
+wagon:
+
+```
+app_main() i64 => 2635722126511989555 (uint64)
+
+real	0m4.349s
+user	0m4.462s
+sys	0m0.027s
+```
+
+wasmi:
+
+```
+Result: Ok(Some(I64(2635722126511989555)))
+
+real	0m4.852s
+user	0m4.837s
+sys	0m0.006s
+```
+
+### Snappy Compress
+
+Test case: `snappy_compress`
+
+Life (JIT enabled):
+
+```
+return value = 393476, duration = 811.148389ms
+
+real	0m1.072s
+user	0m0.973s
+sys	0m0.178s
+```
+
+Life (Interpreter only):
+
+```
+return value = 393476, duration = 2.710492104s
+
+real	0m2.977s
+user	0m3.006s
+sys	0m0.031s
+```
+
+wagon:
+
+```
+app_main() i32 => 393476 (uint32)
+
+real	0m5.443s
+user	0m5.448s
+sys	0m0.043s
+```
+
+wasmi:
+
+```
+Result: Ok(Some(I32(393476)))
+
+real	0m7.017s
+user	0m6.983s
+sys	0m0.020s
+```
+
+### Fibonacci generator (recursive)
+
+Test case: `fib_recursive`
+
+Life (JIT enabled):
+
+```
+return value = 9227465, duration = 3.649676997s
+
+real	0m3.898s
+user	0m4.041s
+sys	0m0.057s
+```
+
+Life (Interpreter only):
+
+```
+return value = 9227465, duration = 2.831716826s
+
+real	0m3.071s
+user	0m3.199s
+sys	0m0.030s
+```
+
+wagon:
+
+```
+app_main() i32 => 9227465 (uint32)
+
+real	0m6.204s
+user	0m6.361s
+sys	0m0.039s
+```
+
+wasmi:
+
+```
+Result: Ok(Some(I32(9227465)))
+
+real	0m5.811s
+user	0m5.789s
+sys	0m0.013s
+```
+
 ## Contributions
 
 We at Perlin love reaching out to the open-source community and are open to accepting issues and pull-requests.

@@ -93,6 +93,7 @@ func (c *Config) Run(cfgPath string) error {
 				panic(err)
 			}
 			localVM, err := exec.NewVirtualMachine(input, exec.VMConfig{
+				EnableJIT: true,
 				MaxMemoryPages: 1024, // for memory trap tests
 			}, &Resolver{})
 			if err != nil {

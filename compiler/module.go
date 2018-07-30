@@ -23,6 +23,8 @@ type InterpreterCode struct {
 	NumLocals  int
 	NumReturns int
 	Bytes      []byte
+	JITInfo interface{}
+	JITDone bool
 }
 
 func LoadModule(raw []byte) (*Module, error) {
