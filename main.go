@@ -21,6 +21,14 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			return func(vm *exec.VirtualMachine) int64 {
 				return vm.GetCurrentFrame().Locals[0] + 1
 			}
+		case "__life_log":
+			return func(vm *exec.VirtualMachine) int64 {
+				ptr := int(uint32(vm.GetCurrentFrame().Locals[0]))
+				msgLen := int(uint32(vm.GetCurrentFrame().Locals[1]))
+				msg := vm.Memory[ptr : ptr + msgLen]
+				fmt.Printf("[app] %s\n", string(msg))
+				return 0
+			}
 
 		default:
 			panic(fmt.Errorf("unknown field: %s", field))
