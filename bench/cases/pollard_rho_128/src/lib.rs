@@ -1,7 +1,12 @@
 fn pollard_rho_factor_i64(n: i64) -> (i64, i64) {
     let n = n as i128;
-    let g = |x: i128| ((x * x) + 1) % n;
 
+    #[inline]
+    fn g(x: i128, n: i128) -> i128 {
+        ((x * x) + 1) % n
+    }
+
+    #[inline]
     fn gcd(mut m: i128, mut n: i128) -> i128 {
         while m != 0 {
             let old_m = m;
@@ -17,8 +22,8 @@ fn pollard_rho_factor_i64(n: i64) -> (i64, i64) {
     let mut d: i128 = 1;
 
     while d == 1 {
-        x = g(x);
-        y = g(g(y));
+        x = g(x, n);
+        y = g(g(y, n), n);
         d = gcd((x - y).abs(), n);
     }
 
