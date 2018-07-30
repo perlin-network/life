@@ -283,14 +283,136 @@ case 0:
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((i32) regs[%d]) >> (((i32) regs[%d]) %% 32));\n", valueID, a, b)
+		case opcodes.I32WrapI64:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
+		case opcodes.I32Clz:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
+			c.program += fmt.Sprintf("else regs[%d] = __builtin_clz((i32) regs[%d]);\n", valueID, a)
+		case opcodes.I32Ctz:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
+			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctz((i32) regs[%d]);\n", valueID, a)
+		case opcodes.I32PopCnt:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("regs[%d] = __builtin_popcount((i32) regs[%d]);\n", valueID, a)
 		case opcodes.I64Const:
 			imm := int64(LE.Uint64(c.code.Bytes[c.ip:c.ip+8]))
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I64Add:
 			c.writeUI64Op(valueID, "+")
+		case opcodes.I64Sub:
+			c.writeUI64Op(valueID, "-")
+		case opcodes.I64Mul:
+			c.writeUI64Op(valueID, "*")
+		case opcodes.I64DivU:
+			c.writeUI64Op(valueID, "/")
+		case opcodes.I64DivS:
+			c.writeSI64Op(valueID, "/")
+		case opcodes.I64RemU:
+			c.writeUI64Op(valueID, "%")
+		case opcodes.I64RemS:
+			c.writeSI64Op(valueID, "%")
+		case opcodes.I64And:
+			c.writeUI64Op(valueID, "&")
+		case opcodes.I64Or:
+			c.writeUI64Op(valueID, "|")
+		case opcodes.I64Xor:
+			c.writeUI64Op(valueID, "^")
 		case opcodes.I64Eq:
 			c.writeUI64Op(valueID, "==")
+		case opcodes.I64Ne:
+			c.writeUI64Op(valueID, "!=")
+		case opcodes.I64LtU:
+			c.writeUI64Op(valueID, "<")
+		case opcodes.I64LtS:
+			c.writeSI64Op(valueID, "<")
+		case opcodes.I64LeU:
+			c.writeUI64Op(valueID, "<=")
+		case opcodes.I64LeS:
+			c.writeSI64Op(valueID, "<=")
+		case opcodes.I64GtU:
+			c.writeUI64Op(valueID, ">")
+		case opcodes.I64GtS:
+			c.writeSI64Op(valueID, ">")
+		case opcodes.I64GeU:
+			c.writeUI64Op(valueID, ">=")
+		case opcodes.I64GeS:
+			c.writeSI64Op(valueID, ">=")
+		case opcodes.I64EqZ:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+
+			c.ip += 4
+
+			c.program += fmt.Sprintf("regs[%d] = (i64) (regs[%d] == 0);\n", valueID, a)
+		case opcodes.I64Shl:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) << (((u64) regs[%d]) %% 64));\n", valueID, a, b)
+		case opcodes.I64ShrU:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) >> (((u64) regs[%d]) %% 64));\n", valueID, a, b)
+		case opcodes.I64ShrS:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			c.checkReg(b)
+
+			c.ip += 8
+			c.program += fmt.Sprintf("regs[%d] = (i64)(((i64) regs[%d]) >> (((i64) regs[%d]) %% 64));\n", valueID, a, b)
+		case opcodes.I64ExtendUI32:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+			c.program += fmt.Sprintf("regs[%d] = (i64) (u32) regs[%d];\n", valueID, a)
+		case opcodes.I64ExtendSI32:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
+		case opcodes.I64Clz:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
+			c.program += fmt.Sprintf("else regs[%d] = __builtin_clzll(regs[%d]);\n", valueID, a)
+		case opcodes.I64Ctz:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
+			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctzll(regs[%d]);\n", valueID, a)
+		case opcodes.I64PopCnt:
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			c.checkReg(a)
+			c.ip += 4
+
+			c.program += fmt.Sprintf("regs[%d] = __builtin_popcountll(regs[%d]);\n", valueID, a)
 		case opcodes.GetLocal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkLocal(id)
