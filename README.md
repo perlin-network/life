@@ -64,6 +64,8 @@ fmt.Printf("return value = %d\n", ret)
 
 We benchmarked **life** and a few other WebAssembly implementation in different languages.
 
+![Benchmark Result](media/bench.png)
+
 ### Pollard Rho Factoring (128-bit)
 
 Test case: `pollard_rho_128`
