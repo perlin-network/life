@@ -62,7 +62,7 @@ fmt.Printf("return value = %d\n", ret)
 
 ## Benchmark
 
-We benchmarked **life** and a few other WebAssembly implementation in different languages.
+We benchmarked **life** along with a few other WebAssembly implementations in different languages ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)).
 
 ![Benchmark Result](media/bench.png)
 
