@@ -50,18 +50,18 @@ import "C"
 
 import (
 	"bytes"
-	"os/exec"
-	"unsafe"
-	"os"
-	"runtime"
 	"io/ioutil"
+	"os"
+	"os/exec"
+	"runtime"
+	"unsafe"
 )
 
 var entryName = C.CString("run")
 
 type DynamicModule struct {
 	dlHandle unsafe.Pointer
-	entry unsafe.Pointer
+	entry    unsafe.Pointer
 }
 
 func (m *DynamicModule) unsafeCleanup() {
@@ -137,9 +137,9 @@ func CompileDynamicModule(source string) *DynamicModule {
 		panic("dlsym failed")
 	}
 
-	dm := &DynamicModule {
+	dm := &DynamicModule{
 		dlHandle: dlHandle,
-		entry: entry,
+		entry:    entry,
 	}
 
 	runtime.SetFinalizer(dm, func(dm *DynamicModule) {

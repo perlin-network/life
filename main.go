@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
-	"time"
 	"math"
 	"strings"
+	"time"
 )
 
 type Resolver struct {
@@ -19,7 +19,7 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 	if module != "env" {
 		panic("module != env")
 	}
-	
+
 	switch field {
 	case "__life_ping":
 		return func(vm *exec.VirtualMachine) int64 {
@@ -61,7 +61,7 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 			dest := int(frame.Locals[0])
 			src := int(frame.Locals[1])
 			num := int(frame.Locals[2])
-			copy(vm.Memory[dest:], vm.Memory[src:src + num])
+			copy(vm.Memory[dest:], vm.Memory[src:src+num])
 			return int64(dest)
 		}
 
@@ -80,7 +80,7 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 		return func(vm *exec.VirtualMachine) int64 {
 			return r.tempRet0
 		}
-	
+
 	default:
 		if strings.HasPrefix(field, "nullFunc_") {
 			return func(vm *exec.VirtualMachine) int64 {
@@ -156,9 +156,9 @@ func main() {
 	}
 
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
-		EnableJIT: *jitFlag,
+		EnableJIT:          *jitFlag,
 		DefaultMemoryPages: 128,
-		DefaultTableSize: 65536,
+		DefaultTableSize:   65536,
 	}, &Resolver{})
 	if err != nil {
 		panic(err)

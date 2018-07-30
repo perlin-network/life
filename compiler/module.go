@@ -13,7 +13,7 @@ import (
 )
 
 type Module struct {
-	Base *wasm.Module
+	Base          *wasm.Module
 	FunctionNames map[int]string
 }
 
@@ -23,8 +23,8 @@ type InterpreterCode struct {
 	NumLocals  int
 	NumReturns int
 	Bytes      []byte
-	JITInfo interface{}
-	JITDone bool
+	JITInfo    interface{}
+	JITDone    bool
 }
 
 func LoadModule(raw []byte) (*Module, error) {
@@ -98,7 +98,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}
 
 	return &Module{
-		Base: m,
+		Base:          m,
 		FunctionNames: functionNames,
 	}, nil
 }

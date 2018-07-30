@@ -2,19 +2,19 @@ package exec
 
 import (
 	"fmt"
-	"math"
-	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/compiler"
+	"github.com/perlin-network/life/compiler/opcodes"
+	"math"
 )
 
 type jitContext struct {
-	vm *VirtualMachine
+	vm         *VirtualMachine
 	functionID int
-	code *compiler.InterpreterCode
-	program string
-	cont int
-	ip int
-	thisIP int
+	code       *compiler.InterpreterCode
+	program    string
+	cont       int
+	ip         int
+	thisIP     int
 }
 
 func (c *jitContext) writeFallback() {
@@ -25,8 +25,8 @@ func (c *jitContext) writeFallback() {
 }
 
 func (c *jitContext) checkLocal(id int) {
-	if id < 0 || id >= c.code.NumParams + c.code.NumLocals {
-		panic(fmt.Errorf("local out of bounds: id = %d, n = %d", id, c.code.NumParams + c.code.NumLocals))
+	if id < 0 || id >= c.code.NumParams+c.code.NumLocals {
+		panic(fmt.Errorf("local out of bounds: id = %d, n = %d", id, c.code.NumParams+c.code.NumLocals))
 	}
 }
 
@@ -43,9 +43,9 @@ func (c *jitContext) checkGlobal(id int) {
 }
 
 func (c *jitContext) writeSI32Op(valueID int, op string) {
-	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 	c.checkReg(a)
-	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 	c.checkReg(b)
 
 	c.ip += 8
@@ -64,9 +64,9 @@ func (c *jitContext) writeSI32Op(valueID int, op string) {
 }
 
 func (c *jitContext) writeUI32Op(valueID int, op string) {
-	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 	c.checkReg(a)
-	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 	c.checkReg(b)
 
 	c.ip += 8
@@ -79,9 +79,9 @@ func (c *jitContext) writeUI32Op(valueID int, op string) {
 }
 
 func (c *jitContext) writeSI64Op(valueID int, op string) {
-	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 	c.checkReg(a)
-	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 	c.checkReg(b)
 
 	c.ip += 8
@@ -100,9 +100,9 @@ func (c *jitContext) writeSI64Op(valueID int, op string) {
 }
 
 func (c *jitContext) writeUI64Op(valueID int, op string) {
-	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+	a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 	c.checkReg(a)
-	b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+	b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 	c.checkReg(b)
 
 	c.ip += 8
@@ -117,7 +117,7 @@ func (c *jitContext) writeUI64Op(valueID int, op string) {
 func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
 	offset := LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8])
 
-	base := int(LE.Uint32(c.code.Bytes[c.ip+8:c.ip+12]))
+	base := int(LE.Uint32(c.code.Bytes[c.ip+8 : c.ip+12]))
 	c.checkReg(base)
 
 	c.ip += 12
@@ -130,10 +130,10 @@ func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
 func (c *jitContext) writeMemoryStore(ty string) {
 	offset := LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8])
 
-	base := int(LE.Uint32(c.code.Bytes[c.ip+8:c.ip+12]))
+	base := int(LE.Uint32(c.code.Bytes[c.ip+8 : c.ip+12]))
 	c.checkReg(base)
 
-	value := int(LE.Uint32(c.code.Bytes[c.ip+12:c.ip+16]))
+	value := int(LE.Uint32(c.code.Bytes[c.ip+12 : c.ip+16]))
 	c.checkReg(value)
 
 	c.ip += 16
@@ -197,11 +197,11 @@ case 0:
 			c.program += "return -2;\n"
 
 		case opcodes.Select:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
-			condReg := int(LE.Uint32(c.code.Bytes[c.ip + 8 : c.ip + 12]))
+			condReg := int(LE.Uint32(c.code.Bytes[c.ip+8 : c.ip+12]))
 			c.checkReg(condReg)
 
 			c.ip += 12
@@ -209,7 +209,7 @@ case 0:
 			c.program += fmt.Sprintf("regs[%d] = regs[%d] ? regs[%d] : regs[%d];", valueID, condReg, a, b)
 
 		case opcodes.I32Const:
-			imm := int64(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
+			imm := int64(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I32Add:
@@ -253,63 +253,63 @@ case 0:
 		case opcodes.I32GeS:
 			c.writeSI32Op(valueID, ">=")
 		case opcodes.I32EqZ:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 
 			c.ip += 4
 
 			c.program += fmt.Sprintf("regs[%d] = (i64) ((u32) regs[%d] == 0);\n", valueID, a)
 		case opcodes.I32Shl:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) << (((u32) regs[%d]) %% 32));\n", valueID, a, b)
 		case opcodes.I32ShrU:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) >> (((u32) regs[%d]) %% 32));\n", valueID, a, b)
 		case opcodes.I32ShrS:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((i32) regs[%d]) >> (((i32) regs[%d]) %% 32));\n", valueID, a, b)
 		case opcodes.I32WrapI64:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
 		case opcodes.I32Clz:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
 			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
 			c.program += fmt.Sprintf("else regs[%d] = __builtin_clz((i32) regs[%d]);\n", valueID, a)
 		case opcodes.I32Ctz:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
 			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
 			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctz((i32) regs[%d]);\n", valueID, a)
 		case opcodes.I32PopCnt:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
 			c.program += fmt.Sprintf("regs[%d] = __builtin_popcount((i32) regs[%d]);\n", valueID, a)
 		case opcodes.I64Const:
-			imm := int64(LE.Uint64(c.code.Bytes[c.ip:c.ip+8]))
+			imm := int64(LE.Uint64(c.code.Bytes[c.ip : c.ip+8]))
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
 		case opcodes.I64Add:
@@ -353,62 +353,62 @@ case 0:
 		case opcodes.I64GeS:
 			c.writeSI64Op(valueID, ">=")
 		case opcodes.I64EqZ:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 
 			c.ip += 4
 
 			c.program += fmt.Sprintf("regs[%d] = (i64) (regs[%d] == 0);\n", valueID, a)
 		case opcodes.I64Shl:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) << (((u64) regs[%d]) %% 64));\n", valueID, a, b)
 		case opcodes.I64ShrU:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) >> (((u64) regs[%d]) %% 64));\n", valueID, a, b)
 		case opcodes.I64ShrS:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
-			b := int(LE.Uint32(c.code.Bytes[c.ip + 4 : c.ip + 8]))
+			b := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(b)
 
 			c.ip += 8
 			c.program += fmt.Sprintf("regs[%d] = (i64)(((i64) regs[%d]) >> (((i64) regs[%d]) %% 64));\n", valueID, a, b)
 		case opcodes.I64ExtendUI32:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = (i64) (u32) regs[%d];\n", valueID, a)
 		case opcodes.I64ExtendSI32:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
 		case opcodes.I64Clz:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
 			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
 			c.program += fmt.Sprintf("else regs[%d] = __builtin_clzll(regs[%d]);\n", valueID, a)
 		case opcodes.I64Ctz:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
 			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
 			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctzll(regs[%d]);\n", valueID, a)
 		case opcodes.I64PopCnt:
-			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip + 4]))
+			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
@@ -420,10 +420,10 @@ case 0:
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = locals[%d];\n", valueID, id)
 		case opcodes.SetLocal:
-			id := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
+			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkLocal(id)
 
-			val := int(LE.Uint32(c.code.Bytes[c.ip+4:c.ip+8]))
+			val := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(val)
 
 			c.ip += 8
@@ -435,10 +435,10 @@ case 0:
 			c.ip += 4
 			c.program += fmt.Sprintf("regs[%d] = globals[%d];\n", valueID, id)
 		case opcodes.SetGlobal:
-			id := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
+			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkGlobal(id)
 
-			val := int(LE.Uint32(c.code.Bytes[c.ip+4:c.ip+8]))
+			val := int(LE.Uint32(c.code.Bytes[c.ip+4 : c.ip+8]))
 			c.checkReg(val)
 
 			c.ip += 8
@@ -476,7 +476,7 @@ case 0:
 			c.writeFallback()
 		case opcodes.Call, opcodes.CallIndirect:
 			c.ip += 4
-			argCount := int(LE.Uint32(c.code.Bytes[c.ip:c.ip+4]))
+			argCount := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.ip += 4
 			c.ip += 4 * argCount
 			c.writeFallback()
@@ -524,7 +524,7 @@ case 0:
 			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
 			c.program += fmt.Sprintf("switch(regs[%d]) {\n", condReg)
 			for i := 0; i < targetCount; i++ {
-				target := int(LE.Uint32(targetsRaw[i * 4 : i * 4 + 4]))
+				target := int(LE.Uint32(targetsRaw[i*4 : i*4+4]))
 				c.program += fmt.Sprintf("case %d: goto I%d;\n", i, target)
 			}
 			c.program += fmt.Sprintf("default: goto I%d;\n", defaultTarget)
@@ -552,10 +552,10 @@ case 0:
 // Returns true if codegen succeeds, or false if the current function cannot be code-generated.
 func (vm *VirtualMachine) GenerateCodeForFunction(functionID int) bool {
 	code := &vm.FunctionCode[functionID]
-	c := &jitContext {
-		vm: vm,
+	c := &jitContext{
+		vm:         vm,
 		functionID: functionID,
-		code: code,
+		code:       code,
 	}
 	return c.Generate()
 }

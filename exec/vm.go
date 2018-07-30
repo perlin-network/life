@@ -50,24 +50,24 @@ type VirtualMachine struct {
 
 // Virtual machine config.
 type VMConfig struct {
-	EnableJIT bool
-	MaxMemoryPages    int
-	MaxTableSize      int
-	MaxValueSlots     int
-	MaxCallStackDepth int
+	EnableJIT          bool
+	MaxMemoryPages     int
+	MaxTableSize       int
+	MaxValueSlots      int
+	MaxCallStackDepth  int
 	DefaultMemoryPages int
-	DefaultTableSize int
+	DefaultTableSize   int
 }
 
 // Call frame.
 type Frame struct {
-	FunctionID int
-	Code       []byte
-	JITInfo interface{}
-	Regs       []int64
-	Locals     []int64
-	IP         int
-	ReturnReg  int
+	FunctionID   int
+	Code         []byte
+	JITInfo      interface{}
+	Regs         []int64
+	Locals       []int64
+	IP           int
+	ReturnReg    int
 	Continuation int32
 }
 
@@ -111,10 +111,10 @@ func NewVirtualMachine(
 				if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
 					panic("cannot import another memory while we already have one")
 				}
-				m.Base.Memory = &wasm.SectionMemories {
-					Entries: []wasm.Memory {
-						wasm.Memory {
-							Limits: wasm.ResizableLimits {
+				m.Base.Memory = &wasm.SectionMemories{
+					Entries: []wasm.Memory{
+						wasm.Memory{
+							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultMemoryPages),
 							},
 						},
@@ -125,10 +125,10 @@ func NewVirtualMachine(
 				if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
 					panic("cannot import another table while we already have one")
 				}
-				m.Base.Table = &wasm.SectionTables {
-					Entries: []wasm.Table {
-						wasm.Table {
-							Limits: wasm.ResizableLimits {
+				m.Base.Table = &wasm.SectionTables{
+					Entries: []wasm.Table{
+						wasm.Table{
+							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultTableSize),
 							},
 						},

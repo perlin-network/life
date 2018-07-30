@@ -1,7 +1,6 @@
 package exec
 
 type DynamicModule struct {
-
 }
 
 func (m *DynamicModule) Run(vm *VirtualMachine, ret *int64) int32 {
