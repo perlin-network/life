@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/perlin-network/life/exec"
 )
 
 type Resolver struct{}
@@ -16,24 +17,20 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 	if module != "spectest" {
 		panic("module != spectest")
 	}
-	switch field {
-	case "print_i32":
-		return func(vm *exec.VirtualMachine) int64 { return 0 }
-	default:
+	if field != "print_i32" {
 		panic(fmt.Errorf("func %s not found", field))
 	}
+	return func(vm *exec.VirtualMachine) int64 { return 0 }
 }
 
 func (r *Resolver) ResolveGlobal(module, field string) int64 {
 	if module != "spectest" {
 		panic("module != spectest")
 	}
-	switch field {
-	case "global_i32":
-		return 0
-	default:
+	if field != "global_i32" {
 		panic(fmt.Errorf("global %s not found", field))
 	}
+	return 0
 }
 
 type Config struct {

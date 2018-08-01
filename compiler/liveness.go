@@ -14,7 +14,7 @@ func (c *SSAFunctionCompiler) RegAlloc() int {
 		}
 		regID++
 	}
-	for i, _ := range c.Code {
+	for i := range c.Code {
 		ins := &c.Code[i]
 
 		if ins.Target != 0 {
@@ -41,16 +41,13 @@ func (c *SSAFunctionCompiler) RegAlloc() int {
 
 func (ins *Instr) BranchTargets() []int {
 	switch ins.Op {
-	case "jmp":
-	case "jmp_if":
-	case "jmp_table":
+	case "jmp", "jmp_if", "jmp_table":
+		ret := make([]int, len(ins.Immediates))
+		for i, t := range ins.Immediates {
+			ret[i] = int(t)
+		}
+		return ret
 	default:
 		return []int{}
 	}
-
-	ret := make([]int, len(ins.Immediates))
-	for i, t := range ins.Immediates {
-		ret[i] = int(t)
-	}
-	return ret
 }
