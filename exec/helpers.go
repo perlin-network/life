@@ -7,6 +7,7 @@ import (
 
 var _ ImportResolver = (*NopResolver)(nil)
 
+// NopResolver is a nil WebAssembly module import resolver.
 type NopResolver struct{}
 
 func (r *NopResolver) ResolveFunc(module, field string) FunctionImport {
@@ -17,7 +18,8 @@ func (r *NopResolver) ResolveGlobal(module, field string) int64 {
 	panic("global import not allowed")
 }
 
-// Returns an error if any happened during execution of user code.
+// RunWithGasLimit runs a WebAssembly modules function denoted by its ID with a specified set
+// of parameters for a specified amount of instructions (also known as gas) denoted by `limit`.
 // Panics on logical errors.
 func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (int64, error) {
 	count := 0
@@ -41,7 +43,8 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (
 	return vm.ReturnValue, nil
 }
 
-// Returns an error if any happened during execution of user code.
+// Run runs a WebAssembly modules function denoted by its ID with a specified set
+// of parameters.
 // Panics on logical errors.
 func (vm *VirtualMachine) Run(entryID int, params ...int64) (int64, error) {
 	vm.Ignite(entryID, params...)

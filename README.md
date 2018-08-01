@@ -1,14 +1,32 @@
 # Life
 
+[![GoDoc][1]][2] [![Discord][7]][8] [![MIT licensed][5]][6] [![Build Status][9]][10] [![Go Report Card][11]][12] [![Coverage Statusd][13]][14]
+
+[1]: https://godoc.org/github.com/perlin-network/life?status.svg
+[2]: https://godoc.org/github.com/perlin-network/life
+[5]: https://img.shields.io/badge/license-MIT-blue.svg
+[6]: LICENSE
+[7]: https://shields.dougley.com/discord/458332417909063682.svg
+[8]: https://discord.gg/dMYfDPM
+[9]: https://travis-ci.org/perlin-network/life.svg?branch=master
+[10]: https://travis-ci.org/perlin-network/life
+[11]: https://goreportcard.com/badge/github.com/perlin-network/life
+[12]: https://goreportcard.com/report/github.com/perlin-network/life
+[13]: https://codecov.io/gh/perlin-network/life/branch/master/graph/badge.svg
+[14]: https://codecov.io/gh/perlin-network/life
+
 **life** is a secure & fast WebAssembly VM built for decentralized applications, written in [Go](https://golang.org/) by Perlin Network.
 
 ## Features
 
-- Correct: Fully implements the WebAssembly execution semantics and passes most of the [official test suite](https://github.com/WebAssembly/testsuite) (66/72 passed, none of the failures are related to the execution semantics).
-- Fast: **life** uses a range of optimization techniques and is faster than all other WebAssembly implementations tested ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)). Benchmark results [here](https://gist.github.com/losfair/1d3743433fafd8d0a1d1dac3c0db4827). JIT support for x86-64 and ARM is planned.
-- Secure: User code is fully sandboxed. Accurate control to resources (instruction cycles, memory usage) is allowed.
+- Fast - Uses a wide range of optimization techniques and is faster than all other WebAssembly implementations tested ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)). Benchmark results [here](https://gist.github.com/losfair/1d3743433fafd8d0a1d1dac3c0db4827). JIT support for x86-64 and ARM is planned.
+- Correct - Implements WebAssembly execution semantics and passes most of the [official test suite](https://github.com/WebAssembly/testsuite) (66/72 passed, none of the failures are related to the execution semantics).
+- Secure - User code executed is fully sandboxed. A WebAssembly module's access to resources (instruction cycles, memory usage) may easily be controlled to the very finest detail.
+- Pure - Does not rely on any native dependencies, and may easily be cross-compiled for running WebAssembly modules on practically any platform (Windows/Linux/Mac/Android/iOS/etc).
+- Practical - Make full use of the minimal nature of WebAssembly to write code once and run anywhere. Completely customize how WebAssembly module imports are resolved and integrated, and have complete control over the execution lifecycle of your WebAssembly modules.
 
-## Get started
+
+## Getting Started
 
 ```bash
 # install vgo tooling
@@ -30,11 +48,11 @@ vgo build
 ./life < /path/to/your/wasm/program # entry point is `app_main` with no arguments by default
 ```
 
-## Integrating into your application
+## Executing WebAssembly Modules
 
-Suppose we have already read in the wasm bytecode to `input`.
+Suppose we have already loaded our *.wasm module's bytecode into the variable `var input []byte`.
 
-Set up the virtual machine:
+Lets pass the bytecode into a newly instantiated virtual machine:
 ```go
 vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{})
 if err != nil { // if the wasm bytecode is invalid
@@ -42,7 +60,7 @@ if err != nil { // if the wasm bytecode is invalid
 }
 ```
 
-Lookup the entry function:
+Lookup the function ID to a desired entry-point function titled `app_main`:
 ```go
 entryID, ok := vm.GetFunctionExport("app_main") // can change to whatever exported function name you want
 if !ok {
@@ -50,7 +68,7 @@ if !ok {
 }
 ```
 
-Run the VM:
+And startup the VM; printing out the result of the entry-point function:
 ```go
 ret, err := vm.Run(entryID)
 if err != nil {
@@ -60,9 +78,81 @@ if err != nil {
 fmt.Printf("return value = %d\n", ret)
 ```
 
+Interested to tinker with more options? Check out our fully-documented example [here](main.go) .
+
+## Import Resolvers
+
+One extremely powerful feature is that you may completely customize how WebAssembly module import functions are resolved, executed, and defined.
+
+With import resolvers, you may now securely call external code/functions inside your WebAssembly modules which executed through **life**.
+
+Take for example the following Rust module compiled down to a WebAssembly module:
+
+```rust
+extern "C" {
+    fn __life_log(msg: &str);
+}
+
+#[no_mangle]
+pub extern "C" fn app_main() -> i32 {
+    unsafe {
+            __life_log("This is being called outside of WebAssembly!");
+    }
+
+    return 0;
+}
+```
+
+We can define an import resolver into our WebAssembly virtual machine that will let us define whatever code the function `__life_log` may execute in our host environment.
+
+```go
+type Resolver struct{}
+
+func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
+	switch module {
+	case "env":
+		switch field {
+		case "__life_log":
+			return func(vm *exec.VirtualMachine) int64 {
+				ptr := int(uint32(vm.GetCurrentFrame().Locals[0]))
+				msgLen := int(uint32(vm.GetCurrentFrame().Locals[1]))
+				msg := vm.Memory[ptr : ptr+msgLen]
+				fmt.Printf("[app] %s\n", string(msg))
+				return 0
+			}
+
+		default:
+			panic(fmt.Errorf("unknown import resolved: %s", field))
+		}
+	default:
+		panic(fmt.Errorf("unknown module: %s", module))
+	}
+}
+
+func (r *Resolver) ResolveGlobal(module, field string) int64 {
+	panic("we're not resolving global variables for now")
+}
+
+```
+
+We can then include the import resolver into our WebAssembly VM:
+
+```go
+vm, err := exec.NewVirtualMachine([]byte, exec.VMConfig{}, new(Resolver))
+if err != nil {
+    panic(err)
+}
+```
+
+And have the VM run the entry-point function `app_main` to see the result:
+
+```bash
+[app] This is being called from outside WebAssembly!
+```
+
 ## Benchmark
 
-We benchmarked **life** along with a few other WebAssembly implementations in different languages ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)).
+We benchmarked **life** alongside a couple of other WebAssembly implementations in different programming languages ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)).
 
 ![Benchmark Result](media/bench.png)
 
@@ -154,7 +244,7 @@ user	0m6.983s
 sys	0m0.020s
 ```
 
-### Fibonacci generator (recursive)
+### Fibonacci (recursive)
 
 Test case: `fib_recursive`
 

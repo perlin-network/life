@@ -7,9 +7,14 @@ import (
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
+// Serialize serializes a set of SSA-form instructions into a byte array
+// for execution with an exec.VirtualMachine.
+//
 // Instruction encoding:
 // Value ID (4 bytes) | Opcode (1 byte) | Operands
+//
 // Types are erased in the generated code.
+// Example: float32/float64 are represented as uint32/uint64 respectively.
 func (c *SSAFunctionCompiler) Serialize() []byte {
 	buf := &bytes.Buffer{}
 	insRelocs := make([]int, len(c.Code))

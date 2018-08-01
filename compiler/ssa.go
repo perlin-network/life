@@ -11,6 +11,8 @@ import (
 
 type TyValueID uint64
 
+// SSAFunctionCompiler represents a compiler which translates a WebAssembly modules
+// intepreted code into a Static-Single-Assignment-based intermediate representation.
 type SSAFunctionCompiler struct {
 	Module *wasm.Module
 	Source *disasm.Disassembly
@@ -43,6 +45,7 @@ type FixupInfo struct {
 	TablePos int
 }
 
+// Instr denotes a single instrution.
 type Instr struct {
 	Target TyValueID // the value id we are assigning to
 
@@ -51,6 +54,8 @@ type Instr struct {
 	Values     []TyValueID
 }
 
+// NewSSAFunctionCompiler instantiates a compiler which translates a WebAssembly modules
+// intepreted code into a Static-Single-Assignment-based intermediate representation.
 func NewSSAFunctionCompiler(m *wasm.Module, d *disasm.Disassembly) *SSAFunctionCompiler {
 	return &SSAFunctionCompiler{
 		Module:         m,
@@ -121,6 +126,8 @@ func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable boo
 	}
 }
 
+// Compile compiles an interpreted WebAssembly modules source code into
+// a Static-Single-Assignment-based intermediate representation.
 func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 	c.Locations = append(c.Locations, &Location{
 		CodePos:    0,

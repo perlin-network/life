@@ -15,20 +15,24 @@ import (
 	"github.com/perlin-network/life/utils"
 )
 
-// The function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.
+// FunctionImport represents the function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.
 type FunctionImport func(vm *VirtualMachine) int64
 
-// Default call stack size.
-const DefaultCallStackSize = 512
+const (
+	// DefaultCallStackSize is the default call stack size.
+	DefaultCallStackSize = 512
 
-// WebAssembly linear memory page size.
-const DefaultPageSize = 65536
+	// DefaultPageSize is the linear memory page size.
+	DefaultPageSize = 65536
 
-const JITCodeSizeThreshold = 30
+	// JITCodeSizeThreshold is the lower-bound code size threshold for the JIT compiler.
+	JITCodeSizeThreshold = 30
+)
 
+// LE is a simple alias to `binary.LittleEndian`.
 var LE = binary.LittleEndian
 
-// The virtual machine.
+// VirtualMachine is a WebAssembly execution environment.
 type VirtualMachine struct {
 	Config          VMConfig
 	Module          *compiler.Module
@@ -48,7 +52,7 @@ type VirtualMachine struct {
 	ReturnValue     int64
 }
 
-// Virtual machine config.
+// VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
 type VMConfig struct {
 	EnableJIT          bool
 	MaxMemoryPages     int
@@ -59,7 +63,7 @@ type VMConfig struct {
 	DefaultTableSize   int
 }
 
-// Call frame.
+// Frame represents a call frame.
 type Frame struct {
 	FunctionID   int
 	Code         []byte
@@ -71,13 +75,16 @@ type Frame struct {
 	Continuation int32
 }
 
-// Import resolver for resolving imports in a module.
+// ImportResolver is an interface for allowing one to define imports to WebAssembly modules
+// ran under a single VirtualMachine instance.
 type ImportResolver interface {
 	ResolveFunc(module, field string) FunctionImport
 	ResolveGlobal(module, field string) int64
 }
 
-// Creates a virtual machine.
+// NewVirtualMachine instantiates a virtual machine for a given WebAssembly module, with
+// specific execution options specified under a VMConfig, and a WebAssembly module import
+// resolver.
 func NewVirtualMachine(
 	code []byte,
 	config VMConfig,
@@ -203,7 +210,7 @@ func NewVirtualMachine(
 	}, nil
 }
 
-// Initializes a frame. Must be called on `call` and `call_indirect`.
+// Init initializes a frame. Must be called on `call` and `call_indirect`.
 func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.InterpreterCode) {
 	numValueSlots := code.NumRegs + code.NumParams + code.NumLocals
 	if vm.Config.MaxValueSlots != 0 && vm.NumValueSlots+numValueSlots > vm.Config.MaxValueSlots {
@@ -237,7 +244,7 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	}
 }
 
-// Destroys a frame. Must be called on return.
+// Destroy destroys a frame. Must be called on return.
 func (f *Frame) Destroy(vm *VirtualMachine) {
 	numValueSlots := len(f.Regs) + len(f.Locals)
 	vm.NumValueSlots -= numValueSlots
@@ -245,7 +252,7 @@ func (f *Frame) Destroy(vm *VirtualMachine) {
 	//fmt.Printf("Leave function %d (%s)\n", f.FunctionID, vm.Module.FunctionNames[f.FunctionID])
 }
 
-// Returns the current frame.
+// GetCurrentFrame returns the current frame.
 func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 	if vm.Config.MaxCallStackDepth != 0 && vm.CurrentFrame >= vm.Config.MaxCallStackDepth {
 		panic("max call stack depth exceeded")
@@ -275,17 +282,17 @@ func (vm *VirtualMachine) getExport(key string, kind wasm.External) (int, bool) 
 	return int(entry.Index), true
 }
 
-// Returns the global export with the given name.
+// GetGlobalExport returns the global export with the given name.
 func (vm *VirtualMachine) GetGlobalExport(key string) (int, bool) {
 	return vm.getExport(key, wasm.ExternalGlobal)
 }
 
-// Returns the function export with the given name.
+// GetFunctionExport returns the function export with the given name.
 func (vm *VirtualMachine) GetFunctionExport(key string) (int, bool) {
 	return vm.getExport(key, wasm.ExternalFunction)
 }
 
-// Prints VM stack trace for debugging.
+// PrintStackTrace prints the entire VM stack trace for debugging.
 func (vm *VirtualMachine) PrintStackTrace() {
 	fmt.Println("--- Begin stack trace ---")
 	for i := vm.CurrentFrame; i >= 0; i-- {
@@ -295,7 +302,7 @@ func (vm *VirtualMachine) PrintStackTrace() {
 	fmt.Println("--- End stack trace ---")
 }
 
-// Initializes the first frame.
+// Ignite initializes the first call frame.
 func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	if vm.ExitError != nil {
 		panic("last execution exited with error; cannot ignite.")
@@ -322,7 +329,7 @@ func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	copy(frame.Locals, params)
 }
 
-// Executes the virtual machine.
+// Execute starts the virtual machines main instruction processing loop.
 // This function may return at any point and is guaranteed to return
 // at least once every 10000 instructions. Caller is responsible for
 // detecting VM status in a loop.

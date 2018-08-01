@@ -9,6 +9,7 @@ import (
 	"io"
 )
 
+// readU32 reads an unsigned 32-bit integer from a reader.
 func readU32(r io.Reader) (uint32, error) {
 	var buf [4]byte
 	_, err := io.ReadFull(r, buf[:])
@@ -18,6 +19,7 @@ func readU32(r io.Reader) (uint32, error) {
 	return binary.LittleEndian.Uint32(buf[:]), nil
 }
 
+// readU64 reads an unsigned 64-bit integer from a reader.
 func readU64(r io.Reader) (uint64, error) {
 	var buf [8]byte
 	_, err := io.ReadFull(r, buf[:])
@@ -27,7 +29,7 @@ func readU64(r io.Reader) (uint64, error) {
 	return binary.LittleEndian.Uint64(buf[:]), nil
 }
 
-// Executes an init expr.
+// executeInitExpr executes and returns the result of a WebAssembly init expression.
 func execInitExpr(expr []byte, globals []int64) int64 {
 	var stack []int64
 	r := bytes.NewReader(expr)
