@@ -90,6 +90,10 @@ func NewVirtualMachine(
 	config VMConfig,
 	impResolver ImportResolver,
 ) (_retVM *VirtualMachine, retErr error) {
+	if config.EnableJIT {
+		fmt.Println("Warning: JIT support is incomplete and the internals are likely to change in the future.")
+	}
+
 	m, err := compiler.LoadModule(code)
 	if err != nil {
 		return nil, err
