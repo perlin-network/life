@@ -84,7 +84,7 @@ Interested to tinker with more options? Check out our fully-documented example [
 
 One extremely powerful feature is that you may completely customize how WebAssembly module import functions are resolved, executed, and defined.
 
-With import resolvers, you may now securely call external code/functions inside your WebAssembly modules which executed through **life**.
+With import resolvers, you may now securely call external code/functions inside your WebAssembly modules which are executed through **life**.
 
 Take for example the following Rust module compiled down to a WebAssembly module:
 
