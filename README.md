@@ -150,11 +150,11 @@ And have the VM run the entry-point function `app_main` to see the result:
 [app] This is being called from outside WebAssembly!
 ```
 
-## Benchmark
+## Benchmarks
+
+<img align="right" width=400 src="media/bench.png">
 
 We benchmarked **life** alongside a couple of other WebAssembly implementations in different programming languages ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)).
-
-![Benchmark Result](media/bench.png)
 
 ### Pollard Rho Factoring (128-bit)
 
