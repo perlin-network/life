@@ -90,13 +90,15 @@ Take for example the following Rust module compiled down to a WebAssembly module
 
 ```rust
 extern "C" {
-    fn __life_log(msg: &str);
+    fn __life_log(msg: *const u8, len: usize);
 }
 
 #[no_mangle]
 pub extern "C" fn app_main() -> i32 {
+    let message = "This is being called outside of WebAssembly!".as_bytes();
+
     unsafe {
-            __life_log("This is being called outside of WebAssembly!");
+        __life_log(message.as_ptr(), message.len());
     }
 
     return 0;
