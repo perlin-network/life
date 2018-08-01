@@ -152,9 +152,14 @@ And have the VM run the entry-point function `app_main` to see the result:
 
 ## Benchmarks
 
-<img align="right" width=400 src="media/bench.png">
+<p align="center">
+	<img width=600 src="media/bench.png">
+</p>
 
 We benchmarked **life** alongside a couple of other WebAssembly implementations in different programming languages ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)).
+
+
+
 
 ### Pollard Rho Factoring (128-bit)
 
