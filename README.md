@@ -1,6 +1,6 @@
 # Life
 
-[![GoDoc][1]][2] [![Discord][7]][8] [![MIT licensed][5]][6] [![Build Status][9]][10] [![Go Report Card][11]][12] [![Coverage Statusd][13]][14]
+[![GoDoc][1]][2] [![Discord][7]][8] [![MIT licensed][5]][6] [![Build Status][9]][10] [![Go Report Card][11]][12]
 
 [1]: https://godoc.org/github.com/perlin-network/life?status.svg
 [2]: https://godoc.org/github.com/perlin-network/life
@@ -12,8 +12,6 @@
 [10]: https://travis-ci.org/perlin-network/life
 [11]: https://goreportcard.com/badge/github.com/perlin-network/life
 [12]: https://goreportcard.com/report/github.com/perlin-network/life
-[13]: https://codecov.io/gh/perlin-network/life/branch/master/graph/badge.svg
-[14]: https://codecov.io/gh/perlin-network/life
 
 **life** is a secure & fast WebAssembly VM built for decentralized applications, written in [Go](https://golang.org/) by Perlin Network.
 
