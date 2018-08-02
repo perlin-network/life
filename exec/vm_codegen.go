@@ -2,25 +2,27 @@ package exec
 
 import (
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
-	"math"
 )
 
 type jitContext struct {
 	vm         *VirtualMachine
 	functionID int
 	code       *compiler.InterpreterCode
-	program    string
+	program    strings.Builder
 	cont       int
 	ip         int
 	thisIP     int
 }
 
 func (c *jitContext) writeFallback() {
-	c.program += fmt.Sprintf("*ret = %d;\n", c.thisIP)
-	c.program += fmt.Sprintf("return %d;\n", c.cont)
-	c.program += fmt.Sprintf("case %d:\n", c.cont)
+	c.program.WriteString(fmt.Sprintf("*ret = %d;\n", c.thisIP))
+	c.program.WriteString(fmt.Sprintf("return %d;\n", c.cont))
+	c.program.WriteString(fmt.Sprintf("case %d:\n", c.cont))
 	c.cont++
 }
 
@@ -51,16 +53,16 @@ func (c *jitContext) writeSI32Op(valueID int, op string) {
 	c.ip += 8
 
 	if op == "/" || op == "%" {
-		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
-		c.program += fmt.Sprintf("if((i32) regs[%d] == %d && (i32) regs[%d] == -1)", a, math.MinInt32, b)
+		c.program.WriteString(fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b))
+		c.program.WriteString(fmt.Sprintf("if((i32) regs[%d] == %d && (i32) regs[%d] == -1)", a, math.MinInt32, b))
 		if op == "/" {
-			c.program += "return -5;"
+			c.program.WriteString("return -5;")
 		} else {
-			c.program += fmt.Sprintf("regs[%d] = 0; else ", valueID)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = 0; else ", valueID))
 		}
 	}
 
-	c.program += fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] %s (i32) regs[%d]);\n", valueID, a, op, b)
+	c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)((i32) regs[%d] %s (i32) regs[%d]);\n", valueID, a, op, b))
 }
 
 func (c *jitContext) writeUI32Op(valueID int, op string) {
@@ -72,10 +74,10 @@ func (c *jitContext) writeUI32Op(valueID int, op string) {
 	c.ip += 8
 
 	if op == "/" || op == "%" {
-		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
+		c.program.WriteString(fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b))
 	}
 
-	c.program += fmt.Sprintf("regs[%d] = (i64)((u32) regs[%d] %s (u32) regs[%d]);\n", valueID, a, op, b)
+	c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)((u32) regs[%d] %s (u32) regs[%d]);\n", valueID, a, op, b))
 }
 
 func (c *jitContext) writeSI64Op(valueID int, op string) {
@@ -87,16 +89,16 @@ func (c *jitContext) writeSI64Op(valueID int, op string) {
 	c.ip += 8
 
 	if op == "/" || op == "%" {
-		c.program += fmt.Sprintf("if(regs[%d] == 0) return -5;\n", b)
-		c.program += fmt.Sprintf("if(regs[%d] == %d && regs[%d] == -1)", a, math.MinInt64, b)
+		c.program.WriteString(fmt.Sprintf("if(regs[%d] == 0) return -5;\n", b))
+		c.program.WriteString(fmt.Sprintf("if(regs[%d] == %d && regs[%d] == -1)", a, math.MinInt64, b))
 		if op == "/" {
-			c.program += "return -5;"
+			c.program.WriteString("return -5;")
 		} else {
-			c.program += fmt.Sprintf("regs[%d] = 0; else ", valueID)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = 0; else ", valueID))
 		}
 	}
 
-	c.program += fmt.Sprintf("regs[%d] = regs[%d] %s regs[%d];\n", valueID, a, op, b)
+	c.program.WriteString(fmt.Sprintf("regs[%d] = regs[%d] %s regs[%d];\n", valueID, a, op, b))
 }
 
 func (c *jitContext) writeUI64Op(valueID int, op string) {
@@ -108,10 +110,10 @@ func (c *jitContext) writeUI64Op(valueID int, op string) {
 	c.ip += 8
 
 	if op == "/" || op == "%" {
-		c.program += fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b)
+		c.program.WriteString(fmt.Sprintf("if((u32) regs[%d] == 0) return -5;\n", b))
 	}
 
-	c.program += fmt.Sprintf("regs[%d] = (u64) regs[%d] %s (u64) regs[%d];\n", valueID, a, op, b)
+	c.program.WriteString(fmt.Sprintf("regs[%d] = (u64) regs[%d] %s (u64) regs[%d];\n", valueID, a, op, b))
 }
 
 func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
@@ -122,9 +124,9 @@ func (c *jitContext) writeMemoryLoad(valueID int, ty string) {
 
 	c.ip += 12
 
-	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base)
-	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n")
-	c.program += fmt.Sprintf("regs[%d] = (i64) *(%s*)((unsigned long) memory + tempPtr0);\n", valueID, ty)
+	c.program.WriteString(fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base))
+	c.program.WriteString(fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n"))
+	c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) *(%s*)((unsigned long) memory + tempPtr0);\n", valueID, ty))
 }
 
 func (c *jitContext) writeMemoryStore(ty string) {
@@ -138,13 +140,13 @@ func (c *jitContext) writeMemoryStore(ty string) {
 
 	c.ip += 16
 
-	c.program += fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base)
-	c.program += fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n")
-	c.program += fmt.Sprintf("*(%s*)((unsigned long) memory + tempPtr0) = (%s) regs[%d];\n", ty, ty, value)
+	c.program.WriteString(fmt.Sprintf("tempPtr0 = %dUL + (unsigned long) (u32) regs[%d];\n", offset, base))
+	c.program.WriteString(fmt.Sprintf("if(tempPtr0 >= (unsigned long) memory_len) return -4;\n"))
+	c.program.WriteString(fmt.Sprintf("*(%s*)((unsigned long) memory + tempPtr0) = (%s) regs[%d];\n", ty, ty, value))
 }
 
 func (c *jitContext) Generate() bool {
-	c.program = `
+	c.program.WriteString(`
 typedef char i8;
 typedef short i16;
 typedef int i32;
@@ -153,12 +155,12 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long long u64;
-`
+`)
 
 	// Returns -1 for done. The return value should have already be written in ret.
 	// Return >= 0 for continuation. In this case, the instruction location should be
 	// written in `ret` and only the current instruction will get interpreted.
-	c.program += `
+	c.program.WriteString(`
 i32 run(
 	i64 * restrict regs,
 	i64 * restrict locals,
@@ -173,7 +175,7 @@ unsigned long tempPtr0;
 
 switch(continuation) {
 case 0:
-`
+`)
 
 	c.cont = 1
 	c.ip = 0
@@ -182,7 +184,7 @@ case 0:
 		if c.ip == len(c.code.Bytes) {
 			break
 		}
-		c.program += fmt.Sprintf("I%d:\n", c.ip)
+		c.program.WriteString(fmt.Sprintf("I%d:\n", c.ip))
 		c.thisIP = c.ip
 
 		valueID := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
@@ -194,7 +196,7 @@ case 0:
 		switch ins {
 		case opcodes.Nop:
 		case opcodes.Unreachable:
-			c.program += "return -2;\n"
+			c.program.WriteString("return -2;\n")
 
 		case opcodes.Select:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
@@ -206,12 +208,12 @@ case 0:
 
 			c.ip += 12
 
-			c.program += fmt.Sprintf("regs[%d] = regs[%d] ? regs[%d] : regs[%d];", valueID, condReg, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = regs[%d] ? regs[%d] : regs[%d];", valueID, condReg, a, b))
 
 		case opcodes.I32Const:
 			imm := int64(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm))
 		case opcodes.I32Add:
 			c.writeUI32Op(valueID, "+")
 		case opcodes.I32Sub:
@@ -258,7 +260,7 @@ case 0:
 
 			c.ip += 4
 
-			c.program += fmt.Sprintf("regs[%d] = (i64) ((u32) regs[%d] == 0);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) ((u32) regs[%d] == 0);\n", valueID, a))
 		case opcodes.I32Shl:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -266,7 +268,7 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) << (((u32) regs[%d]) %% 32));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) << (((u32) regs[%d]) %% 32));\n", valueID, a, b))
 		case opcodes.I32ShrU:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -274,7 +276,7 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) >> (((u32) regs[%d]) %% 32));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((u32) regs[%d]) >> (((u32) regs[%d]) %% 32));\n", valueID, a, b))
 		case opcodes.I32ShrS:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -282,36 +284,36 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((i32) regs[%d]) >> (((i32) regs[%d]) %% 32));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((i32) regs[%d]) >> (((i32) regs[%d]) %% 32));\n", valueID, a, b))
 		case opcodes.I32WrapI64:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a))
 		case opcodes.I32Clz:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
-			c.program += fmt.Sprintf("else regs[%d] = __builtin_clz((i32) regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID))
+			c.program.WriteString(fmt.Sprintf("else regs[%d] = __builtin_clz((i32) regs[%d]);\n", valueID, a))
 		case opcodes.I32Ctz:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID)
-			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctz((i32) regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 32;\n", a, valueID))
+			c.program.WriteString(fmt.Sprintf("else regs[%d] = __builtin_ctz((i32) regs[%d]);\n", valueID, a))
 		case opcodes.I32PopCnt:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("regs[%d] = __builtin_popcount((i32) regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = __builtin_popcount((i32) regs[%d]);\n", valueID, a))
 		case opcodes.I64Const:
 			imm := int64(LE.Uint64(c.code.Bytes[c.ip : c.ip+8]))
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = %dLL;\n", valueID, imm))
 		case opcodes.I64Add:
 			c.writeUI64Op(valueID, "+")
 		case opcodes.I64Sub:
@@ -358,7 +360,7 @@ case 0:
 
 			c.ip += 4
 
-			c.program += fmt.Sprintf("regs[%d] = (i64) (regs[%d] == 0);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) (regs[%d] == 0);\n", valueID, a))
 		case opcodes.I64Shl:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -366,7 +368,7 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) << (((u64) regs[%d]) %% 64));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) << (((u64) regs[%d]) %% 64));\n", valueID, a, b))
 		case opcodes.I64ShrU:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -374,7 +376,7 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) >> (((u64) regs[%d]) %% 64));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((u64) regs[%d]) >> (((u64) regs[%d]) %% 64));\n", valueID, a, b))
 		case opcodes.I64ShrS:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
@@ -382,43 +384,43 @@ case 0:
 			c.checkReg(b)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("regs[%d] = (i64)(((i64) regs[%d]) >> (((i64) regs[%d]) %% 64));\n", valueID, a, b)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64)(((i64) regs[%d]) >> (((i64) regs[%d]) %% 64));\n", valueID, a, b))
 		case opcodes.I64ExtendUI32:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = (i64) (u32) regs[%d];\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) (u32) regs[%d];\n", valueID, a))
 		case opcodes.I64ExtendSI32:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = (i64) (i32) regs[%d];\n", valueID, a))
 		case opcodes.I64Clz:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
-			c.program += fmt.Sprintf("else regs[%d] = __builtin_clzll(regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID))
+			c.program.WriteString(fmt.Sprintf("else regs[%d] = __builtin_clzll(regs[%d]);\n", valueID, a))
 		case opcodes.I64Ctz:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID)
-			c.program += fmt.Sprintf("else regs[%d] = __builtin_ctzll(regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("if(regs[%d] == 0) regs[%d] = 64;\n", a, valueID))
+			c.program.WriteString(fmt.Sprintf("else regs[%d] = __builtin_ctzll(regs[%d]);\n", valueID, a))
 		case opcodes.I64PopCnt:
 			a := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkReg(a)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("regs[%d] = __builtin_popcountll(regs[%d]);\n", valueID, a)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = __builtin_popcountll(regs[%d]);\n", valueID, a))
 		case opcodes.GetLocal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkLocal(id)
 
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = locals[%d];\n", valueID, id)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = locals[%d];\n", valueID, id))
 		case opcodes.SetLocal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkLocal(id)
@@ -427,13 +429,13 @@ case 0:
 			c.checkReg(val)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("locals[%d] = regs[%d];\n", id, val)
+			c.program.WriteString(fmt.Sprintf("locals[%d] = regs[%d];\n", id, val))
 		case opcodes.GetGlobal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkGlobal(id)
 
 			c.ip += 4
-			c.program += fmt.Sprintf("regs[%d] = globals[%d];\n", valueID, id)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = globals[%d];\n", valueID, id))
 		case opcodes.SetGlobal:
 			id := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.checkGlobal(id)
@@ -442,7 +444,7 @@ case 0:
 			c.checkReg(val)
 
 			c.ip += 8
-			c.program += fmt.Sprintf("globals[%d] = regs[%d];\n", id, val)
+			c.program.WriteString(fmt.Sprintf("globals[%d] = regs[%d];\n", id, val))
 		case opcodes.I32Load:
 			c.writeMemoryLoad(valueID, "u32")
 		case opcodes.I64Load:
@@ -486,8 +488,8 @@ case 0:
 			c.checkReg(yieldReg)
 			c.ip += 8
 
-			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
-			c.program += fmt.Sprintf("goto I%d;\n", target)
+			c.program.WriteString(fmt.Sprintf("*yielded = regs[%d];\n", yieldReg))
+			c.program.WriteString(fmt.Sprintf("goto I%d;\n", target))
 		case opcodes.JmpIf:
 			target := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 
@@ -499,10 +501,10 @@ case 0:
 
 			c.ip += 12
 
-			c.program += fmt.Sprintf("if(regs[%d]) {\n", cond)
-			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
-			c.program += fmt.Sprintf("goto I%d;\n", target)
-			c.program += "}\n"
+			c.program.WriteString(fmt.Sprintf("if(regs[%d]) {\n", cond))
+			c.program.WriteString(fmt.Sprintf("*yielded = regs[%d];\n", yieldReg))
+			c.program.WriteString(fmt.Sprintf("goto I%d;\n", target))
+			c.program.WriteString("}\n")
 		case opcodes.JmpTable:
 			targetCount := int(LE.Uint32(c.code.Bytes[c.ip : c.ip+4]))
 			c.ip += 4
@@ -521,14 +523,14 @@ case 0:
 			c.checkReg(yieldReg)
 			c.ip += 4
 
-			c.program += fmt.Sprintf("*yielded = regs[%d];\n", yieldReg)
-			c.program += fmt.Sprintf("switch(regs[%d]) {\n", condReg)
+			c.program.WriteString(fmt.Sprintf("*yielded = regs[%d];\n", yieldReg))
+			c.program.WriteString(fmt.Sprintf("switch(regs[%d]) {\n", condReg))
 			for i := 0; i < targetCount; i++ {
 				target := int(LE.Uint32(targetsRaw[i*4 : i*4+4]))
-				c.program += fmt.Sprintf("case %d: goto I%d;\n", i, target)
+				c.program.WriteString(fmt.Sprintf("case %d: goto I%d;\n", i, target))
 			}
-			c.program += fmt.Sprintf("default: goto I%d;\n", defaultTarget)
-			c.program += "}"
+			c.program.WriteString(fmt.Sprintf("default: goto I%d;\n", defaultTarget))
+			c.program.WriteString("}")
 		case opcodes.Phi:
 			fmt.Sprintf("regs[%d] = *yielded\n", valueID)
 		default:
@@ -537,18 +539,19 @@ case 0:
 		}
 	}
 
-	c.program += `
+	c.program.WriteString(`
 	break;
 	}
 	return -3; // invalid
 }
-	`
-	//fmt.Println(c.program)
-	c.code.JITInfo = CompileDynamicModule(c.program)
+	`)
+	program := c.program.String()
+	fmt.Println(program)
+	c.code.JITInfo = CompileDynamicModule(program)
 	return true
 }
 
-// Generate C code for the given function.
+// GenerateCodeForFunction generates C code for the given function.
 // Returns true if codegen succeeds, or false if the current function cannot be code-generated.
 func (vm *VirtualMachine) GenerateCodeForFunction(functionID int) bool {
 	code := &vm.FunctionCode[functionID]
