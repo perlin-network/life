@@ -532,7 +532,7 @@ case 0:
 			c.program.WriteString(fmt.Sprintf("default: goto I%d;\n", defaultTarget))
 			c.program.WriteString("}")
 		case opcodes.Phi:
-			fmt.Sprintf("regs[%d] = *yielded\n", valueID)
+			c.program.WriteString(fmt.Sprintf("regs[%d] = *yielded\n", valueID))
 		default:
 			fmt.Printf("unsupported op: %s\n", ins.String())
 			return false
