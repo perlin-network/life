@@ -43,7 +43,7 @@ python3 run_spec_tests.py /path/to/testsuite
 vgo build
 
 # run your wasm program
-./life < /path/to/your/wasm/program # entry point is `app_main` with no arguments by default
+./life /path/to/your/wasm/program.wasm # entry point is `app_main` with no arguments by default
 ```
 
 ## Executing WebAssembly Modules
