@@ -3,10 +3,10 @@ package exec
 import (
 	"bytes"
 	"encoding/binary"
-	//"fmt"
+	"io"
+
 	"github.com/go-interpreter/wagon/wasm/leb128"
 	ops "github.com/go-interpreter/wagon/wasm/operators"
-	"io"
 )
 
 // readU32 reads an unsigned 32-bit integer from a reader.
@@ -36,9 +36,10 @@ func execInitExpr(expr []byte, globals []int64) int64 {
 
 	for {
 		b, err := r.ReadByte()
-		if err == io.EOF {
+		switch err {
+		case io.EOF:
 			break
-		} else if err != nil {
+		default:
 			panic(err)
 		}
 		switch b {
