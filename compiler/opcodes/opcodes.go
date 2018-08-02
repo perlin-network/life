@@ -1,5 +1,10 @@
 package opcodes
 
+// To execute next command please install a `stringer` tool:
+// `go get -u golang.org/x/tools/cmd/stringer`
+
+//go:generate stringer -type=Opcode
+
 type Opcode byte
 
 const (
@@ -177,4 +182,6 @@ const (
 	GrowMemory
 
 	Phi
+
+	Unknown
 )
