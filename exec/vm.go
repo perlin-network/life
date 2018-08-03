@@ -3,16 +3,14 @@ package exec
 import (
 	"encoding/binary"
 	"fmt"
-
 	"math"
-
 	"math/bits"
-
-	"github.com/go-interpreter/wagon/wasm"
 
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
+
+	"github.com/go-interpreter/wagon/wasm"
 )
 
 // FunctionImport represents the function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.

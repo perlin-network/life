@@ -3,10 +3,10 @@ package exec
 import (
 	"bytes"
 	"encoding/binary"
-	//"fmt"
+	"io"
+
 	"github.com/go-interpreter/wagon/wasm/leb128"
 	ops "github.com/go-interpreter/wagon/wasm/operators"
-	"io"
 )
 
 // readU32 reads an unsigned 32-bit integer from a reader.
