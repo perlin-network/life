@@ -36,10 +36,9 @@ func execInitExpr(expr []byte, globals []int64) int64 {
 
 	for {
 		b, err := r.ReadByte()
-		switch err {
-		case io.EOF:
+		if err == io.EOF {
 			break
-		default:
+		} else if err != nil {
 			panic(err)
 		}
 		switch b {
