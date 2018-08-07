@@ -112,7 +112,7 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 	if m.Base.Import != nil {
 		for i := 0; i < len(m.Base.Import.Entries); i++ {
 			e := &m.Base.Import.Entries[i]
-			if e.Kind != wasm.ExternalFunction {
+			if e.Type.Kind() != wasm.ExternalFunction {
 				continue
 			}
 			tyID := e.Type.(wasm.FuncImport).Type

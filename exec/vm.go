@@ -110,7 +110,7 @@ func NewVirtualMachine(
 
 	if m.Base.Import != nil && impResolver != nil {
 		for _, imp := range m.Base.Import.Entries {
-			switch imp.Kind {
+			switch imp.Type.Kind() {
 			case wasm.ExternalFunction:
 				funcImports = append(funcImports, impResolver.ResolveFunc(imp.ModuleName, imp.FieldName))
 			case wasm.ExternalGlobal:
@@ -144,7 +144,7 @@ func NewVirtualMachine(
 					},
 				}
 			default:
-				panic(fmt.Errorf("import kind not supported: %d", imp.Kind))
+				panic(fmt.Errorf("import kind not supported: %d", imp.Type.Kind()))
 			}
 		}
 	}
