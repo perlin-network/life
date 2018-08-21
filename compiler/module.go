@@ -42,9 +42,9 @@ func LoadModule(raw []byte) (*Module, error) {
 
 	functionNames := make(map[int]string)
 
-	for _, sec := range m.Other {
+	for _, sec := range m.Customs {
 		if sec.Name == "name" {
-			r := bytes.NewReader(sec.Bytes)
+			r := bytes.NewReader(sec.RawSection.Bytes)
 			for {
 				ty, err := leb128.ReadVarUint32(r)
 				if err != nil || ty != 1 {
