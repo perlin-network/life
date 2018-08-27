@@ -7,6 +7,7 @@ import (
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
 	//"github.com/go-interpreter/wagon/validate"
+	"github.com/go-interpreter/wagon/wasm/leb128"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
 )
@@ -61,39 +62,39 @@ func LoadModule(raw []byte) (*Module, error) {
 				if n != len(data) {
 					panic("len mismatch")
 				}
-					{
-						r := bytes.NewReader(data)
-						for {
-							count, err := leb128.ReadVarUint32(r)
+				{
+					r := bytes.NewReader(data)
+					for {
+						count, err := leb128.ReadVarUint32(r)
+						if err != nil {
+							break
+						}
+						for i := 0; i < int(count); i++ {
+							index, err := leb128.ReadVarUint32(r)
 							if err != nil {
-								break
+								panic(err)
 							}
-							for i := 0; i < int(count); i++ {
-								index, err := leb128.ReadVarUint32(r)
-								if err != nil {
-									panic(err)
-								}
-								nameLen, err := leb128.ReadVarUint32(r)
-								if err != nil {
-									panic(err)
-								}
-								name := make([]byte, int(nameLen))
-								n, err := r.Read(name)
-								if err != nil {
-									panic(err)
-								}
-								if n != len(name) {
-									panic("len mismatch")
-								}
-								functionNames[int(index)] = string(name)
-								//fmt.Printf("%d -> %s\n", int(index), string(name))
+							nameLen, err := leb128.ReadVarUint32(r)
+							if err != nil {
+								panic(err)
 							}
+							name := make([]byte, int(nameLen))
+							n, err := r.Read(name)
+							if err != nil {
+								panic(err)
+							}
+							if n != len(name) {
+								panic("len mismatch")
+							}
+							functionNames[int(index)] = string(name)
+							//fmt.Printf("%d -> %s\n", int(index), string(name))
 						}
 					}
 				}
-				//fmt.Printf("%d function names written\n", len(functionNames))
 			}
+			//fmt.Printf("%d function names written\n", len(functionNames))
 		}
+	}
 
 	return &Module{
 		Base:          m,
