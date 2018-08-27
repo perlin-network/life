@@ -40,28 +40,27 @@ func LoadModule(raw []byte) (*Module, error) {
 	}*/
 
 	functionNames := make(map[int]string)
-	/*
-		for _, sec := range m.Other {
-			if sec.Name == "name" {
-				r := bytes.NewReader(sec.Bytes)
-				for {
-					ty, err := leb128.ReadVarUint32(r)
-					if err != nil || ty != 1 {
-						break
-					}
-					payloadLen, err := leb128.ReadVarUint32(r)
-					if err != nil {
-						panic(err)
-					}
-					data := make([]byte, int(payloadLen))
-					n, err := r.Read(data)
-					if err != nil {
-						panic(err)
-					}
-					if n != len(data) {
-						panic("len mismatch")
-					}
 
+	for _, sec := range m.Customs {
+		if sec.Name == "name" {
+			r := bytes.NewReader(sec.RawSection.Bytes)
+			for {
+				ty, err := leb128.ReadVarUint32(r)
+				if err != nil || ty != 1 {
+					break
+				}
+				payloadLen, err := leb128.ReadVarUint32(r)
+				if err != nil {
+					panic(err)
+				}
+				data := make([]byte, int(payloadLen))
+				n, err := r.Read(data)
+				if err != nil {
+					panic(err)
+				}
+				if n != len(data) {
+					panic("len mismatch")
+				}
 					{
 						r := bytes.NewReader(data)
 						for {
@@ -95,7 +94,6 @@ func LoadModule(raw []byte) (*Module, error) {
 				//fmt.Printf("%d function names written\n", len(functionNames))
 			}
 		}
-	*/
 
 	return &Module{
 		Base:          m,
