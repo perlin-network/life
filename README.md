@@ -27,20 +27,20 @@
 ## Getting Started
 
 ```bash
-# install vgo tooling
-go get -u golang.org/x/vgo
+# enable go modules: https://github.com/golang/go/wiki/Modules
+export GO111MODULE=on
 
 # download the dependencies to vendor folder
-vgo mod -vendor
+go mod vendor
 
 # build test suite runner
-vgo build github.com/perlin-network/life/spec/test_runner
+go build github.com/perlin-network/life/spec/test_runner
 
 # run official test suite
 python3 run_spec_tests.py /path/to/testsuite
 
 # build main program
-vgo build
+go build
 
 # run your wasm program
 ./life /path/to/your/wasm/program.wasm # entry point is `app_main` with no arguments by default
