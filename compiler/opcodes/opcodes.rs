@@ -1,7 +1,7 @@
 #[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Opcode {
-    Nop Opcode = 0,
+    Nop = 0,
     Unreachable = 1,
     Select = 2,
     I32Const = 3,

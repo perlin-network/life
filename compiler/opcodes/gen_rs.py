@@ -4,7 +4,7 @@ with open("opcodes.go") as f:
 
     out = "#[repr(u8)]\n#[derive(Copy, Clone, Eq, PartialEq)]\npub enum Opcode {\n"
     for i, line in enumerate(lines):
-        line = line.split("=")[0].strip()
+        line = line.strip().split(" ")[0]
         if len(line) > 0:
             out += "    {0} = {1},\n".format(line, i)
     out += "}\n"
