@@ -3,9 +3,11 @@ package compiler
 import (
 	"bytes"
 	"encoding/binary"
+
 	//"fmt"
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
+
 	//"github.com/go-interpreter/wagon/validate"
 	"github.com/go-interpreter/wagon/wasm/leb128"
 	"github.com/perlin-network/life/compiler/opcodes"
@@ -159,7 +161,24 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		//fmt.Println(compiler.Code)
 		//fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
-		//fmt.Println(compiler.Code)
+
+		liveness := compiler.NewLiveness(f.Body.Locals)
+
+		for _, instrIndex := range liveness.GetUnusedLocals() {
+			// Replace unused instructions by nop
+			compiler.Code[instrIndex] = Instr{
+				Op: "nop",
+			}
+		}
+
+		// TODO(sven): we could also remove the local, we need to change every
+		// local access
+
+		// for _, c := range compiler.Code {
+		// 	fmt.Printf("%s %d\n", c.Op, c.Immediates)
+		// }
+
+		// fmt.Println(compiler.Code)
 		numLocals := 0
 		for _, v := range f.Body.Locals {
 			numLocals += int(v.Count)

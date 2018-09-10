@@ -1,5 +1,9 @@
 package compiler
 
+import (
+	"fmt"
+)
+
 type CFGraph struct {
 	Blocks []BasicBlock
 }
@@ -19,6 +23,44 @@ const (
 	JmpTable
 	JmpReturn
 )
+
+func (cfg CFGraph) Dump() {
+	for blockID, block := range cfg.Blocks {
+
+		// code to string
+
+		var code string
+
+		for _, i := range block.Code {
+			code += i.Op + ", "
+		}
+
+		// kind to string
+
+		var kind string
+
+		switch block.JmpKind {
+		case JmpEither:
+			kind = "Either"
+		case JmpTable:
+			kind = "Table"
+		case JmpReturn:
+			kind = "Return"
+		default:
+			kind = "Goto"
+		}
+
+		// print
+
+		fmt.Printf(
+			"b%d: %s %s(%d)\n",
+			blockID,
+			code,
+			kind,
+			block.JmpTargets,
+		)
+	}
+}
 
 func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 	g := &CFGraph{}

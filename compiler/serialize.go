@@ -719,6 +719,9 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.GrowMemory)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
+		case "nop":
+			binary.Write(buf, binary.LittleEndian, opcodes.Nop)
+
 		default:
 			panic(ins.Op)
 		}

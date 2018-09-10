@@ -546,7 +546,6 @@ case 0:
 }
 	`)
 	program := c.program.String()
-	fmt.Println(program)
 	c.code.JITInfo = CompileDynamicModule(program)
 	return true
 }

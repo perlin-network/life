@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"strconv"
 
 	"math"
 
@@ -10,6 +11,10 @@ import (
 )
 
 type TyValueID uint64
+
+func (v TyValueID) String() string {
+	return strconv.Itoa(int(v))
+}
 
 // SSAFunctionCompiler represents a compiler which translates a WebAssembly modules
 // intepreted code into a Static-Single-Assignment-based intermediate representation.
