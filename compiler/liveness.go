@@ -16,7 +16,7 @@ import (
 )
 
 // Set relative complement: S' = A ∖ B
-func setdiff(a, b []TyValueID) []TyValueID {
+func setDiff(a, b []TyValueID) []TyValueID {
 	exclusion := make(map[TyValueID]bool)
 
 	for _, item := range b {
@@ -45,7 +45,7 @@ func isLocalSetAction(instr Instr) bool {
 }
 
 // Set union: S' = A ∪ B
-func union2(a, b []TyValueID) []TyValueID {
+func setUnion(a, b []TyValueID) []TyValueID {
 	m := make(map[TyValueID]bool)
 
 	for _, item := range a {
@@ -91,7 +91,7 @@ func phiUses(block BasicBlock) []TyValueID {
 }
 
 // Identifies a block
-type blockID = int
+type blockID int
 
 // Represents a BasicBlock in our Graph (a node)
 type livenessBasicBlock struct {
@@ -103,7 +103,7 @@ type livenessBasicBlock struct {
 type LivenessProcessor struct {
 	ssaFuncCompiler *SSAFunctionCompiler
 	locals          []TyValueID
-	nodes           map[int]*livenessBasicBlock
+	nodes           map[blockID]*livenessBasicBlock
 	liveIn          map[blockID][]TyValueID
 	unusedLocals    []TyValueID
 }
@@ -144,10 +144,10 @@ func (liveness *LivenessProcessor) visitBlock(node *livenessBasicBlock, parentBl
 	blockPhiUses := phiUses(block)
 
 	// UpwardExposed(B) = PhiUses(B) \ PhiDefs(B)
-	// upwardExposed := setdiff(blockPhiUses, blockPhiDefs)
+	// upwardExposed := setDiff(blockPhiUses, blockPhiDefs)
 
 	// Unused(B) = PhiDefs(B) \ PhiUses(B)
-	unused := setdiff(blockPhiDefs, blockPhiUses)
+	unused := setDiff(blockPhiDefs, blockPhiUses)
 
 	// if _, hasBeenProcessed := liveness.liveIn[node.id]; !hasBeenProcessed {
 	// 	fmt.Printf(
@@ -166,15 +166,15 @@ func (liveness *LivenessProcessor) visitBlock(node *livenessBasicBlock, parentBl
 
 	for _, target := range block.JmpTargets {
 		// S ∈ successor(B)
-		successor := liveness.nodes[target]
+		successor := liveness.nodes[blockID(target)]
 
 		if isLoopEdge(block, successor.block) == false {
 			liveInSuccessor := liveness.liveIn[successor.id]
 
 			// Live = Live ∪ (LiveIn(S) \ PhiDefs(S))
-			live = union2(
+			live = setUnion(
 				live,
-				setdiff(liveInSuccessor, liveness.phiDefs(successor.block)),
+				setDiff(liveInSuccessor, liveness.phiDefs(successor.block)),
 			)
 		}
 	}
@@ -183,10 +183,10 @@ func (liveness *LivenessProcessor) visitBlock(node *livenessBasicBlock, parentBl
 	// liveOut := live
 
 	// LiveIn(B) = Live ∪ PhiDefs(B)
-	liveIn := union2(live, blockPhiDefs)
+	liveIn := setUnion(live, blockPhiDefs)
 
 	if _, hasBeenProcessed := liveness.liveIn[node.id]; !hasBeenProcessed {
-		liveness.liveIn[node.id] = union2(liveness.liveIn[node.id], liveIn)
+		liveness.liveIn[node.id] = setUnion(liveness.liveIn[node.id], liveIn)
 	} else {
 		liveness.liveIn[node.id] = liveIn
 	}
@@ -205,13 +205,15 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	traversalStack := stack.New()
 
 	for index, block := range cfg.Blocks {
+		id := blockID(index)
+
 		b := &livenessBasicBlock{
-			id:      index,
+			id:      id,
 			block:   block,
 			visited: false,
 		}
 
-		nodes[index] = b
+		nodes[id] = b
 		traversalStack.Push(b)
 	}
 
@@ -219,11 +221,8 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 
 	for _, local := range funcLocals {
 		// TODO(sven): ignore type for now, doesn't impact the liveness analysis
-		i := uint32(0)
-		for i < local.Count {
+		for i := 0; i < int(local.Count); i++ {
 			locals = append(locals, TyValueID(i))
-
-			i++
 		}
 	}
 
@@ -243,7 +242,7 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 			node.visited = true
 
 			for _, target := range node.block.JmpTargets {
-				successor := livenessProcessor.nodes[target]
+				successor := livenessProcessor.nodes[blockID(target)]
 
 				if successor == nil {
 					panic("edge is pointing to an unknown node")
@@ -257,7 +256,7 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	}
 
 	for i := range cfg.Blocks {
-		livenessProcessor.visitBlock(nodes[i], nil)
+		livenessProcessor.visitBlock(nodes[blockID(i)], nil)
 	}
 
 	return livenessProcessor
