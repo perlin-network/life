@@ -115,12 +115,43 @@ func (liveness *LivenessProcessor) GetUnusedLocals() []int {
 		unusedLocals[local] = true
 	}
 
-	for i, c := range liveness.ssaFuncCompiler.Code {
+	// used to track provenance upwards of the value
+	followTargets := make(map[TyValueID]bool)
+
+	/*
+		While from bottom up the instructions and do:
+
+		Let C be an instruction
+
+		If LocalSetAction(C)
+			Eliminate the instruction
+			Track the provenance in the Values
+
+		If C Target ∈ FollowTargets
+			Eliminate the instruction
+			Track the provenance in the Values
+
+	*/
+	for i := len(liveness.ssaFuncCompiler.Code) - 1; i >= 0; i-- {
+		c := liveness.ssaFuncCompiler.Code[i]
+
+		if _, doFollow := followTargets[c.Target]; doFollow {
+			delete(followTargets, c.Target)
+
+			deadInstrIndices = append(deadInstrIndices, i)
+
+			// next targets
+			for _, next := range c.Values {
+				followTargets[next] = true
+			}
+		}
+
 		if isLocalSetAction(c) {
 			index := TyValueID(c.Immediates[0])
 
 			if _, useUnusedLocal := unusedLocals[index]; useUnusedLocal {
 				deadInstrIndices = append(deadInstrIndices, i)
+				followTargets[c.Values[0]] = true
 			}
 		}
 	}
