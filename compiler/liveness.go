@@ -163,7 +163,7 @@ func (liveness *LivenessProcessor) GetUnusedLocals() []int {
 }
 
 // BasicBlock visitor
-func (liveness *LivenessProcessor) visitBlock(node *livenessBasicBlock, parentBlock *livenessBasicBlock) {
+func (liveness *LivenessProcessor) visitBlock(node *livenessBasicBlock) {
 	block := node.block
 
 	if len(block.Code) == 0 {
@@ -235,18 +235,50 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	// fmt.Printf("\n------- liveness ----\n")
 
 	nodes := make(map[blockID]*livenessBasicBlock)
+
 	traversalStack := NewLivenessTraversalStack()
+	nextTraversalStack := NewLivenessTraversalStack()
 
-	for index, block := range cfg.Blocks {
-		id := blockID(index)
+	id := 0
 
+	for _, block := range cfg.Blocks {
 		b := &livenessBasicBlock{
-			id:      id,
+			id:      blockID(id),
 			block:   block,
 			visited: false,
 		}
 
-		nodes[id] = b
+		traversalStack.Push(b)
+		nodes[blockID(id)] = b
+
+		id++
+
+		for traversalStack.Len() > 0 {
+			node := traversalStack.Pop()
+
+			if node.visited == true {
+				continue
+			}
+
+			nextTraversalStack.Push(node)
+			node.visited = true
+
+			for _, edge := range node.block.JmpTargets {
+				nextBlock := cfg.Blocks[blockID(edge)]
+
+				b := &livenessBasicBlock{
+					id:      blockID(id),
+					block:   nextBlock,
+					visited: false,
+				}
+
+				nextTraversalStack.Push(b)
+				nodes[blockID(id)] = b
+
+				id++
+			}
+		}
+
 		traversalStack.Push(b)
 	}
 
@@ -267,29 +299,9 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	}
 
 	// DFS
-
-	for traversalStack.Len() > 0 {
-		node := traversalStack.Pop()
-
-		if node.visited == false {
-			node.visited = true
-
-			for _, target := range node.block.JmpTargets {
-				successor := livenessProcessor.nodes[blockID(target)]
-
-				if successor == nil {
-					panic("edge is pointing to an unknown node")
-				}
-
-				if successor.visited == false {
-					livenessProcessor.visitBlock(successor, node)
-				}
-			}
-		}
-	}
-
-	for i := range cfg.Blocks {
-		livenessProcessor.visitBlock(nodes[blockID(i)], nil)
+	for nextTraversalStack.Len() > 0 {
+		node := nextTraversalStack.Pop()
+		livenessProcessor.visitBlock(node)
 	}
 
 	return livenessProcessor
