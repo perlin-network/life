@@ -12,7 +12,6 @@ package compiler
 
 import (
 	"github.com/go-interpreter/wagon/wasm"
-	"github.com/golang-collections/collections/stack"
 )
 
 // Set relative complement: S' = A ∖ B
@@ -202,7 +201,7 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	// fmt.Printf("\n------- liveness ----\n")
 
 	nodes := make(map[blockID]*livenessBasicBlock)
-	traversalStack := stack.New()
+	traversalStack := NewLivenessTraversalStack()
 
 	for index, block := range cfg.Blocks {
 		id := blockID(index)
@@ -236,7 +235,7 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 	// DFS
 
 	for traversalStack.Len() > 0 {
-		node, _ := traversalStack.Pop().(*livenessBasicBlock)
+		node := traversalStack.Pop()
 
 		if node.visited == false {
 			node.visited = true
