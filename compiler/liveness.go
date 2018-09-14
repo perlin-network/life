@@ -131,6 +131,9 @@ func (liveness *LivenessProcessor) GetUnusedLocals() []int {
 			Eliminate the instruction
 			Track the provenance in the Values
 
+		TODO(sven): wrong code will be generated for tee_local, we
+		need to ensure that the instruction's Target ∉ LiveIn(B)
+
 	*/
 	for i := len(liveness.ssaFuncCompiler.Code) - 1; i >= 0; i-- {
 		c := liveness.ssaFuncCompiler.Code[i]
