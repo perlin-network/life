@@ -59,6 +59,9 @@ type VMConfig struct {
 	MaxCallStackDepth  int
 	DefaultMemoryPages int
 	DefaultTableSize   int
+
+	// debug flags
+	DebugCompiledIR bool
 }
 
 // Frame represents a call frame.
@@ -97,7 +100,7 @@ func NewVirtualMachine(
 		return nil, err
 	}
 
-	functionCode, err := m.CompileForInterpreter()
+	functionCode, err := m.CompileForInterpreter(config.DebugCompiledIR)
 	if err != nil {
 		return nil, err
 	}

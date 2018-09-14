@@ -3,6 +3,8 @@ package compiler
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"os"
 
 	//"fmt"
 	"github.com/go-interpreter/wagon/disasm"
@@ -104,7 +106,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr error) {
+func (m *Module) CompileForInterpreter(debugCompiledIR bool) (_retCode []InterpreterCode, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
 	ret := make([]InterpreterCode, 0)
@@ -174,11 +176,12 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		// TODO(sven): we could also remove the local, we need to change every
 		// local access
 
-		// for _, c := range compiler.Code {
-		// 	fmt.Printf("%s %d\n", c.Op, c.Immediates)
-		// }
+		if debugCompiledIR {
+			for _, c := range compiler.Code {
+				fmt.Fprintf(os.Stderr, "%s %d\n", c.Op, c.Immediates)
+			}
+		}
 
-		// fmt.Println(compiler.Code)
 		numLocals := 0
 		for _, v := range f.Body.Locals {
 			numLocals += int(v.Count)

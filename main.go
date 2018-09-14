@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"time"
+
+	"github.com/perlin-network/life/exec"
 )
 
 // Resolver defines imports for WebAssembly modules ran in Life.
@@ -59,6 +60,8 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
 	jitFlag := flag.Bool("jit", false, "enable jit")
+	debugCompiledIRFlag := flag.Bool("debug-compiled-ir", false, "print compiled IR")
+
 	flag.Parse()
 
 	// Read WebAssembly *.wasm file.
@@ -72,6 +75,9 @@ func main() {
 		EnableJIT:          *jitFlag,
 		DefaultMemoryPages: 128,
 		DefaultTableSize:   65536,
+
+		// debug flags
+		DebugCompiledIR: *debugCompiledIRFlag,
 	}, new(Resolver))
 
 	if err != nil {
