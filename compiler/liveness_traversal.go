@@ -4,6 +4,16 @@
 // MIT see licence https://github.com/golang-collections/collections/blob/master/LICENSE
 package compiler
 
+// Identifies a block
+type blockID int
+
+// Represents a BasicBlock in our Graph (a node)
+type livenessBasicBlock struct {
+	id      blockID
+	block   BasicBlock
+	visited bool
+}
+
 type (
 	livenessTraversalStack struct {
 		top    *node

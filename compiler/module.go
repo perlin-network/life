@@ -166,7 +166,7 @@ func (m *Module) CompileForInterpreter(debugCompiledIR bool) (_retCode []Interpr
 
 		liveness := compiler.NewLiveness(f.Body.Locals)
 
-		for _, instrIndex := range liveness.GetUnusedLocals() {
+		for _, instrIndex := range liveness.Local().GetUnused() {
 			// Replace unused instructions by nop
 			compiler.Code[instrIndex] = Instr{
 				Op: "nop",
