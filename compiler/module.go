@@ -162,7 +162,9 @@ func (m *Module) CompileForInterpreter(debugCompiledIR bool) (_retCode []Interpr
 		compiler.Compile(importTypeIDs)
 		//fmt.Println(compiler.Code)
 		//fmt.Printf("%+v\n", compiler.NewCFGraph())
-		numRegs := compiler.RegAlloc()
+
+		// allocate registers
+		compiler.RegAlloc()
 
 		liveness := compiler.NewLiveness(f.Body.Locals)
 
@@ -173,12 +175,14 @@ func (m *Module) CompileForInterpreter(debugCompiledIR bool) (_retCode []Interpr
 			}
 		}
 
+		numRegs := liveness.Value().GetNumberOfReg()
+
 		// TODO(sven): we could also remove the local, we need to change every
 		// local access
 
 		if debugCompiledIR {
 			for _, c := range compiler.Code {
-				fmt.Fprintf(os.Stderr, "%s %d\n", c.Op, c.Immediates)
+				fmt.Fprintf(os.Stderr, "%d <- %s %d\n", c.Target, c.Op, c.Immediates)
 			}
 		}
 

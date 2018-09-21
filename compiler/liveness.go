@@ -69,6 +69,7 @@ type Liveness struct {
 	nodes map[blockID]*livenessBasicBlock
 
 	localResolver *livenessLocalResolver
+	valueResolver *livenessValueResolver
 }
 
 // Process the liveness ranges
@@ -128,6 +129,7 @@ func (c *SSAFunctionCompiler) NewLiveness(funcLocals []wasm.LocalEntry) *Livenes
 		nodes: nodes,
 
 		localResolver: newLivenessLocalResolver(nodes, c, funcLocals),
+		valueResolver: newLivenessValueResolver(nodes, c),
 	}
 
 	// DFS
@@ -144,6 +146,11 @@ func (liveness *Liveness) Local() *livenessLocalResolver {
 	return liveness.localResolver
 }
 
+// Get Value resolver
+func (liveness *Liveness) Value() *livenessValueResolver {
+	return liveness.valueResolver
+}
+
 // BasicBlock visitor
 func (liveness *Liveness) visitBlock(node *livenessBasicBlock) {
 	block := node.block
@@ -152,23 +159,29 @@ func (liveness *Liveness) visitBlock(node *livenessBasicBlock) {
 		return
 	}
 
-	var live []TyValueID
+	blockLocalPhiDefs := liveness.localResolver.phiDefs(block)
+	blockLocalPhiUses := liveness.localResolver.phiUses(block)
 
-	blockPhiDefs := liveness.localResolver.phiDefs(block)
-	blockPhiUses := liveness.localResolver.phiUses(block)
+	localLive := blockLocalPhiUses
 
-	live = blockPhiUses
+	blockValuePhiDefs := liveness.valueResolver.phiDefs(block)
+	blockValuePhiUses := liveness.valueResolver.phiUses(block)
+
+	valueLive := blockValuePhiUses
 
 	// UpwardExposed(B) = PhiUses(B) \ PhiDefs(B)
-	// upwardExposed := setDiff(blockPhiUses, blockPhiDefs)
+	// upwardExposed := setDiff(blockLocalPhiUses, blockLocalPhiDefs)
 
-	// Unused(B) = PhiDefs(B) \ PhiUses(B)
-	unused := setDiff(blockPhiDefs, blockPhiUses)
+	/*
+		Unused(B) = PhiDefs(B) \ PhiUses(B)
+	*/
+	localUnused := setDiff(blockLocalPhiDefs, blockLocalPhiUses)
+	// ValueUnused := setDiff(blockValuePhiDefs, blockValuePhiUses)
 
 	// if !liveness.localResolver.hasLiveIn(node.id) {
 	// 	fmt.Printf(
 	// 		"------ %d \nPhiUses(B) = %s, PhiDefs(B) = %s, UpwardExposed(B) = %s, Unused(B) = %s\n",
-	// 		node.id, phiUses(block), blockPhiDefs, upwardExposed, unused,
+	// 		node.id, phiUses(block), blockLocalPhiDefs, upwardExposed, unused,
 	// 	)
 
 	// 	for _, c := range block.Code {
@@ -183,12 +196,20 @@ func (liveness *Liveness) visitBlock(node *livenessBasicBlock) {
 		successor := liveness.nodes[blockID(target)]
 
 		if isLoopEdge(block, successor.block) == false {
-			liveInSuccessor := liveness.localResolver.getLiveIn(successor.id)
+			localLiveInSuccessor := liveness.localResolver.getLiveIn(successor.id)
+			valueLiveInSuccessor := liveness.valueResolver.getLiveIn(successor.id)
 
-			// Live = Live ∪ (LiveIn(S) \ PhiDefs(S))
-			live = setUnion(
-				live,
-				setDiff(liveInSuccessor, liveness.localResolver.phiDefs(successor.block)),
+			/*
+				Live = Live ∪ (LiveIn(S) \ PhiDefs(S))
+			*/
+			localLive = setUnion(
+				localLive,
+				setDiff(localLiveInSuccessor, liveness.localResolver.phiDefs(successor.block)),
+			)
+
+			valueLive = setUnion(
+				localLive,
+				setDiff(valueLiveInSuccessor, liveness.valueResolver.phiDefs(successor.block)),
 			)
 		}
 	}
@@ -196,14 +217,27 @@ func (liveness *Liveness) visitBlock(node *livenessBasicBlock) {
 	// LiveOut(B) = Live
 	// liveOut := live
 
-	// LiveIn(B) = Live ∪ PhiDefs(B)
-	liveIn := setUnion(live, blockPhiDefs)
+	/*
+		LiveIn(B) = Live ∪ PhiDefs(B)
+	*/
+	// for locals
+	localLiveIn := setUnion(localLive, blockLocalPhiDefs)
 
 	if liveness.localResolver.hasLiveIn(node.id) {
-		liveness.localResolver.setLiveIn(node.id, setUnion(liveness.localResolver.getLiveIn(node.id), liveIn))
+		liveness.localResolver.setLiveIn(node.id, setUnion(liveness.localResolver.getLiveIn(node.id), localLiveIn))
 	} else {
-		liveness.localResolver.setLiveIn(node.id, liveIn)
+		liveness.localResolver.setLiveIn(node.id, localLiveIn)
 	}
 
-	liveness.localResolver.unusedLocals = unused
+	liveness.localResolver.unusedLocals = localUnused
+
+	// for values
+	// register needed: LiveIn(B) \ Unused(B)
+	valueLiveIn := setUnion(valueLive, blockValuePhiDefs)
+
+	if liveness.valueResolver.hasLiveIn(node.id) {
+		liveness.valueResolver.setLiveIn(node.id, setUnion(liveness.valueResolver.getLiveIn(node.id), valueLiveIn))
+	} else {
+		liveness.valueResolver.setLiveIn(node.id, valueLiveIn)
+	}
 }

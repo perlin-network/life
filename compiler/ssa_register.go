@@ -2,8 +2,7 @@ package compiler
 
 // FIXME: The current RegAlloc is based on wasm stack info and we probably
 // want a real one (in addition to this) with liveness analysis.
-// Returns the total number of registers used.
-func (c *SSAFunctionCompiler) RegAlloc() int {
+func (c *SSAFunctionCompiler) RegAlloc() {
 	regID := TyValueID(1)
 	valueRelocs := make(map[TyValueID]TyValueID)
 	for _, values := range c.StackValueSets {
@@ -33,6 +32,4 @@ func (c *SSAFunctionCompiler) RegAlloc() int {
 			}
 		}
 	}
-
-	return int(regID)
 }
