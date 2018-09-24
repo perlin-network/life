@@ -659,6 +659,16 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
+		case "jmp_either":
+			binary.Write(buf, binary.LittleEndian, opcodes.JmpEither)
+
+			reloc32Targets = append(reloc32Targets, buf.Len())
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[0]))
+			reloc32Targets = append(reloc32Targets, buf.Len())
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Immediates[1]))
+
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[1]))
 		case "jmp_table":
 			binary.Write(buf, binary.LittleEndian, opcodes.JmpTable)
 			binary.Write(buf, binary.LittleEndian, uint32(len(ins.Immediates)-1))
@@ -718,6 +728,10 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 		case "grow_memory":
 			binary.Write(buf, binary.LittleEndian, opcodes.GrowMemory)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
+
+		case "add_gas":
+			binary.Write(buf, binary.LittleEndian, opcodes.AddGas)
+			binary.Write(buf, binary.LittleEndian, uint64(ins.Immediates[0]))
 
 		default:
 			panic(ins.Op)

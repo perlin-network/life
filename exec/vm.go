@@ -48,6 +48,7 @@ type VirtualMachine struct {
 	Exited          bool
 	ExitError       interface{}
 	ReturnValue     int64
+	Gas             uint64
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -59,6 +60,7 @@ type VMConfig struct {
 	MaxCallStackDepth  int
 	DefaultMemoryPages int
 	DefaultTableSize   int
+	GasLimit           uint64
 }
 
 // Frame represents a call frame.
@@ -87,6 +89,7 @@ func NewVirtualMachine(
 	code []byte,
 	config VMConfig,
 	impResolver ImportResolver,
+	gasPolicy compiler.GasPolicy,
 ) (_retVM *VirtualMachine, retErr error) {
 	if config.EnableJIT {
 		fmt.Println("Warning: JIT support is incomplete and the internals are likely to change in the future.")
@@ -97,7 +100,7 @@ func NewVirtualMachine(
 		return nil, err
 	}
 
-	functionCode, err := m.CompileForInterpreter()
+	functionCode, err := m.CompileForInterpreter(gasPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -331,6 +334,17 @@ func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	copy(frame.Locals, params)
 }
 
+func (vm *VirtualMachine) AddAndCheckGas(delta uint64) {
+	newGas := vm.Gas + delta
+	if newGas < vm.Gas {
+		panic("gas overflow")
+	}
+	if vm.Config.GasLimit != 0 && newGas > vm.Config.GasLimit {
+		panic("gas limit exceeded")
+	}
+	vm.Gas = newGas
+}
+
 // Execute starts the virtual machines main instruction processing loop.
 // This function may return at any point and is guaranteed to return
 // at least once every 10000 instructions. Caller is responsible for
@@ -359,14 +373,7 @@ func (vm *VirtualMachine) Execute() {
 
 	frame := vm.GetCurrentFrame()
 
-	cycleCount := 0
-
 	for {
-		if cycleCount == 10000 {
-			return
-		}
-		cycleCount++
-
 		if frame.JITInfo != nil {
 			dm := frame.JITInfo.(*DynamicModule)
 			var fRetVal int64
@@ -1281,6 +1288,19 @@ func (vm *VirtualMachine) Execute() {
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			vm.Yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			frame.IP = target
+		case opcodes.JmpEither:
+			targetA := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
+			targetB := int(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
+			cond := int(LE.Uint32(frame.Code[frame.IP+8 : frame.IP+12]))
+			yieldedReg := int(LE.Uint32(frame.Code[frame.IP+12 : frame.IP+16]))
+			frame.IP += 16
+
+			vm.Yielded = frame.Regs[yieldedReg]
+			if frame.Regs[cond] != 0 {
+				frame.IP = targetA
+			} else {
+				frame.IP = targetB
+			}
 		case opcodes.JmpIf:
 			target := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			cond := int(LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8]))
@@ -1430,6 +1450,11 @@ func (vm *VirtualMachine) Execute() {
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = vm.Yielded
+
+		case opcodes.AddGas:
+			delta := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
+			frame.IP += 8
+			vm.AddAndCheckGas(delta)
 		default:
 			panic("unknown instruction")
 		}
