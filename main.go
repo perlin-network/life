@@ -72,7 +72,7 @@ func main() {
 		EnableJIT:          *jitFlag,
 		DefaultMemoryPages: 128,
 		DefaultTableSize:   65536,
-	}, new(Resolver))
+	}, new(Resolver), nil)
 
 	if err != nil {
 		panic(err)
