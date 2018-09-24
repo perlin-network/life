@@ -102,7 +102,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr error) {
+func (m *Module) CompileForInterpreter(gp GasPolicy) (_retCode []InterpreterCode, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
 	ret := make([]InterpreterCode, 0)
@@ -156,6 +156,9 @@ func (m *Module) CompileForInterpreter() (_retCode []InterpreterCode, retErr err
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.CallIndexOffset = numFuncImports
 		compiler.Compile(importTypeIDs)
+		if gp != nil {
+			compiler.InsertGasCounters(gp)
+		}
 		//fmt.Println(compiler.Code)
 		//fmt.Printf("%+v\n", compiler.NewCFGraph())
 		numRegs := compiler.RegAlloc()
