@@ -164,6 +164,7 @@ const (
 
 	Jmp
 	JmpIf
+	JmpEither
 	JmpTable
 	ReturnValue
 	ReturnVoid
@@ -182,6 +183,8 @@ const (
 	GrowMemory
 
 	Phi
+
+	AddGas
 
 	Unknown
 )
