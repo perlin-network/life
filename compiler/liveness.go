@@ -61,7 +61,10 @@ func setUnion(a, b []TyValueID) []TyValueID {
 }
 
 func isLoopEdge(parentBlock BasicBlock, block BasicBlock) bool {
-	// FIXME(sven): implement this
+	/*
+		WebAssembly's loops are just a block and a jmp, for our use-case
+		we don't need to implement this, since the CFG already handles it.
+	*/
 	return false
 }
 
