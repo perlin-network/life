@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"os"
@@ -92,9 +93,12 @@ func (c *Config) Run(cfgPath string) error {
 				panic(err)
 			}
 			localVM, err := exec.NewVirtualMachine(input, exec.VMConfig{
-				EnableJIT:      true,
+				//EnableJIT:      true,
 				MaxMemoryPages: 1024, // for memory trap tests
-			}, &Resolver{})
+				GasLimit:       0,    // unlimited
+			}, &Resolver{}, &compiler.SimpleGasPolicy{
+				GasPerInstruction: 1,
+			})
 			if err != nil {
 				panic(err)
 			}

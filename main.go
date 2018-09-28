@@ -78,7 +78,7 @@ func main() {
 
 		// debug flags
 		DebugCompiledIR: *debugCompiledIRFlag,
-	}, new(Resolver))
+	}, new(Resolver), nil)
 
 	if err != nil {
 		panic(err)
