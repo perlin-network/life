@@ -67,5 +67,6 @@ func (liveness *livenessValueResolver) GetNumberOfReg() int {
 		totalLiveValue = setUnion(totalLiveValue, blockLiveness)
 	}
 
-	return len(totalLiveValue)
+	// add one since register start at one, zero being null
+	return len(totalLiveValue) + 1
 }
