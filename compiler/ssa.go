@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
+	"strings"
 )
 
 type TyValueID uint64
@@ -123,6 +124,18 @@ func (c *SSAFunctionCompiler) FixupLocationRef(loc *Location, wasUnreachable boo
 		retID := c.NextValueID()
 		c.Code = append(c.Code, buildInstr(retID, "phi", nil, nil))
 		c.PushStack(retID)
+	}
+}
+
+func (c *SSAFunctionCompiler) FilterFloatingPoint() {
+	for i, ins := range c.Code {
+		if strings.HasPrefix(ins.Op, "f32.") || strings.HasPrefix(ins.Op, "f64.") ||
+			strings.HasSuffix(ins.Op, "/f32") || strings.HasSuffix(ins.Op, "/f64") {
+			if strings.Contains(ins.Op, ".reinterpret/") || strings.HasSuffix(ins.Op, ".const") {
+				continue // whitelist
+			}
+			c.Code[i] = buildInstr(0, "fp_disabled_error", nil, nil)
+		}
 	}
 }
 
