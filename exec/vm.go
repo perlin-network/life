@@ -67,7 +67,6 @@ type VMConfig struct {
 type Frame struct {
 	FunctionID   int
 	Code         []byte
-	JITInfo      interface{}
 	Regs         []int64
 	Locals       []int64
 	IP           int
@@ -92,7 +91,7 @@ func NewVirtualMachine(
 	gasPolicy compiler.GasPolicy,
 ) (_retVM *VirtualMachine, retErr error) {
 	if config.EnableJIT {
-		fmt.Println("Warning: JIT support is incomplete and the internals are likely to change in the future.")
+		fmt.Println("Warning: JIT support is removed.")
 	}
 
 	m, err := compiler.LoadModule(code)
@@ -233,20 +232,6 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	f.Continuation = 0
 
 	//fmt.Printf("Enter function %d (%s)\n", functionID, vm.Module.FunctionNames[functionID])
-	if vm.Config.EnableJIT {
-		code := &vm.FunctionCode[functionID]
-		if !code.JITDone {
-			if len(code.Bytes) > JITCodeSizeThreshold {
-				if !vm.GenerateCodeForFunction(functionID) {
-					fmt.Printf("codegen for function %d failed\n", functionID)
-				} else {
-					fmt.Printf("codegen for function %d succeeded\n", functionID)
-				}
-			}
-			code.JITDone = true
-		}
-		f.JITInfo = code.JITInfo
-	}
 }
 
 // Destroy destroys a frame. Must be called on return.
@@ -374,18 +359,6 @@ func (vm *VirtualMachine) Execute() {
 	frame := vm.GetCurrentFrame()
 
 	for {
-		if frame.JITInfo != nil {
-			dm := frame.JITInfo.(*DynamicModule)
-			var fRetVal int64
-			status := dm.Run(vm, &fRetVal)
-			if status < 0 {
-				panic(fmt.Errorf("status = %d", status))
-			}
-			//fmt.Printf("JIT: continuation = %d, ip = %d\n", status, int(fRetVal))
-			frame.Continuation = status
-			frame.IP = int(fRetVal)
-		}
-
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
 		frame.IP += 5
