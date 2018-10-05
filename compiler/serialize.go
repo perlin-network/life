@@ -733,6 +733,9 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 			binary.Write(buf, binary.LittleEndian, opcodes.AddGas)
 			binary.Write(buf, binary.LittleEndian, uint64(ins.Immediates[0]))
 
+		case "fp_disabled_error":
+			binary.Write(buf, binary.LittleEndian, opcodes.FPDisabledError)
+
 		default:
 			panic(ins.Op)
 		}

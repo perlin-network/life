@@ -13,8 +13,9 @@ import (
 )
 
 type Module struct {
-	Base          *wasm.Module
-	FunctionNames map[int]string
+	Base                 *wasm.Module
+	FunctionNames        map[int]string
+	DisableFloatingPoint bool
 }
 
 type InterpreterCode struct {
@@ -156,6 +157,9 @@ func (m *Module) CompileForInterpreter(gp GasPolicy) (_retCode []InterpreterCode
 		compiler := NewSSAFunctionCompiler(m.Base, d)
 		compiler.CallIndexOffset = numFuncImports
 		compiler.Compile(importTypeIDs)
+		if m.DisableFloatingPoint {
+			compiler.FilterFloatingPoint()
+		}
 		if gp != nil {
 			compiler.InsertGasCounters(gp)
 		}

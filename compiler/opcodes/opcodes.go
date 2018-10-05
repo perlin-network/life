@@ -186,5 +186,7 @@ const (
 
 	AddGas
 
+	FPDisabledError
+
 	Unknown
 )

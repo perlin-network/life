@@ -161,5 +161,6 @@ pub enum Opcode {
     GrowMemory = 172,
     Phi = 174,
     AddGas = 176,
-    Unknown = 178,
+    FPDisabledError = 178,
+    Unknown = 180,
 }
