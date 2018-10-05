@@ -53,14 +53,15 @@ type VirtualMachine struct {
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
 type VMConfig struct {
-	EnableJIT          bool
-	MaxMemoryPages     int
-	MaxTableSize       int
-	MaxValueSlots      int
-	MaxCallStackDepth  int
-	DefaultMemoryPages int
-	DefaultTableSize   int
-	GasLimit           uint64
+	EnableJIT            bool
+	MaxMemoryPages       int
+	MaxTableSize         int
+	MaxValueSlots        int
+	MaxCallStackDepth    int
+	DefaultMemoryPages   int
+	DefaultTableSize     int
+	GasLimit             uint64
+	DisableFloatingPoint bool
 }
 
 // Frame represents a call frame.
@@ -98,6 +99,8 @@ func NewVirtualMachine(
 	if err != nil {
 		return nil, err
 	}
+
+	m.DisableFloatingPoint = config.DisableFloatingPoint
 
 	functionCode, err := m.CompileForInterpreter(gasPolicy)
 	if err != nil {
@@ -1428,6 +1431,10 @@ func (vm *VirtualMachine) Execute() {
 			delta := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
 			frame.IP += 8
 			vm.AddAndCheckGas(delta)
+
+		case opcodes.FPDisabledError:
+			panic("wasm: floating point disabled")
+
 		default:
 			panic("unknown instruction")
 		}
