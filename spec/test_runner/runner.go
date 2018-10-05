@@ -94,8 +94,9 @@ func (c *Config) Run(cfgPath string) error {
 			}
 			localVM, err := exec.NewVirtualMachine(input, exec.VMConfig{
 				//EnableJIT:      true,
-				MaxMemoryPages: 1024, // for memory trap tests
-				GasLimit:       0,    // unlimited
+				MaxMemoryPages:       1024, // for memory trap tests
+				GasLimit:             0,    // unlimited
+				DisableFloatingPoint: false,
 			}, &Resolver{}, &compiler.SimpleGasPolicy{
 				GasPerInstruction: 1,
 			})
