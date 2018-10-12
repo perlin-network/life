@@ -32,36 +32,38 @@ var LE = binary.LittleEndian
 
 // VirtualMachine is a WebAssembly execution environment.
 type VirtualMachine struct {
-	Config          VMConfig
-	Module          *compiler.Module
-	FunctionCode    []compiler.InterpreterCode
-	FunctionImports []FunctionImport
-	CallStack       []Frame
-	CurrentFrame    int
-	Table           []uint32
-	Globals         []int64
-	Memory          []byte
-	NumValueSlots   int
-	Yielded         int64
-	InsideExecute   bool
-	Delegate        func()
-	Exited          bool
-	ExitError       interface{}
-	ReturnValue     int64
-	Gas             uint64
+	Config           VMConfig
+	Module           *compiler.Module
+	FunctionCode     []compiler.InterpreterCode
+	FunctionImports  []FunctionImport
+	CallStack        []Frame
+	CurrentFrame     int
+	Table            []uint32
+	Globals          []int64
+	Memory           []byte
+	NumValueSlots    int
+	Yielded          int64
+	InsideExecute    bool
+	Delegate         func()
+	Exited           bool
+	ExitError        interface{}
+	ReturnValue      int64
+	Gas              uint64
+	GasLimitExceeded bool
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
 type VMConfig struct {
-	EnableJIT            bool
-	MaxMemoryPages       int
-	MaxTableSize         int
-	MaxValueSlots        int
-	MaxCallStackDepth    int
-	DefaultMemoryPages   int
-	DefaultTableSize     int
-	GasLimit             uint64
-	DisableFloatingPoint bool
+	EnableJIT                bool
+	MaxMemoryPages           int
+	MaxTableSize             int
+	MaxValueSlots            int
+	MaxCallStackDepth        int
+	DefaultMemoryPages       int
+	DefaultTableSize         int
+	GasLimit                 uint64
+	DisableFloatingPoint     bool
+	ReturnOnGasLimitExceeded bool
 }
 
 // Frame represents a call frame.
@@ -322,15 +324,20 @@ func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	copy(frame.Locals, params)
 }
 
-func (vm *VirtualMachine) AddAndCheckGas(delta uint64) {
+func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 	newGas := vm.Gas + delta
 	if newGas < vm.Gas {
 		panic("gas overflow")
 	}
 	if vm.Config.GasLimit != 0 && newGas > vm.Config.GasLimit {
-		panic("gas limit exceeded")
+		if vm.Config.ReturnOnGasLimitExceeded {
+			return false
+		} else {
+			panic("gas limit exceeded")
+		}
 	}
 	vm.Gas = newGas
+	return true
 }
 
 // Execute starts the virtual machines main instruction processing loop.
@@ -350,6 +357,7 @@ func (vm *VirtualMachine) Execute() {
 		panic("vm execution is not re-entrant")
 	}
 	vm.InsideExecute = true
+	vm.GasLimitExceeded = false
 
 	defer func() {
 		vm.InsideExecute = false
@@ -1430,7 +1438,10 @@ func (vm *VirtualMachine) Execute() {
 		case opcodes.AddGas:
 			delta := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
 			frame.IP += 8
-			vm.AddAndCheckGas(delta)
+			if !vm.AddAndCheckGas(delta) {
+				vm.GasLimitExceeded = true
+				return
+			}
 
 		case opcodes.FPDisabledError:
 			panic("wasm: floating point disabled")
