@@ -43,7 +43,8 @@ python3 run_spec_tests.py /path/to/testsuite
 go build
 
 # run your wasm program
-./life /path/to/your/wasm/program.wasm # entry point is `app_main` with no arguments by default
+./life -entry 'method' /path/to/your/wasm/program.wasm [param,...] # entry point is `app_main` by default without entry flag, array with param in it is optional arguements for entry. params should be converted into `int`.
+
 ```
 
 ## Executing WebAssembly Modules
