@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
+	"strconv"
 	"time"
 )
 
@@ -97,9 +98,18 @@ func main() {
 			panic(err)
 		}
 	}
+	var args []int64
+	for _, arg := range flag.Args()[1:] {
+		fmt.Println(arg)
+		if ia, err := strconv.Atoi(arg); err != nil {
+			panic(err)
+		} else {
+			args = append(args, int64(ia))
+		}
+	}
 
 	// Run the WebAssembly module's entry function.
-	ret, err := vm.Run(entryID)
+	ret, err := vm.Run(entryID, args...)
 	if err != nil {
 		vm.PrintStackTrace()
 		panic(err)
