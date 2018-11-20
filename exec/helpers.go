@@ -33,7 +33,7 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (
 			vm.Delegate = nil
 		}
 		count++
-		if count == limit {
+		if count > limit {
 			return -1, errors.New("gas limit exceeded")
 		}
 	}
