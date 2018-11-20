@@ -44,7 +44,7 @@ go build
 
 # run your wasm program
 # entry point is `app_main` by default if entry flag is omitted, array with 
-# param in it is optional arguements for entrypoint. params should be converted into `int`.
+# param in it is optional arguments for entrypoint. params should be converted into `int`.
 ./life -entry 'method' /path/to/your/wasm/program.wasm [param,...] 
 
 ```
