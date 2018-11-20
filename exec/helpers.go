@@ -47,7 +47,7 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (
 // Run runs a WebAssembly modules function denoted by its ID with a specified set
 // of parameters.
 // Panics on logical errors.
-func (vm *VirtualMachine) Run(entryID int, params ...int64) (int64, error) {
+func (vm *VirtualMachine) RunWithoutGasLimit(entryID int, params ...int64) (int64, error) {
 	vm.Ignite(entryID, params...)
 	for !vm.Exited {
 		vm.Execute()
@@ -61,4 +61,12 @@ func (vm *VirtualMachine) Run(entryID int, params ...int64) (int64, error) {
 		return -1, utils.UnifyError(vm.ExitError)
 	}
 	return vm.ReturnValue, nil
+}
+
+func (vm *VirtualMachine) Run(entryID int, limit int, params ...int64) (int64, error) {
+	if limit == 0 {
+		return vm.RunWithoutGasLimit(entryID, params...)
+	} else {
+		return vm.RunWithGasLimit(entryID, limit, params...)
+	}
 }

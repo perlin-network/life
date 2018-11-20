@@ -60,6 +60,7 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
 	jitFlag := flag.Bool("jit", false, "enable jit")
+	gasLimitFlag := flag.Int("gas", 0, "Run with gas limit.")
 	flag.Parse()
 
 	// Read WebAssembly *.wasm file.
@@ -92,7 +93,7 @@ func main() {
 	// called by the module, run it first.
 	if vm.Module.Base.Start != nil {
 		startID := int(vm.Module.Base.Start.Index)
-		_, err := vm.Run(startID)
+		_, err := vm.Run(startID, *gasLimitFlag)
 		if err != nil {
 			vm.PrintStackTrace()
 			panic(err)
@@ -109,7 +110,7 @@ func main() {
 	}
 
 	// Run the WebAssembly module's entry function.
-	ret, err := vm.Run(entryID, args...)
+	ret, err := vm.Run(entryID, *gasLimitFlag, args...)
 	if err != nil {
 		vm.PrintStackTrace()
 		panic(err)
