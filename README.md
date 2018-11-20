@@ -43,9 +43,12 @@ python3 run_spec_tests.py /path/to/testsuite
 go build
 
 # run your wasm program
-# entry point is `app_main` by default if entry flag is omitted, array with 
-# param in it is optional arguments for entrypoint. params should be converted into `int`.
-./life -entry 'method' /path/to/your/wasm/program.wasm [param,...] 
+# Arguments:
+# `entry` - allows for specifying the entrypoint for the WASM program. Default entry point is `app_main`.
+# `gas` - allows for setting the gas limit for the execution. When not specified program runs without limit.
+# array with params is optional arguments for entrypoint. Params should be convertible into `int`.
+# Example usage
+./life -gas 10 -entry 'method' /path/to/your/wasm/program.wasm [param,...]
 
 ```
 
