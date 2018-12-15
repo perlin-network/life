@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"strconv"
@@ -60,12 +61,27 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
 	jitFlag := flag.Bool("jit", false, "enable jit")
+	ngenFlag := flag.Bool("ngen", false, "use ngen")
 	flag.Parse()
 
 	// Read WebAssembly *.wasm file.
 	input, err := ioutil.ReadFile(flag.Arg(0))
 	if err != nil {
 		panic(err)
+	}
+
+	if *ngenFlag {
+		m, err := compiler.LoadModule(input)
+		if err != nil {
+			panic(err)
+		}
+		code, err := m.CompileWithNGen(nil)
+		fmt.Println(code)
+		if err != nil {
+			panic(err)
+		}
+		// fmt.Println(code)
+		return
 	}
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
