@@ -81,7 +81,9 @@ func main() {
 	}
 
 	if *ngenFlag {
-		fmt.Println(vm.NCompile())
+		fmt.Println(vm.NCompile(exec.NCompileConfig{
+			AliasDef: true,
+		}))
 		return
 	}
 

@@ -133,7 +133,7 @@ func (m *Module) CompileWithNGen(gp GasPolicy) (out string, retErr error) {
 				}
 			}
 			importStubBuilder.WriteString("};\n")
-			bSprintf(importStubBuilder, "return %sinvoke_import(vm, %d, params);\n", NGEN_ENV_API_PREFIX, i)
+			bSprintf(importStubBuilder, "return %sinvoke_import(vm, %d, %d, params);\n", NGEN_ENV_API_PREFIX, numFuncImports, len(ty.ParamTypes))
 			importStubBuilder.WriteString("}\n")
 			importTypeIDs = append(importTypeIDs, int(tyID))
 			numFuncImports++

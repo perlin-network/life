@@ -11,9 +11,12 @@ const NGEN_VALUE_PREFIX = "v"
 const NGEN_INS_LABEL_PREFIX = "ins"
 const NGEN_ENV_API_PREFIX = "wenv_"
 const NGEN_UINT32_MASK = "0xffffffffull"
-const NGEN_VM_STRUCT = `
+const NGEN_HEADER = `
+struct VirtualMachine;
+typedef uint64_t (*ExternalFunction)(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
 struct VirtualMachine {
 	void (*throw_s)(struct VirtualMachine *vm, const char *s);
+	ExternalFunction (*resolve_import)(struct VirtualMachine *vm, const char *module_name, const char *field_name);
 };
 `
 
@@ -51,7 +54,8 @@ func writeBinOp_Shift(b *strings.Builder, ins Instr, op string, ty string, round
 
 func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
 	bSprintf(b,
-		"%s%d = %s%s(* (%s*) &%s%d, * (%s*) &%s%d);",
+		"* (%s*) &%s%d = %s%s(* (%s*) &%s%d, * (%s*) &%s%d);",
+		ty,
 		NGEN_VALUE_PREFIX, ins.Target,
 		NGEN_FUNCTION_PREFIX, f,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
@@ -59,14 +63,30 @@ func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
 	)
 }
 
-func writeBinOp(b *strings.Builder, ins Instr, op string, ty string) {
+func writeBinOp_ConstRv(b *strings.Builder, ins Instr, op string, ty string, rv string) {
 	bSprintf(b,
-		"%s%d = ((* (%s*) &%s%d) %s (* (%s*) &%s%d));",
+		"* (%s*) &%s%d = ((* (%s*) &%s%d) %s (%s));",
+		ty,
+		NGEN_VALUE_PREFIX, ins.Target,
+		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		op,
+		rv,
+	)
+}
+
+func writeBinOp2(b *strings.Builder, ins Instr, op string, ty string, retTy string) {
+	bSprintf(b,
+		"* (%s*) &%s%d = ((* (%s*) &%s%d) %s (* (%s*) &%s%d));",
+		retTy,
 		NGEN_VALUE_PREFIX, ins.Target,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
 		op,
 		ty, NGEN_VALUE_PREFIX, ins.Values[1],
 	)
+}
+
+func writeBinOp(b *strings.Builder, ins Instr, op string, ty string) {
+	writeBinOp2(b, ins, op, ty, ty)
 }
 
 func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals uint64) string {
@@ -162,14 +182,14 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_if":
 			bSprintf(body,
-				"if(%s%d) { phi = %s%d; goto %s%d; }",
+				"if(%s%d & 0xffffffffull) { phi = %s%d; goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 			)
 		case "jmp_either":
 			bSprintf(body,
-				"phi = %s%d; if(%s%d) { goto %s%d; } else { goto %s%d; }",
+				"phi = %s%d; if(%s%d & 0xffffffffull) { goto %s%d; } else { goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
@@ -177,7 +197,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_table":
 			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[0])
-			bSprintf(body, "switch(%s%d) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
+			bSprintf(body, "switch(%s%d & 0xffffffffull) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
@@ -196,10 +216,10 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			bSprintf(body,
 				"%s%d = (%s%d & %s) ? %s%d : %s%d;",
 				NGEN_VALUE_PREFIX, ins.Target,
-				NGEN_VALUE_PREFIX, ins.Values[0],
-				NGEN_UINT32_MASK,
-				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_VALUE_PREFIX, ins.Values[2],
+				NGEN_UINT32_MASK,
+				NGEN_VALUE_PREFIX, ins.Values[0],
+				NGEN_VALUE_PREFIX, ins.Values[1],
 			)
 		case "i32.const", "f32.const":
 			bSprintf(body,
@@ -358,17 +378,17 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "f32.copysign":
 			writeBinOp_Fcall(body, ins, "fcopysign32", "float")
 		case "f32.eq":
-			writeBinOp(body, ins, "==", "float")
+			writeBinOp2(body, ins, "==", "float", "uint64_t")
 		case "f32.ne":
-			writeBinOp(body, ins, "!=", "float")
+			writeBinOp2(body, ins, "!=", "float", "uint64_t")
 		case "f32.lt":
-			writeBinOp(body, ins, "<", "float")
+			writeBinOp2(body, ins, "<", "float", "uint64_t")
 		case "f32.le":
-			writeBinOp(body, ins, "<=", "float")
+			writeBinOp2(body, ins, "<=", "float", "uint64_t")
 		case "f32.gt":
-			writeBinOp(body, ins, ">", "float")
+			writeBinOp2(body, ins, ">", "float", "uint64_t")
 		case "f32.ge":
-			writeBinOp(body, ins, ">=", "float")
+			writeBinOp2(body, ins, ">=", "float", "uint64_t")
 
 		case "f64.add":
 			writeBinOp(body, ins, "+", "double")
@@ -399,17 +419,29 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "f64.copysign":
 			writeBinOp_Fcall(body, ins, "fcopysign64", "double")
 		case "f64.eq":
-			writeBinOp(body, ins, "==", "double")
+			writeBinOp2(body, ins, "==", "double", "uint64_t")
 		case "f64.ne":
-			writeBinOp(body, ins, "!=", "double")
+			writeBinOp2(body, ins, "!=", "double", "uint64_t")
 		case "f64.lt":
-			writeBinOp(body, ins, "<", "double")
+			writeBinOp2(body, ins, "<", "double", "uint64_t")
 		case "f64.le":
-			writeBinOp(body, ins, "<=", "double")
+			writeBinOp2(body, ins, "<=", "double", "uint64_t")
 		case "f64.gt":
-			writeBinOp(body, ins, ">", "double")
+			writeBinOp2(body, ins, ">", "double", "uint64_t")
 		case "f64.ge":
-			writeBinOp(body, ins, ">=", "double")
+			writeBinOp2(body, ins, ">=", "double", "uint64_t")
+
+		case "i64.extend_u/i32":
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
+		case "i64.extend_s/i32":
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
+			bSprintf(body,
+				"\nif((%s%d >> 31) & 1) %s%d |= 0xffffffff00000000ull;",
+				NGEN_VALUE_PREFIX, ins.Target,
+				NGEN_VALUE_PREFIX, ins.Target,
+			)
+		case "i32.wrap/i64":
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
 
 		default:
 			panic(ins.Op)
