@@ -107,10 +107,6 @@ func LoadModule(raw []byte) (*Module, error) {
 func (m *Module) CompileWithNGen(gp GasPolicy) (out string, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
-	out = `
-#include <stdint.h>
-`
-
 	importStubBuilder := &strings.Builder{}
 	importTypeIDs := make([]int, 0)
 	numFuncImports := 0
@@ -124,7 +120,7 @@ func (m *Module) CompileWithNGen(gp GasPolicy) (out string, retErr error) {
 			tyID := e.Type.(wasm.FuncImport).Type
 			ty := &m.Base.Types.Entries[int(tyID)]
 
-			bSprintf(importStubBuilder, "uint64_t %s%d(void *vm", NGEN_FUNCTION_PREFIX, i)
+			bSprintf(importStubBuilder, "uint64_t %s%d(struct VirtualMachine *vm", NGEN_FUNCTION_PREFIX, i)
 			for j := 0; j < len(ty.ParamTypes); j++ {
 				bSprintf(importStubBuilder, ",uint64_t %s%d", NGEN_LOCAL_PREFIX, j)
 			}

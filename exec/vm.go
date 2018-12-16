@@ -11,6 +11,7 @@ import (
 	"github.com/perlin-network/life/utils"
 
 	"github.com/go-interpreter/wagon/wasm"
+	"strings"
 )
 
 // FunctionImport represents the function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.
@@ -50,6 +51,7 @@ type VirtualMachine struct {
 	ReturnValue      int64
 	Gas              uint64
 	GasLimitExceeded bool
+	GasPolicy        compiler.GasPolicy
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -216,7 +218,60 @@ func NewVirtualMachine(
 		Globals:         globals,
 		Memory:          memory,
 		Exited:          true,
+		GasPolicy:       gasPolicy,
 	}, nil
+}
+
+func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
+	builder.WriteString(fmt.Sprintf(format, args...))
+}
+
+func (vm *VirtualMachine) GenerateNEnv() string {
+	builder := &strings.Builder{}
+
+	bSprintf(builder, "#include <stdint.h>\n\n")
+
+	builder.WriteString(compiler.NGEN_VM_STRUCT)
+
+	for i, code := range vm.FunctionCode {
+		bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i)
+		for j := 0; j < code.NumParams; j++ {
+			bSprintf(builder, ",uint64_t")
+		}
+		bSprintf(builder, ");\n")
+	}
+
+	bSprintf(builder, "struct TableEntry { uint64_t num_params; void *func; };\n")
+	bSprintf(builder, "static struct TableEntry table[] = {\n")
+	for _, entry := range vm.Table {
+		if entry == math.MaxUint32 {
+			bSprintf(builder, "{ .num_params = 0, .func = 0 },\n")
+		} else {
+			functionID := int(entry)
+			code := vm.FunctionCode[functionID]
+
+			bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID)
+		}
+	}
+	bSprintf(builder, "};\n")
+	bSprintf(builder, "static const uint64_t num_table_entries = %d;\n", len(vm.Table))
+	bSprintf(builder, "static void * __attribute__((always_inline)) %sresolve_indirect(struct VirtualMachine *vm, uint64_t entry_id, uint64_t num_params) {\n", compiler.NGEN_ENV_API_PREFIX)
+	bSprintf(builder, "if(entry_id >= num_table_entries) { vm->throw_s(vm, \"%s\"); }\n", "table entry out of bounds")
+	bSprintf(builder, "if(table[entry_id].func == 0) { vm->throw_s(vm, \"%s\"); }\n", "table entry is null")
+	bSprintf(builder, "if(table[entry_id].num_params != num_params) { vm->throw_s(vm, \"%s\"); }\n", "argument count mismatch")
+	bSprintf(builder, "return table[entry_id].func;\n")
+	bSprintf(builder, "}\n")
+
+	return builder.String()
+}
+
+func (vm *VirtualMachine) NCompile() string {
+	body, err := vm.Module.CompileWithNGen(vm.GasPolicy)
+	if err != nil {
+		panic(err)
+	}
+
+	return vm.GenerateNEnv() + "\n" + body
 }
 
 // Init initializes a frame. Must be called on `call` and `call_indirect`.

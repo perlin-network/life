@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"strconv"
@@ -70,20 +69,6 @@ func main() {
 		panic(err)
 	}
 
-	if *ngenFlag {
-		m, err := compiler.LoadModule(input)
-		if err != nil {
-			panic(err)
-		}
-		code, err := m.CompileWithNGen(nil)
-		fmt.Println(code)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Println(code)
-		return
-	}
-
 	// Instantiate a new WebAssembly VM with a few resolved imports.
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
 		EnableJIT:          *jitFlag,
@@ -93,6 +78,11 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	if *ngenFlag {
+		fmt.Println(vm.NCompile())
+		return
 	}
 
 	// Get the function ID of the entry function to be executed.

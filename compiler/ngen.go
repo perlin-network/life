@@ -11,6 +11,11 @@ const NGEN_VALUE_PREFIX = "v"
 const NGEN_INS_LABEL_PREFIX = "ins"
 const NGEN_ENV_API_PREFIX = "wenv_"
 const NGEN_UINT32_MASK = "0xffffffffull"
+const NGEN_VM_STRUCT = `
+struct VirtualMachine {
+	void (*throw_s)(struct VirtualMachine *vm, const char *s);
+};
+`
 
 func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
 	builder.WriteString(fmt.Sprintf(format, args...))
@@ -67,7 +72,7 @@ func writeBinOp(b *strings.Builder, ins Instr, op string, ty string) {
 func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals uint64) string {
 	builder := &strings.Builder{}
 
-	bSprintf(builder, "uint64_t %s%d(void *vm", NGEN_FUNCTION_PREFIX, selfID)
+	bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *vm", NGEN_FUNCTION_PREFIX, selfID)
 
 	for i := uint64(0); i < numParams; i++ {
 		bSprintf(builder, ",uint64_t %s%d", NGEN_LOCAL_PREFIX, i)
@@ -131,6 +136,24 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				bSprintf(body, ",%s%d", NGEN_VALUE_PREFIX, v)
 			}
 			body.WriteString(");")
+		case "call_indirect":
+			bSprintf(body,
+				"%s%d = ((uint64_t (*)(struct VirtualMachine *",
+				NGEN_VALUE_PREFIX, ins.Target,
+			)
+			for range ins.Values[:len(ins.Values)-1] {
+				bSprintf(body, ",uint64_t")
+			}
+			bSprintf(body,
+				")) %sresolve_indirect(vm, %s%d, %d)) (vm",
+				NGEN_ENV_API_PREFIX,
+				NGEN_VALUE_PREFIX, ins.Values[len(ins.Values)-1],
+				len(ins.Values)-1,
+			)
+			for _, v := range ins.Values[:len(ins.Values)-1] {
+				bSprintf(body, ",%s%d", NGEN_VALUE_PREFIX, v)
+			}
+			body.WriteString(");")
 		case "jmp":
 			bSprintf(body,
 				"phi = %s%d; goto %s%d;",
@@ -151,6 +174,23 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[1],
+			)
+		case "jmp_table":
+			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[0])
+			bSprintf(body, "switch(%s%d) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
+			for i, v := range ins.Immediates {
+				if i == len(ins.Immediates)-1 {
+					bSprintf(body, "default: ")
+				} else {
+					bSprintf(body, "case %d: ", i)
+				}
+				bSprintf(body, "goto %s%d;\n", NGEN_INS_LABEL_PREFIX, v)
+			}
+			bSprintf(body, "}")
+		case "phi":
+			bSprintf(body,
+				"%s%d = phi;",
+				NGEN_VALUE_PREFIX, ins.Target,
 			)
 		case "select":
 			bSprintf(body,
