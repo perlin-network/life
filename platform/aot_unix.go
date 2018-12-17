@@ -126,13 +126,14 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 	}
 
 	cmd := os_exec.Command("cc", "-O2", "-o", outPath, "-shared", inPath)
-	out, err := cmd.Output()
-	if err != nil {
-		panic(err)
-	}
+	out, err := cmd.CombinedOutput()
 
 	if len(out) > 0 {
-		log.Printf("compiler warnings: \n%s\n", string(out))
+		log.Printf("compiler warnings/errors: \n%s\n", string(out))
+	}
+
+	if err != nil {
+		panic(err)
 	}
 
 	outPathC := C.CString(outPath)
