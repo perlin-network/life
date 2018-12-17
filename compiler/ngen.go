@@ -304,14 +304,14 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "jmp_either":
 			bSprintf(body,
 				"phi = %s%d; if(%s%d & UINT32_MASK) { goto %s%d; } else { goto %s%d; }",
-				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
+				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[1],
 			)
 		case "jmp_table":
-			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[0])
-			bSprintf(body, "switch(%s%d & UINT32_MASK) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
+			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[1])
+			bSprintf(body, "switch(%s%d & UINT32_MASK) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
