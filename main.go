@@ -64,9 +64,8 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 }
 
 func main() {
-	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
-	jitFlag := flag.Bool("jit", false, "enable jit")
-	ngenFlag := flag.Bool("ngen", false, "use ngen")
+	entryFunctionFlag := flag.String("entry", "app_main", "entry function name")
+	pmFlag := flag.Bool("polymerase", false, "enable the Polymerase engine")
 	noFloatingPointFlag := flag.Bool("no-fp", false, "disable floating point")
 	flag.Parse()
 
@@ -78,7 +77,6 @@ func main() {
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
-		EnableJIT:            *jitFlag,
 		DefaultMemoryPages:   128,
 		DefaultTableSize:     65536,
 		DisableFloatingPoint: *noFloatingPointFlag,
@@ -88,16 +86,15 @@ func main() {
 		panic(err)
 	}
 
-	if *ngenFlag {
-		fmt.Println(vm.NCompile(exec.NCompileConfig{
-			AliasDef: true,
-		}))
-		return
-	}
-
-	aotSvc := platform.FullAOTCompile(vm)
-	if aotSvc != nil {
-		vm.SetAOTService(aotSvc)
+	if *pmFlag {
+		fmt.Println("[Polymerase] Compilation started.")
+		aotSvc := platform.FullAOTCompile(vm)
+		if aotSvc != nil {
+			fmt.Println("[Polymerase] Compilation finished successfully.")
+			vm.SetAOTService(aotSvc)
+		} else {
+			fmt.Println("[Polymerase] The current platform is not yet supported.")
+		}
 	}
 
 	// Get the function ID of the entry function to be executed.
