@@ -87,10 +87,12 @@ func main() {
 	}
 
 	if *pmFlag {
+		compileStartTime := time.Now()
 		fmt.Println("[Polymerase] Compilation started.")
 		aotSvc := platform.FullAOTCompile(vm)
 		if aotSvc != nil {
-			fmt.Println("[Polymerase] Compilation finished successfully.")
+			compileEndTime := time.Now()
+			fmt.Printf("[Polymerase] Compilation finished successfully in %+v.\n", compileEndTime.Sub(compileStartTime))
 			vm.SetAOTService(aotSvc)
 		} else {
 			fmt.Println("[Polymerase] The current platform is not yet supported.")
