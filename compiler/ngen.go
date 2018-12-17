@@ -10,14 +10,49 @@ const NGEN_LOCAL_PREFIX = "l"
 const NGEN_VALUE_PREFIX = "v"
 const NGEN_INS_LABEL_PREFIX = "ins"
 const NGEN_ENV_API_PREFIX = "wenv_"
-const NGEN_UINT32_MASK = "0xffffffffull"
 const NGEN_HEADER = `
+static const uint64_t UINT32_MASK = 0xffffffffull;
 struct VirtualMachine;
 typedef uint64_t (*ExternalFunction)(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
 struct VirtualMachine {
 	void (*throw_s)(struct VirtualMachine *vm, const char *s);
 	ExternalFunction (*resolve_import)(struct VirtualMachine *vm, const char *module_name, const char *field_name);
+	uint64_t mem_size;
+	uint8_t *mem;
+	void (*grow_memory)(struct VirtualMachine *vm, uint64_t inc_size);
 };
+static uint8_t * __attribute__((always_inline)) mem_translate(struct VirtualMachine *vm, uint64_t start, uint64_t size) {
+	if(start + size < start || start + size > vm->mem_size) vm->throw_s(vm, "memory access out of bounds");
+	return &vm->mem[start];
+}
+static uint64_t __attribute__((always_inline)) clz32(uint32_t x) {
+	return __builtin_clz(x);
+}
+static uint64_t __attribute__((always_inline)) ctz32(uint32_t x) {
+	return __builtin_ctz(x);
+}
+static uint64_t __attribute__((always_inline)) clz64(uint64_t x) {
+	return __builtin_clzll(x);
+}
+static uint64_t __attribute__((always_inline)) ctz64(uint64_t x) {
+	return __builtin_ctzll(x);
+}
+static uint64_t __attribute__((always_inline)) rotl32( uint32_t x, uint32_t r )
+{
+  return (x << r) | (x >> (32 - r % 32));
+}
+static uint64_t __attribute__((always_inline)) rotl64( uint64_t x, uint64_t r )
+{
+  return (x << r) | (x >> (64 - r % 64));
+}
+static uint64_t __attribute__((always_inline)) rotr32( uint32_t x, uint32_t r )
+{
+  return (x >> r) | (x << (32 - r % 32));
+}
+static uint64_t __attribute__((always_inline)) rotr64( uint64_t x, uint64_t r )
+{
+  return (x >> r) | (x << (64 - r % 64));
+}
 `
 
 func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
@@ -34,9 +69,9 @@ func writeUnOp_Eqz(b *strings.Builder, ins Instr, ty string) {
 
 func writeUnOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
 	bSprintf(b,
-		"%s%d = %s%s(* (%s*) &%s%d);",
+		"%s%d = %s(* (%s*) &%s%d);",
 		NGEN_VALUE_PREFIX, ins.Target,
-		NGEN_FUNCTION_PREFIX, f,
+		f,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
 	)
 }
@@ -54,10 +89,10 @@ func writeBinOp_Shift(b *strings.Builder, ins Instr, op string, ty string, round
 
 func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
 	bSprintf(b,
-		"* (%s*) &%s%d = %s%s(* (%s*) &%s%d, * (%s*) &%s%d);",
+		"* (%s*) &%s%d = %s(* (%s*) &%s%d, * (%s*) &%s%d);",
 		ty,
 		NGEN_VALUE_PREFIX, ins.Target,
-		NGEN_FUNCTION_PREFIX, f,
+		f,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
 		ty, NGEN_VALUE_PREFIX, ins.Values[1],
 	)
@@ -89,7 +124,29 @@ func writeBinOp(b *strings.Builder, ins Instr, op string, ty string) {
 	writeBinOp2(b, ins, op, ty, ty)
 }
 
-func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals uint64) string {
+func writeMemLoad(b *strings.Builder, ins Instr, ty string) {
+	bSprintf(b,
+		"* (int64_t *) &%s%d = * (%s *) mem_translate(vm, %s%d + %dull, sizeof(%s));", // TODO: any missing conversions?
+		NGEN_VALUE_PREFIX, ins.Target,
+		ty,
+		NGEN_VALUE_PREFIX, ins.Values[0],
+		uint64(ins.Immediates[1]),
+		ty,
+	)
+}
+
+func writeMemStore(b *strings.Builder, ins Instr, ty string) {
+	bSprintf(b,
+		"* (%s *) mem_translate(vm, %s%d + %dull, sizeof(%s)) = %s%d;",
+		ty,
+		NGEN_VALUE_PREFIX, ins.Values[0],
+		uint64(ins.Immediates[1]),
+		ty,
+		NGEN_VALUE_PREFIX, ins.Values[1],
+	)
+}
+
+func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals uint64, numGlobals uint64) string {
 	builder := &strings.Builder{}
 
 	bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *vm", NGEN_FUNCTION_PREFIX, selfID)
@@ -114,7 +171,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		bSprintf(body, "\n%s%d:\n", NGEN_INS_LABEL_PREFIX, i)
 		switch ins.Op {
 		case "unreachable":
-			bSprintf(body, "%strap_unreachable();", NGEN_ENV_API_PREFIX)
+			bSprintf(body, "vm->throw_s(vm, \"unreachable executed\");")
 		case "return":
 			if len(ins.Values) == 0 {
 				body.WriteString("return 0;")
@@ -134,16 +191,21 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
 		case "get_global":
+			if uint64(ins.Immediates[0]) >= numGlobals {
+				panic("global index out of bounds")
+			}
 			bSprintf(body,
-				"%s%d = %sget_global(%d);",
+				"%s%d = globals[%d];",
 				NGEN_VALUE_PREFIX, ins.Target,
-				NGEN_ENV_API_PREFIX, ins.Immediates[0],
+				uint64(ins.Immediates[0]),
 			)
 		case "set_global":
+			if uint64(ins.Immediates[0]) >= numGlobals {
+				panic("global index out of bounds")
+			}
 			bSprintf(body,
-				"%s%d = %sset_global(%d, %s%d);",
-				NGEN_VALUE_PREFIX, ins.Target,
-				NGEN_ENV_API_PREFIX, ins.Immediates[0],
+				"globals[%d] = %s%d;",
+				uint64(ins.Immediates[0]),
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
 		case "call":
@@ -182,14 +244,14 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_if":
 			bSprintf(body,
-				"if(%s%d & 0xffffffffull) { phi = %s%d; goto %s%d; }",
+				"if(%s%d & UINT32_MASK) { phi = %s%d; goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 			)
 		case "jmp_either":
 			bSprintf(body,
-				"phi = %s%d; if(%s%d & 0xffffffffull) { goto %s%d; } else { goto %s%d; }",
+				"phi = %s%d; if(%s%d & UINT32_MASK) { goto %s%d; } else { goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
@@ -197,7 +259,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_table":
 			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[0])
-			bSprintf(body, "switch(%s%d & 0xffffffffull) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
+			bSprintf(body, "switch(%s%d & UINT32_MASK) {\n", NGEN_VALUE_PREFIX, ins.Values[1])
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
@@ -214,10 +276,9 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "select":
 			bSprintf(body,
-				"%s%d = (%s%d & %s) ? %s%d : %s%d;",
+				"%s%d = (%s%d & UINT32_MASK) ? %s%d : %s%d;",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[2],
-				NGEN_UINT32_MASK,
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 			)
@@ -432,16 +493,64 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp2(body, ins, ">=", "double", "uint64_t")
 
 		case "i64.extend_u/i32":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
 		case "i64.extend_s/i32":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
 			bSprintf(body,
-				"\nif((%s%d >> 31) & 1) %s%d |= 0xffffffff00000000ull;",
+				"\nif((%s%d >> 31) & 1) %s%d |= (UINT32_MASK << 32);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
 		case "i32.wrap/i64":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "0xffffffffull")
+			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
+
+		case "i32.reinterpret/f32", "i64.reinterpret/f64", "f32.reinterpret/i32", "f64.reinterpret/i64":
+
+		case "i32.load", "f32.load", "i64.load32_u":
+			writeMemLoad(body, ins, "uint32_t")
+
+		case "i32.load8_s", "i64.load8_s":
+			writeMemLoad(body, ins, "int8_t")
+
+		case "i32.load8_u", "i64.load8_u":
+			writeMemLoad(body, ins, "uint8_t")
+
+		case "i32.load16_s", "i64.load16_s":
+			writeMemLoad(body, ins, "int16_t")
+
+		case "i32.load16_u", "i64.load16_u":
+			writeMemLoad(body, ins, "uint16_t")
+
+		case "i64.load32_s":
+			writeMemLoad(body, ins, "int32_t")
+
+		case "i64.load", "f64.load":
+			writeMemLoad(body, ins, "uint64_t")
+
+		case "i32.store", "f32.store", "i64.store32":
+			writeMemStore(body, ins, "uint32_t")
+
+		case "i32.store8", "i64.store8":
+			writeMemStore(body, ins, "uint8_t")
+
+		case "i32.store16", "i64.store16":
+			writeMemStore(body, ins, "uint16_t")
+
+		case "i64.store", "f64.store":
+			writeMemStore(body, ins, "uint64_t")
+
+		case "current_memory":
+			bSprintf(body,
+				"%s%d = vm->mem_size / 65536;",
+				NGEN_VALUE_PREFIX, ins.Target,
+			)
+
+		case "grow_memory":
+			bSprintf(body,
+				"%s%d = vm->mem_size / 65536; vm->grow_memory(vm, (%s%d & UINT32_MASK) * 65536);",
+				NGEN_VALUE_PREFIX, ins.Target,
+				NGEN_VALUE_PREFIX, ins.Values[0],
+			)
 
 		default:
 			panic(ins.Op)

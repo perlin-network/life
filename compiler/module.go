@@ -104,7 +104,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileWithNGen(gp GasPolicy) (out string, retErr error) {
+func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (out string, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
 	importStubBuilder := &strings.Builder{}
@@ -165,7 +165,7 @@ func (m *Module) CompileWithNGen(gp GasPolicy) (out string, retErr error) {
 		for _, v := range f.Body.Locals {
 			numLocals += int(v.Count)
 		}
-		out += compiler.NGen(uint64(numFuncImports+i), uint64(len(f.Sig.ParamTypes)), uint64(numLocals))
+		out += compiler.NGen(uint64(numFuncImports+i), uint64(len(f.Sig.ParamTypes)), uint64(numLocals), numGlobals)
 	}
 
 	return

@@ -248,6 +248,12 @@ func (vm *VirtualMachine) GenerateNEnv() string {
 
 	builder.WriteString(compiler.NGEN_HEADER)
 
+	bSprintf(builder, "static uint64_t globals[] = {")
+	for _, v := range vm.Globals {
+		bSprintf(builder, "%dull,", uint64(v))
+	}
+	bSprintf(builder, "};\n")
+
 	for i, code := range vm.FunctionCode {
 		bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i)
 		for j := 0; j < code.NumParams; j++ {
@@ -316,7 +322,7 @@ func (vm *VirtualMachine) NBuildAliasDef() string {
 }
 
 func (vm *VirtualMachine) NCompile(config NCompileConfig) string {
-	body, err := vm.Module.CompileWithNGen(vm.GasPolicy)
+	body, err := vm.Module.CompileWithNGen(vm.GasPolicy, uint64(len(vm.Globals)))
 	if err != nil {
 		panic(err)
 	}
