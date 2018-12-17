@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/perlin-network/life/exec"
+	"github.com/perlin-network/life/platform"
 	"io/ioutil"
 	"strconv"
 	"time"
@@ -30,6 +31,11 @@ func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
 				msgLen := int(uint32(vm.GetCurrentFrame().Locals[1]))
 				msg := vm.Memory[ptr : ptr+msgLen]
 				fmt.Printf("[app] %s\n", string(msg))
+				return 0
+			}
+		case "print_i64":
+			return func(vm *exec.VirtualMachine) int64 {
+				fmt.Printf("[app] print_i64: %d\n", vm.GetCurrentFrame().Locals[0])
 				return 0
 			}
 
@@ -87,6 +93,11 @@ func main() {
 			AliasDef: true,
 		}))
 		return
+	}
+
+	aotSvc := platform.FullAOTCompile(vm)
+	if aotSvc != nil {
+		vm.SetAOTService(aotSvc)
 	}
 
 	// Get the function ID of the entry function to be executed.

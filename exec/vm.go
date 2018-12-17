@@ -40,6 +40,10 @@ type NCompileConfig struct {
 	AliasDef bool
 }
 
+type AOTService interface {
+	UnsafeInvokeFunction_0(vm *VirtualMachine, name string) uint64
+}
+
 // VirtualMachine is a WebAssembly execution environment.
 type VirtualMachine struct {
 	Config           VMConfig
@@ -62,6 +66,7 @@ type VirtualMachine struct {
 	GasLimitExceeded bool
 	GasPolicy        compiler.GasPolicy
 	ImportResolver   ImportResolver
+	AOTService       AOTService
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -235,6 +240,10 @@ func NewVirtualMachine(
 		GasPolicy:       gasPolicy,
 		ImportResolver:  impResolver,
 	}, nil
+}
+
+func (vm *VirtualMachine) SetAOTService(s AOTService) {
+	vm.AOTService = s
 }
 
 func bSprintf(builder *strings.Builder, format string, args ...interface{}) {

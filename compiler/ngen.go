@@ -20,6 +20,7 @@ struct VirtualMachine {
 	uint64_t mem_size;
 	uint8_t *mem;
 	void (*grow_memory)(struct VirtualMachine *vm, uint64_t inc_size);
+	void *userdata;
 };
 static uint8_t * __attribute__((always_inline)) mem_translate(struct VirtualMachine *vm, uint64_t start, uint64_t size) {
 	if(start + size < start || start + size > vm->mem_size) vm->throw_s(vm, "memory access out of bounds");
