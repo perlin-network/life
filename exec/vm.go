@@ -257,6 +257,8 @@ func (vm *VirtualMachine) GenerateNEnv() string {
 
 	bSprintf(builder, "#include <stdint.h>\n\n")
 
+	//builder.WriteString("#define POLYMERASE_NO_MEM_BOUND_CHECK\n")
+
 	builder.WriteString(compiler.NGEN_HEADER)
 	if !vm.Config.DisableFloatingPoint {
 		builder.WriteString(compiler.NGEN_FP_HEADER)

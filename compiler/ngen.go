@@ -23,8 +23,10 @@ struct VirtualMachine {
 	void *userdata;
 };
 static uint8_t * __attribute__((always_inline)) mem_translate(struct VirtualMachine *vm, uint64_t start, uint64_t size) {
+	#ifndef POLYMERASE_NO_MEM_BOUND_CHECK
 	if(start + size < start || start + size > vm->mem_size) vm->throw_s(vm, "memory access out of bounds");
-	return &vm->mem[start];
+	#endif
+	return &vm->mem[* (uint32_t*) &start];
 }
 static uint64_t __attribute__((always_inline)) clz32(uint32_t x) {
 	return __builtin_clz(x);
