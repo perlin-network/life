@@ -11,7 +11,7 @@ const NGEN_VALUE_PREFIX = "v"
 const NGEN_INS_LABEL_PREFIX = "ins"
 const NGEN_ENV_API_PREFIX = "wenv_"
 const NGEN_HEADER = `
-static const uint64_t UINT32_MASK = 0xffffffffull;
+//static const uint64_t UINT32_MASK = 0xffffffffull;
 struct VirtualMachine;
 typedef uint64_t (*ExternalFunction)(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
 struct VirtualMachine {
@@ -296,14 +296,14 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_if":
 			bSprintf(body,
-				"if(%s%d & UINT32_MASK) { phi = %s%d; goto %s%d; }",
+				"if(* (uint32_t*) &%s%d) { phi = %s%d; goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 			)
 		case "jmp_either":
 			bSprintf(body,
-				"phi = %s%d; if(%s%d & UINT32_MASK) { goto %s%d; } else { goto %s%d; }",
+				"phi = %s%d; if(* (uint32_t*) &%s%d) { goto %s%d; } else { goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
@@ -311,7 +311,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_table":
 			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[1])
-			bSprintf(body, "switch(%s%d & UINT32_MASK) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
+			bSprintf(body, "switch(* (uint32_t*) &%s%d) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
@@ -321,6 +321,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				bSprintf(body, "goto %s%d;\n", NGEN_INS_LABEL_PREFIX, v)
 			}
 			bSprintf(body, "}")
+
 		case "phi":
 			bSprintf(body,
 				"%s%d = phi;",
@@ -328,7 +329,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "select":
 			bSprintf(body,
-				"%s%d = (%s%d & UINT32_MASK) ? %s%d : %s%d;",
+				"%s%d = (* (uint32_t*) &%s%d) ? %s%d : %s%d;",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[2],
 				NGEN_VALUE_PREFIX, ins.Values[0],
@@ -553,16 +554,12 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp2(body, ins, ">=", "double", "uint64_t")
 
 		case "i64.extend_u/i32":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
+			writeUnOp_Fcall(body, ins, "", "uint32_t", "uint64_t")
 		case "i64.extend_s/i32":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
-			bSprintf(body,
-				"\nif((%s%d >> 31) & 1) %s%d |= (UINT32_MASK << 32);",
-				NGEN_VALUE_PREFIX, ins.Target,
-				NGEN_VALUE_PREFIX, ins.Target,
-			)
+			writeUnOp_Fcall(body, ins, "", "int32_t", "int64_t")
+
 		case "i32.wrap/i64":
-			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
+			writeUnOp_Fcall(body, ins, "", "uint32_t", "uint64_t")
 
 		// TODO: These floating point operations need to be double-checked for correctness.
 
@@ -570,7 +567,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeUnOp_Fcall(body, ins, "ftrunc32", "float", "int64_t")
 
 		case "i32.trunc_s/f64", "i64.trunc_s/f64", "i32.trunc_u/f64", "i64.trunc_u/f64":
-			writeUnOp_Fcall(body, ins, "ftrunc64", "float", "int64_t")
+			writeUnOp_Fcall(body, ins, "ftrunc64", "double", "int64_t")
 
 		case "f32.demote/f64":
 			writeUnOp_Fcall(body, ins, "", "double", "float")
@@ -645,7 +642,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 
 		case "grow_memory":
 			bSprintf(body,
-				"%s%d = vm->mem_size / 65536; vm->grow_memory(vm, (%s%d & UINT32_MASK) * 65536);",
+				"%s%d = vm->mem_size / 65536; vm->grow_memory(vm, (* (uint32_t*) &%s%d) * 65536);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
