@@ -23,17 +23,31 @@ ExternalFunction go_vm_resolve_import(struct VirtualMachine *vm, const char *mod
 void go_vm_grow_memory(struct VirtualMachine *vm, uint64_t inc_size);
 uint64_t go_vm_dispatch_import_invocation(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
 
+static void build_vm(struct VirtualMachine *out, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size) {
+	out->throw_s = go_vm_throw_s;
+	out->resolve_import = go_vm_resolve_import;
+	out->mem_size = mem_size;
+	out->mem = mem;
+	out->grow_memory = go_vm_grow_memory;
+	out->userdata = (void *) managed_vm;
+}
 static uint64_t unsafe_invoke_function_0(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size) {
 	uint64_t (*f)(struct VirtualMachine *vm) = sym;
-	struct VirtualMachine vm = {
-		.throw_s = go_vm_throw_s,
-		.resolve_import = go_vm_resolve_import,
-		.mem_size = mem_size,
-		.mem = mem,
-		.grow_memory = go_vm_grow_memory,
-		.userdata = (void *) managed_vm,
-	};
+	struct VirtualMachine vm;
+	build_vm(&vm, managed_vm, mem, mem_size);
 	return f(&vm);
+}
+static uint64_t unsafe_invoke_function_1(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size, uint64_t p0) {
+	uint64_t (*f)(struct VirtualMachine *vm, uint64_t) = sym;
+	struct VirtualMachine vm;
+	build_vm(&vm, managed_vm, mem, mem_size);
+	return f(&vm, p0);
+}
+static uint64_t unsafe_invoke_function_2(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size, uint64_t p0, uint64_t p1) {
+	uint64_t (*f)(struct VirtualMachine *vm, uint64_t, uint64_t) = sym;
+	struct VirtualMachine vm;
+	build_vm(&vm, managed_vm, mem, mem_size);
+	return f(&vm, p0, p1);
 }
 */
 import "C"
@@ -82,6 +96,10 @@ func go_vm_dispatch_import_invocation(vm *C.struct_VirtualMachine, importID C.ui
 
 //export go_vm_grow_memory
 func go_vm_grow_memory(vm *C.struct_VirtualMachine, incSize uint64) {
+	if incSize == 0 {
+		return
+	}
+
 	managedVM := (*exec.VirtualMachine)(vm.userdata)
 
 	managedVM.Memory = append(managedVM.Memory, make([]byte, int(incSize))...)
@@ -93,7 +111,7 @@ type AOTContext struct {
 	dlHandle unsafe.Pointer
 }
 
-func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
+func (c *AOTContext) resolveNameForInvocation(name string) unsafe.Pointer {
 	nameC := C.CString(name)
 	sym := C.dlsym(c.dlHandle, nameC)
 	C.free(unsafe.Pointer(nameC))
@@ -102,11 +120,51 @@ func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string
 		panic("function not found")
 	}
 
+	return sym
+}
+
+func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
+	var memRef *C.uint8_t
+	if len(vm.Memory) > 0 {
+		memRef = (*C.uint8_t)(&vm.Memory[0])
+	}
+
 	return uint64(C.unsafe_invoke_function_0(
-		sym,
+		c.resolveNameForInvocation(name),
 		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
-		(*C.uint8_t)(&vm.Memory[0]),
-		(C.uint64_t)(uint64(len(vm.Memory))),
+		memRef,
+		C.uint64_t(uint64(len(vm.Memory))),
+	))
+}
+
+func (c *AOTContext) UnsafeInvokeFunction_1(vm *exec.VirtualMachine, name string, p0 uint64) uint64 {
+	var memRef *C.uint8_t
+	if len(vm.Memory) > 0 {
+		memRef = (*C.uint8_t)(&vm.Memory[0])
+	}
+
+	return uint64(C.unsafe_invoke_function_1(
+		c.resolveNameForInvocation(name),
+		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
+		memRef,
+		C.uint64_t(uint64(len(vm.Memory))),
+		C.uint64_t(p0),
+	))
+}
+
+func (c *AOTContext) UnsafeInvokeFunction_2(vm *exec.VirtualMachine, name string, p0, p1 uint64) uint64 {
+	var memRef *C.uint8_t
+	if len(vm.Memory) > 0 {
+		memRef = (*C.uint8_t)(&vm.Memory[0])
+	}
+
+	return uint64(C.unsafe_invoke_function_2(
+		c.resolveNameForInvocation(name),
+		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
+		memRef,
+		C.uint64_t(uint64(len(vm.Memory))),
+		C.uint64_t(p0),
+		C.uint64_t(p1),
 	))
 }
 

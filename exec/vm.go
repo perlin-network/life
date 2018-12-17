@@ -42,6 +42,8 @@ type NCompileConfig struct {
 
 type AOTService interface {
 	UnsafeInvokeFunction_0(vm *VirtualMachine, name string) uint64
+	UnsafeInvokeFunction_1(vm *VirtualMachine, name string, p0 uint64) uint64
+	UnsafeInvokeFunction_2(vm *VirtualMachine, name string, p0, p1 uint64) uint64
 }
 
 // VirtualMachine is a WebAssembly execution environment.

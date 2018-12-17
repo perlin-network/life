@@ -52,17 +52,31 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (
 func (vm *VirtualMachine) Run(entryID int, params ...int64) (retVal int64, retErr error) {
 	vm.Ignite(entryID, params...) // call Ignite() to perform necessary checks even if we are using the AOT mode.
 
-	if vm.AOTService != nil && len(params) == 0 {
-		defer func() {
+	if vm.AOTService != nil {
+		recoveryFunc := func() {
 			if err := recover(); err != nil {
 				if err, ok := err.(error); ok {
 					retErr = err
 				} else {
 					panic(err)
 				}
+			} else {
+				vm.CurrentFrame = -1
 			}
-		}()
-		return int64(vm.AOTService.UnsafeInvokeFunction_0(vm, fmt.Sprintf("%s%d", compiler.NGEN_FUNCTION_PREFIX, entryID))), nil
+		}
+		targetName := fmt.Sprintf("%s%d", compiler.NGEN_FUNCTION_PREFIX, entryID)
+		switch len(params) {
+		case 0:
+			defer recoveryFunc()
+			return int64(vm.AOTService.UnsafeInvokeFunction_0(vm, targetName)), nil
+		case 1:
+			defer recoveryFunc()
+			return int64(vm.AOTService.UnsafeInvokeFunction_1(vm, targetName, uint64(params[0]))), nil
+		case 2:
+			defer recoveryFunc()
+			return int64(vm.AOTService.UnsafeInvokeFunction_2(vm, targetName, uint64(params[0]), uint64(params[1]))), nil
+		default:
+		}
 	}
 
 	for !vm.Exited {
