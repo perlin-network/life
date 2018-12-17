@@ -55,9 +55,59 @@ static uint64_t __attribute__((always_inline)) rotr64( uint64_t x, uint64_t r )
   return (x >> r) | (x << (64 - r % 64));
 }
 `
+const NGEN_FP_HEADER = `
+#include <math.h>
+
+static float __attribute__((always_inline)) fmin32(float a, float b) {
+	if(isnan(a) || isnan(b)) return NAN;
+	return fminf(a, b);
+}
+
+static double __attribute__((always_inline)) fmin64(double a, double b) {
+	if(isnan(a) || isnan(b)) return NAN;
+	return fmin(a, b);
+}
+
+static float __attribute__((always_inline)) fmax32(float a, float b) {
+	if(isnan(a) || isnan(b)) return NAN;
+	return fmaxf(a, b);
+}
+
+static double __attribute__((always_inline)) fmax64(double a, double b) {
+	if(isnan(a) || isnan(b)) return NAN;
+	return fmax(a, b);
+}
+
+static float __attribute__((always_inline)) fneg32(float x) {
+	return -x;
+}
+
+static double __attribute__((always_inline)) fneg64(double x) {
+	return -x;
+}
+
+#define fsqrt32 sqrtf
+#define fsqrt64 sqrt
+#define fceil32 ceilf
+#define fceil64 ceil
+#define ffloor32 floorf
+#define ffloor64 floor
+#define ftrunc32 truncf
+#define ftrunc64 trunc
+#define fnearest32 roundf
+#define fnearest64 round
+#define fabs32 fabsf
+#define fabs64 fabs
+#define fcopysign32 copysignf
+#define fcopysign64 copysign
+`
 
 func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
 	builder.WriteString(fmt.Sprintf(format, args...))
+}
+
+func writeDivZeroRvCheck(b *strings.Builder, ins Instr) {
+	bSprintf(b, "if(%s%d == 0) vm->throw_s(vm, \"divide by zero\"); ", NGEN_VALUE_PREFIX, ins.Values[1])
 }
 
 func writeUnOp_Eqz(b *strings.Builder, ins Instr, ty string) {
@@ -68,9 +118,10 @@ func writeUnOp_Eqz(b *strings.Builder, ins Instr, ty string) {
 	)
 }
 
-func writeUnOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
+func writeUnOp_Fcall(b *strings.Builder, ins Instr, f string, ty string, retTy string) {
 	bSprintf(b,
-		"%s%d = %s(* (%s*) &%s%d);",
+		"* (%s*) &%s%d = %s(* (%s*) &%s%d);",
+		retTy,
 		NGEN_VALUE_PREFIX, ins.Target,
 		f,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
@@ -88,10 +139,10 @@ func writeBinOp_Shift(b *strings.Builder, ins Instr, op string, ty string, round
 	)
 }
 
-func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string) {
+func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string, retTy string) {
 	bSprintf(b,
 		"* (%s*) &%s%d = %s(* (%s*) &%s%d, * (%s*) &%s%d);",
-		ty,
+		retTy,
 		NGEN_VALUE_PREFIX, ins.Target,
 		f,
 		ty, NGEN_VALUE_PREFIX, ins.Values[0],
@@ -285,9 +336,9 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "i32.const", "f32.const":
 			bSprintf(body,
-				"%s%d = (int32_t) (%d);",
+				"%s%d = (uint32_t) (%du);",
 				NGEN_VALUE_PREFIX, ins.Target,
-				int32(ins.Immediates[0]),
+				uint32(ins.Immediates[0]),
 			)
 		case "i32.add":
 			writeBinOp(body, ins, "+", "uint32_t")
@@ -296,12 +347,16 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "i32.mul":
 			writeBinOp(body, ins, "*", "uint32_t")
 		case "i32.div_s":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "/", "int32_t")
 		case "i32.div_u":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "/", "uint32_t")
 		case "i32.rem_s":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "%", "int32_t")
 		case "i32.rem_u":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "%", "uint32_t")
 		case "i32.and":
 			writeBinOp(body, ins, "&", "uint32_t")
@@ -316,15 +371,15 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "i32.shr_u":
 			writeBinOp_Shift(body, ins, ">>", "uint32_t", 32)
 		case "i32.rotl":
-			writeBinOp_Fcall(body, ins, "rotl32", "uint32_t")
+			writeBinOp_Fcall(body, ins, "rotl32", "uint32_t", "uint64_t")
 		case "i32.rotr":
-			writeBinOp_Fcall(body, ins, "rotr32", "uint32_t")
+			writeBinOp_Fcall(body, ins, "rotr32", "uint32_t", "uint64_t")
 		case "i32.clz":
-			writeUnOp_Fcall(body, ins, "clz32", "uint32_t")
+			writeUnOp_Fcall(body, ins, "clz32", "uint32_t", "uint64_t")
 		case "i32.ctz":
-			writeUnOp_Fcall(body, ins, "ctz32", "uint32_t")
+			writeUnOp_Fcall(body, ins, "ctz32", "uint32_t", "uint64_t")
 		case "i32.popcnt":
-			writeUnOp_Fcall(body, ins, "popcnt32", "uint32_t")
+			writeUnOp_Fcall(body, ins, "popcnt32", "uint32_t", "uint64_t")
 		case "i32.eqz":
 			writeUnOp_Eqz(body, ins, "uint32_t")
 		case "i32.eq":
@@ -349,9 +404,9 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp(body, ins, ">=", "uint32_t")
 		case "i64.const", "f64.const":
 			bSprintf(body,
-				"%s%d = (int64_t) (%d);",
+				"%s%d = (uint64_t) (%dull);",
 				NGEN_VALUE_PREFIX, ins.Target,
-				int64(ins.Immediates[0]),
+				uint64(ins.Immediates[0]),
 			)
 		case "i64.add":
 			writeBinOp(body, ins, "+", "uint64_t")
@@ -360,12 +415,16 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "i64.mul":
 			writeBinOp(body, ins, "*", "uint64_t")
 		case "i64.div_s":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "/", "int64_t")
 		case "i64.div_u":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "/", "uint64_t")
 		case "i64.rem_s":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "%", "int64_t")
 		case "i64.rem_u":
+			writeDivZeroRvCheck(body, ins)
 			writeBinOp(body, ins, "%", "uint64_t")
 		case "i64.and":
 			writeBinOp(body, ins, "&", "uint64_t")
@@ -380,15 +439,15 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "i64.shr_u":
 			writeBinOp_Shift(body, ins, ">>", "uint64_t", 64)
 		case "i64.rotl":
-			writeBinOp_Fcall(body, ins, "rotl64", "uint64_t")
+			writeBinOp_Fcall(body, ins, "rotl64", "uint64_t", "uint64_t")
 		case "i64.rotr":
-			writeBinOp_Fcall(body, ins, "rotr64", "uint64_t")
+			writeBinOp_Fcall(body, ins, "rotr64", "uint64_t", "uint64_t")
 		case "i64.clz":
-			writeUnOp_Fcall(body, ins, "clz64", "uint64_t")
+			writeUnOp_Fcall(body, ins, "clz64", "uint64_t", "uint64_t")
 		case "i64.ctz":
-			writeUnOp_Fcall(body, ins, "ctz64", "uint64_t")
+			writeUnOp_Fcall(body, ins, "ctz64", "uint64_t", "uint64_t")
 		case "i64.popcnt":
-			writeUnOp_Fcall(body, ins, "popcnt64", "uint64_t")
+			writeUnOp_Fcall(body, ins, "popcnt64", "uint64_t", "uint64_t")
 		case "i64.eqz":
 			writeUnOp_Eqz(body, ins, "uint64_t")
 		case "i64.eq":
@@ -420,25 +479,25 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "f32.div":
 			writeBinOp(body, ins, "/", "float")
 		case "f32.sqrt":
-			writeUnOp_Fcall(body, ins, "fsqrt32", "float")
+			writeUnOp_Fcall(body, ins, "fsqrt32", "float", "float")
 		case "f32.min":
-			writeBinOp_Fcall(body, ins, "fmin32", "float")
+			writeBinOp_Fcall(body, ins, "fmin32", "float", "float")
 		case "f32.max":
-			writeBinOp_Fcall(body, ins, "fmax32", "float")
+			writeBinOp_Fcall(body, ins, "fmax32", "float", "float")
 		case "f32.ceil":
-			writeUnOp_Fcall(body, ins, "fceil32", "float")
+			writeUnOp_Fcall(body, ins, "fceil32", "float", "float")
 		case "f32.floor":
-			writeUnOp_Fcall(body, ins, "ffloor32", "float")
+			writeUnOp_Fcall(body, ins, "ffloor32", "float", "float")
 		case "f32.trunc":
-			writeUnOp_Fcall(body, ins, "ftrunc32", "float")
+			writeUnOp_Fcall(body, ins, "ftrunc32", "float", "float")
 		case "f32.nearest":
-			writeUnOp_Fcall(body, ins, "fnearest32", "float")
+			writeUnOp_Fcall(body, ins, "fnearest32", "float", "float")
 		case "f32.abs":
-			writeUnOp_Fcall(body, ins, "fabs32", "float")
+			writeUnOp_Fcall(body, ins, "fabs32", "float", "float")
 		case "f32.neg":
-			writeUnOp_Fcall(body, ins, "fneg32", "float")
+			writeUnOp_Fcall(body, ins, "fneg32", "float", "float")
 		case "f32.copysign":
-			writeBinOp_Fcall(body, ins, "fcopysign32", "float")
+			writeBinOp_Fcall(body, ins, "fcopysign32", "float", "float")
 		case "f32.eq":
 			writeBinOp2(body, ins, "==", "float", "uint64_t")
 		case "f32.ne":
@@ -461,25 +520,25 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "f64.div":
 			writeBinOp(body, ins, "/", "double")
 		case "f64.sqrt":
-			writeUnOp_Fcall(body, ins, "fsqrt64", "double")
+			writeUnOp_Fcall(body, ins, "fsqrt64", "double", "double")
 		case "f64.min":
-			writeBinOp_Fcall(body, ins, "fmin64", "double")
+			writeBinOp_Fcall(body, ins, "fmin64", "double", "double")
 		case "f64.max":
-			writeBinOp_Fcall(body, ins, "fmax64", "double")
+			writeBinOp_Fcall(body, ins, "fmax64", "double", "double")
 		case "f64.ceil":
-			writeUnOp_Fcall(body, ins, "fceil64", "double")
+			writeUnOp_Fcall(body, ins, "fceil64", "double", "double")
 		case "f64.floor":
-			writeUnOp_Fcall(body, ins, "ffloor64", "double")
+			writeUnOp_Fcall(body, ins, "ffloor64", "double", "double")
 		case "f64.trunc":
-			writeUnOp_Fcall(body, ins, "ftrunc64", "double")
+			writeUnOp_Fcall(body, ins, "ftrunc64", "double", "double")
 		case "f64.nearest":
-			writeUnOp_Fcall(body, ins, "fnearest64", "double")
+			writeUnOp_Fcall(body, ins, "fnearest64", "double", "double")
 		case "f64.abs":
-			writeUnOp_Fcall(body, ins, "fabs64", "double")
+			writeUnOp_Fcall(body, ins, "fabs64", "double", "double")
 		case "f64.neg":
-			writeUnOp_Fcall(body, ins, "fneg64", "double")
+			writeUnOp_Fcall(body, ins, "fneg64", "double", "double")
 		case "f64.copysign":
-			writeBinOp_Fcall(body, ins, "fcopysign64", "double")
+			writeBinOp_Fcall(body, ins, "fcopysign64", "double", "double")
 		case "f64.eq":
 			writeBinOp2(body, ins, "==", "double", "uint64_t")
 		case "f64.ne":
@@ -504,6 +563,44 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "i32.wrap/i64":
 			writeBinOp_ConstRv(body, ins, "&", "uint64_t", "UINT32_MASK")
+
+		// TODO: These floating point operations need to be double-checked for correctness.
+
+		case "i32.trunc_s/f32", "i64.trunc_s/f32", "i32.trunc_u/f32", "i64.trunc_u/f32":
+			writeUnOp_Fcall(body, ins, "ftrunc32", "float", "int64_t")
+
+		case "i32.trunc_s/f64", "i64.trunc_s/f64", "i32.trunc_u/f64", "i64.trunc_u/f64":
+			writeUnOp_Fcall(body, ins, "ftrunc64", "float", "int64_t")
+
+		case "f32.demote/f64":
+			writeUnOp_Fcall(body, ins, "", "double", "float")
+
+		case "f64.promote/f32":
+			writeUnOp_Fcall(body, ins, "", "float", "double")
+
+		case "f32.convert_s/i32":
+			writeUnOp_Fcall(body, ins, "", "int32_t", "float")
+
+		case "f32.convert_s/i64":
+			writeUnOp_Fcall(body, ins, "", "int64_t", "float")
+
+		case "f32.convert_u/i32":
+			writeUnOp_Fcall(body, ins, "", "uint32_t", "float")
+
+		case "f32.convert_u/i64":
+			writeUnOp_Fcall(body, ins, "", "uint64_t", "float")
+
+		case "f64.convert_s/i32":
+			writeUnOp_Fcall(body, ins, "", "int32_t", "double")
+
+		case "f64.convert_s/i64":
+			writeUnOp_Fcall(body, ins, "", "int64_t", "double")
+
+		case "f64.convert_u/i32":
+			writeUnOp_Fcall(body, ins, "", "uint32_t", "double")
+
+		case "f64.convert_u/i64":
+			writeUnOp_Fcall(body, ins, "", "uint64_t", "double")
 
 		case "i32.reinterpret/f32", "i64.reinterpret/f64", "f32.reinterpret/i32", "f64.reinterpret/i64":
 
