@@ -61,6 +61,7 @@ func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function id")
 	jitFlag := flag.Bool("jit", false, "enable jit")
 	ngenFlag := flag.Bool("ngen", false, "use ngen")
+	noFloatingPointFlag := flag.Bool("no-fp", false, "disable floating point")
 	flag.Parse()
 
 	// Read WebAssembly *.wasm file.
@@ -71,9 +72,10 @@ func main() {
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{
-		EnableJIT:          *jitFlag,
-		DefaultMemoryPages: 128,
-		DefaultTableSize:   65536,
+		EnableJIT:            *jitFlag,
+		DefaultMemoryPages:   128,
+		DefaultTableSize:     65536,
+		DisableFloatingPoint: *noFloatingPointFlag,
 	}, new(Resolver), nil)
 
 	if err != nil {
