@@ -134,7 +134,7 @@ func (c *SSAFunctionCompiler) FilterFloatingPoint() {
 			if strings.Contains(ins.Op, ".reinterpret/") || strings.HasSuffix(ins.Op, ".const") {
 				continue // whitelist
 			}
-			c.Code[i] = buildInstr(0, "fp_disabled_error", nil, nil)
+			c.Code[i] = buildInstr(ins.Target, "fp_disabled_error", nil, nil)
 		}
 	}
 }

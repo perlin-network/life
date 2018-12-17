@@ -552,6 +552,12 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
 
+		case "add_gas":
+			// TODO: Implement
+
+		case "fp_disabled_error":
+			bSprintf(body, "vm->throw_s(vm, \"floating point disabled\");")
+
 		default:
 			panic(ins.Op)
 		}
