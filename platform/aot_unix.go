@@ -183,7 +183,7 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		panic(err)
 	}
 
-	cmd := os_exec.Command("cc", "-O2", "-o", outPath, "-shared", inPath)
+	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-o", outPath, "-shared", inPath, "-ldl")
 	out, err := cmd.CombinedOutput()
 
 	if len(out) > 0 {
