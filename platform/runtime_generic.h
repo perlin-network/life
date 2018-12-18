@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include "vm_def.h"
 
-static const int NEED_MEM_BOUND_CHECK = 1;
+static int need_mem_bound_check() {
+    return 1;
+}
 
 static void __x_grow_memory(struct VirtualMachine *vm, uint64_t inc_size) {
     if(vm->mem_size + inc_size < vm->mem_size) {
@@ -30,4 +32,8 @@ static void vm_destroy(struct VirtualMachine *vm) {
 
 static uintptr_t vm_get_managed(struct VirtualMachine *vm) {
     return (uintptr_t) vm->userdata;
+}
+
+static uint64_t vm_execute(struct VirtualMachine *vm, uint64_t (*f)(struct VirtualMachine *, void *), void *userdata) {
+    return f(vm, userdata);
 }

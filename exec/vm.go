@@ -37,7 +37,8 @@ type FunctionImportInfo struct {
 }
 
 type NCompileConfig struct {
-	AliasDef bool
+	AliasDef             bool
+	DisableMemBoundCheck bool
 }
 
 type AOTService interface {
@@ -278,12 +279,14 @@ func filterName(name string) string {
 	return ret
 }
 
-func (vm *VirtualMachine) GenerateNEnv() string {
+func (vm *VirtualMachine) GenerateNEnv(config NCompileConfig) string {
 	builder := &strings.Builder{}
 
 	bSprintf(builder, "#include <stdint.h>\n\n")
 
-	//builder.WriteString("#define POLYMERASE_NO_MEM_BOUND_CHECK\n")
+	if config.DisableMemBoundCheck {
+		builder.WriteString("#define POLYMERASE_NO_MEM_BOUND_CHECK\n")
+	}
 
 	builder.WriteString(compiler.NGEN_HEADER)
 	if !vm.Config.DisableFloatingPoint {
@@ -369,7 +372,7 @@ func (vm *VirtualMachine) NCompile(config NCompileConfig) string {
 		panic(err)
 	}
 
-	out := vm.GenerateNEnv() + "\n" + body
+	out := vm.GenerateNEnv(config) + "\n" + body
 	if config.AliasDef {
 		out += "\n"
 		out += vm.NBuildAliasDef()

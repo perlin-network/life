@@ -6,9 +6,9 @@ package platform
 #include "vm_def.h"
 #include <string.h>
 
-#ifdef __linux__
-//#include "runtime_linux.h"
-#include "runtime_generic.h"
+#if defined(__linux__) && defined(__x86_64__)
+#include "runtime_linux_x86_64.h"
+//#include "runtime_generic.h"
 #else
 #include "runtime_generic.h"
 #endif
@@ -19,17 +19,61 @@ package platform
 
 typedef const char const_char;
 
+struct InvokeInfo {
+	void *sym;
+	int num_params;
+	const uint64_t *params;
+};
+
+static uint64_t __do_invoke(struct VirtualMachine *vm, void *_info) {
+	struct InvokeInfo *info = _info;
+
+	switch(info->num_params) {
+		case 0: {
+			uint64_t (*f)(struct VirtualMachine *vm) = info->sym;
+			return f(vm);
+		}
+		case 1: {
+			uint64_t (*f)(struct VirtualMachine *vm, uint64_t) = info->sym;
+			return f(vm, info->params[0]);
+		}
+		case 2: {
+			uint64_t (*f)(struct VirtualMachine *vm, uint64_t, uint64_t) = info->sym;
+			return f(vm, info->params[0], info->params[1]);
+		}
+		default: {
+			abort();
+		}
+	}
+}
+
 static uint64_t unsafe_invoke_function_0(struct VirtualMachine *vm, void *sym) {
-	uint64_t (*f)(struct VirtualMachine *vm) = sym;
-	return f(vm);
+	struct InvokeInfo ii = {
+		.sym = sym,
+		.num_params = 0,
+		.params = 0,
+	};
+	return vm_execute(vm, __do_invoke, &ii);
 }
+
 static uint64_t unsafe_invoke_function_1(struct VirtualMachine *vm, void *sym, uint64_t p0) {
-	uint64_t (*f)(struct VirtualMachine *vm, uint64_t) = sym;
-	return f(vm, p0);
+	uint64_t params[] = {p0};
+	struct InvokeInfo ii = {
+		.sym = sym,
+		.num_params = 1,
+		.params = params,
+	};
+	return vm_execute(vm, __do_invoke, &ii);
 }
+
 static uint64_t unsafe_invoke_function_2(struct VirtualMachine *vm, void *sym, uint64_t p0, uint64_t p1) {
-	uint64_t (*f)(struct VirtualMachine *vm, uint64_t, uint64_t) = sym;
-	return f(vm, p0, p1);
+	uint64_t params[] = {p0, p1};
+	struct InvokeInfo ii = {
+		.sym = sym,
+		.num_params = 2,
+		.params = params,
+	};
+	return vm_execute(vm, __do_invoke, &ii);
 }
 */
 import "C"
@@ -138,7 +182,10 @@ func (c *AOTContext) UnsafeInvokeFunction_2(vm *exec.VirtualMachine, name string
 }
 
 func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
-	code := vm.NCompile(exec.NCompileConfig{AliasDef: false})
+	code := vm.NCompile(exec.NCompileConfig{
+		AliasDef:             false,
+		DisableMemBoundCheck: C.need_mem_bound_check() == 0,
+	})
 	tempDir, err := ioutil.TempDir("", "life-aot-")
 	if err != nil {
 		panic(err)
