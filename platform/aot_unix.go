@@ -1,7 +1,17 @@
 package platform
 
 /*
-#cgo LDFLAGS: -ldl
+#cgo LDFLAGS: -ldl -lpthread
+
+#include "vm_def.h"
+#include <string.h>
+
+#ifdef __linux__
+//#include "runtime_linux.h"
+#include "runtime_generic.h"
+#else
+#include "runtime_generic.h"
+#endif
 
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -9,47 +19,17 @@ package platform
 
 typedef const char const_char;
 
-struct VirtualMachine;
-typedef uint64_t (*ExternalFunction)(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
-struct VirtualMachine {
-	void (*throw_s)(struct VirtualMachine *vm, const char *s);
-	ExternalFunction (*resolve_import)(struct VirtualMachine *vm, const char *module_name, const char *field_name);
-	uint64_t mem_size;
-	uint8_t *mem;
-	void (*grow_memory)(struct VirtualMachine *vm, uint64_t inc_size);
-	void *userdata;
-};
-
-void go_vm_throw_s(struct VirtualMachine *vm, const char *s);
-ExternalFunction go_vm_resolve_import(struct VirtualMachine *vm, const char *module_name, const char *field_name);
-void go_vm_grow_memory(struct VirtualMachine *vm, uint64_t inc_size);
-uint64_t go_vm_dispatch_import_invocation(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params);
-
-static void build_vm(struct VirtualMachine *out, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size) {
-	out->throw_s = go_vm_throw_s;
-	out->resolve_import = go_vm_resolve_import;
-	out->mem_size = mem_size;
-	out->mem = mem;
-	out->grow_memory = go_vm_grow_memory;
-	out->userdata = (void *) managed_vm;
-}
-static uint64_t unsafe_invoke_function_0(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size) {
+static uint64_t unsafe_invoke_function_0(struct VirtualMachine *vm, void *sym) {
 	uint64_t (*f)(struct VirtualMachine *vm) = sym;
-	struct VirtualMachine vm;
-	build_vm(&vm, managed_vm, mem, mem_size);
-	return f(&vm);
+	return f(vm);
 }
-static uint64_t unsafe_invoke_function_1(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size, uint64_t p0) {
+static uint64_t unsafe_invoke_function_1(struct VirtualMachine *vm, void *sym, uint64_t p0) {
 	uint64_t (*f)(struct VirtualMachine *vm, uint64_t) = sym;
-	struct VirtualMachine vm;
-	build_vm(&vm, managed_vm, mem, mem_size);
-	return f(&vm, p0);
+	return f(vm, p0);
 }
-static uint64_t unsafe_invoke_function_2(void *sym, uintptr_t managed_vm, uint8_t *mem, uint64_t mem_size, uint64_t p0, uint64_t p1) {
+static uint64_t unsafe_invoke_function_2(struct VirtualMachine *vm, void *sym, uint64_t p0, uint64_t p1) {
 	uint64_t (*f)(struct VirtualMachine *vm, uint64_t, uint64_t) = sym;
-	struct VirtualMachine vm;
-	build_vm(&vm, managed_vm, mem, mem_size);
-	return f(&vm, p0, p1);
+	return f(vm, p0, p1);
 }
 */
 import "C"
@@ -96,21 +76,29 @@ func go_vm_dispatch_import_invocation(vm *C.struct_VirtualMachine, importID C.ui
 	return C.uint64_t(imp.F(managedVM))
 }
 
-//export go_vm_grow_memory
-func go_vm_grow_memory(vm *C.struct_VirtualMachine, incSize C.uint64_t) {
-	if incSize == 0 {
-		return
+//export go_vm_pre_notify_grow_memory
+func go_vm_pre_notify_grow_memory(vm *C.struct_VirtualMachine, incSize C.uint64_t) {
+
+}
+
+//export go_vm_post_notify_grow_memory
+func go_vm_post_notify_grow_memory(vm *C.struct_VirtualMachine) {
+	updateMemory(vm)
+}
+
+func updateMemory(vm *C.struct_VirtualMachine) {
+	managedVM := (*exec.VirtualMachine)(unsafe.Pointer(uintptr(C.vm_get_managed(vm))))
+	memorySlice := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(vm.mem)),
+		Len:  int(vm.mem_size),
+		Cap:  int(vm.mem_size),
 	}
-
-	managedVM := (*exec.VirtualMachine)(vm.userdata)
-
-	managedVM.Memory = append(managedVM.Memory, make([]byte, int(incSize))...)
-	vm.mem_size = (C.uint64_t)(uint64(len(managedVM.Memory)))
-	vm.mem = (*C.uint8_t)(&managedVM.Memory[0])
+	managedVM.Memory = *(*[]byte)(unsafe.Pointer(&memorySlice))
 }
 
 type AOTContext struct {
 	dlHandle unsafe.Pointer
+	vmHandle *C.struct_VirtualMachine
 }
 
 func (c *AOTContext) resolveNameForInvocation(name string) unsafe.Pointer {
@@ -126,45 +114,24 @@ func (c *AOTContext) resolveNameForInvocation(name string) unsafe.Pointer {
 }
 
 func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
-	var memRef *C.uint8_t
-	if len(vm.Memory) > 0 {
-		memRef = (*C.uint8_t)(&vm.Memory[0])
-	}
-
 	return uint64(C.unsafe_invoke_function_0(
+		c.vmHandle,
 		c.resolveNameForInvocation(name),
-		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
-		memRef,
-		C.uint64_t(uint64(len(vm.Memory))),
 	))
 }
 
 func (c *AOTContext) UnsafeInvokeFunction_1(vm *exec.VirtualMachine, name string, p0 uint64) uint64 {
-	var memRef *C.uint8_t
-	if len(vm.Memory) > 0 {
-		memRef = (*C.uint8_t)(&vm.Memory[0])
-	}
-
 	return uint64(C.unsafe_invoke_function_1(
+		c.vmHandle,
 		c.resolveNameForInvocation(name),
-		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
-		memRef,
-		C.uint64_t(uint64(len(vm.Memory))),
 		C.uint64_t(p0),
 	))
 }
 
 func (c *AOTContext) UnsafeInvokeFunction_2(vm *exec.VirtualMachine, name string, p0, p1 uint64) uint64 {
-	var memRef *C.uint8_t
-	if len(vm.Memory) > 0 {
-		memRef = (*C.uint8_t)(&vm.Memory[0])
-	}
-
 	return uint64(C.unsafe_invoke_function_2(
+		c.vmHandle,
 		c.resolveNameForInvocation(name),
-		C.uintptr_t(uintptr(unsafe.Pointer(vm))),
-		memRef,
-		C.uint64_t(uint64(len(vm.Memory))),
 		C.uint64_t(p0),
 		C.uint64_t(p1),
 	))
@@ -185,7 +152,7 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		panic(err)
 	}
 
-	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-o", outPath, "-shared", inPath, "-ldl")
+	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-o", outPath, "-shared", inPath)
 	out, err := cmd.CombinedOutput()
 
 	if len(out) > 0 {
@@ -203,12 +170,23 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		panic("unable to open compiled code")
 	}
 
+	nativeVM := C.vm_alloc()
+	C.vm_build(nativeVM, C.uintptr_t(uintptr(unsafe.Pointer(vm))), C.uint64_t(len(vm.Memory)))
+	if len(vm.Memory) > 0 {
+		C.memcpy(unsafe.Pointer(nativeVM.mem), unsafe.Pointer(&vm.Memory[0]), C.ulong(len(vm.Memory)))
+	}
+
+	updateMemory(nativeVM)
+
 	ctx := &AOTContext{
 		dlHandle: handle,
+		vmHandle: nativeVM,
 	}
 
 	runtime.SetFinalizer(ctx, func(ctx *AOTContext) {
 		C.dlclose(ctx.dlHandle)
+		C.vm_destroy(ctx.vmHandle)
+		C.free(unsafe.Pointer(ctx.vmHandle))
 	})
 
 	return ctx
