@@ -1,6 +1,8 @@
 package platform
 
 /*
+#cgo LDFLAGS: -ldl
+
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -95,7 +97,7 @@ func go_vm_dispatch_import_invocation(vm *C.struct_VirtualMachine, importID C.ui
 }
 
 //export go_vm_grow_memory
-func go_vm_grow_memory(vm *C.struct_VirtualMachine, incSize uint64) {
+func go_vm_grow_memory(vm *C.struct_VirtualMachine, incSize C.uint64_t) {
 	if incSize == 0 {
 		return
 	}
