@@ -58,7 +58,7 @@ func go_vm_resolve_import(vm *C.struct_VirtualMachine, moduleName *C.const_char,
 
 //export go_vm_dispatch_import_invocation
 func go_vm_dispatch_import_invocation(vm *C.struct_VirtualMachine, importID C.uint64_t, numParams C.uint64_t, params *C.uint64_t) C.uint64_t {
-	managedVM := (*exec.VirtualMachine)(vm.userdata)
+	managedVM := (*exec.VirtualMachine)(unsafe.Pointer(uintptr(C.vm_get_managed(vm))))
 
 	imp := &managedVM.FunctionImports[importID]
 	if imp.F == nil {
