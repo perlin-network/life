@@ -252,6 +252,32 @@ func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
 	builder.WriteString(fmt.Sprintf(format, args...))
 }
 
+func escapeName(name string) string {
+	ret := ""
+
+	for _, ch := range []byte(name) {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			ret += string(ch)
+		} else {
+			ret += fmt.Sprintf("\\x%02x", ch)
+		}
+	}
+
+	return ret
+}
+
+func filterName(name string) string {
+	ret := ""
+
+	for _, ch := range []byte(name) {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			ret += string(ch)
+		}
+	}
+
+	return ret
+}
+
 func (vm *VirtualMachine) GenerateNEnv() string {
 	builder := &strings.Builder{}
 
@@ -304,7 +330,7 @@ func (vm *VirtualMachine) GenerateNEnv() string {
 	bSprintf(builder, "static const uint64_t num_import_entries = %d;\n", len(vm.FunctionImports))
 	bSprintf(builder, "static struct ImportEntry imports[] = {\n")
 	for _, imp := range vm.FunctionImports {
-		bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", imp.ModuleName, imp.FieldName)
+		bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName))
 	}
 	bSprintf(builder, "};\n")
 	bSprintf(builder,
@@ -329,7 +355,7 @@ func (vm *VirtualMachine) NBuildAliasDef() string {
 	if vm.Module.Base.Export != nil {
 		for name, exp := range vm.Module.Base.Export.Entries {
 			if exp.Kind == wasm.ExternalFunction {
-				bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, name, compiler.NGEN_FUNCTION_PREFIX, exp.Index)
+				bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index)
 			}
 		}
 	}
