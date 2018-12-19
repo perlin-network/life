@@ -223,8 +223,6 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 	}
 	builder.WriteString(") {\n")
 
-	builder.WriteString("union Value phi = { .vu64 = 0 };\n")
-
 	for i := uint64(0); i < numLocals; i++ {
 		bSprintf(builder, "uint64_t %s%d = 0;\n", NGEN_LOCAL_PREFIX, i+numParams)
 	}
@@ -235,7 +233,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 	for i, ins := range c.Code {
 		valueIDs[ins.Target] = struct{}{}
 
-		bSprintf(body, "\n%s%d:\n", NGEN_INS_LABEL_PREFIX, i)
+		bSprintf(body, "%s%d: ", NGEN_INS_LABEL_PREFIX, i)
 		switch ins.Op {
 		case "unreachable":
 			bSprintf(body, "vm->throw_s(vm, \"unreachable executed\");")
@@ -676,9 +674,12 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 
 	body.WriteString("\nreturn 0;\n")
 
+	bSprintf(builder, "union Value phi")
+
 	for id, _ := range valueIDs {
-		bSprintf(builder, "union Value %s%d = { .vu64 = 0 };\n", NGEN_VALUE_PREFIX, id)
+		bSprintf(builder, ",%s%d", NGEN_VALUE_PREFIX, id)
 	}
+	bSprintf(builder, ";\n")
 
 	builder.WriteString(body.String())
 	builder.WriteString("}\n")
