@@ -22,11 +22,28 @@ struct VirtualMachine {
 	void (*grow_memory)(struct VirtualMachine *vm, uint64_t inc_size);
 	void *userdata;
 };
-static uint8_t * __attribute__((always_inline)) mem_translate(struct VirtualMachine *vm, uint64_t start, uint64_t size) {
+
+#define V_uint32_t vu32
+#define V_uint64_t vu64
+#define V_int32_t vi32
+#define V_int64_t vi64
+#define V_float vf32
+#define V_double vf64
+
+union Value {
+	uint32_t vu32;
+	uint64_t vu64;
+	int32_t vi32;
+	int64_t vi64;
+	float vf32;
+	double vf64;
+};
+static uint8_t * __attribute__((always_inline)) mem_translate(struct VirtualMachine *vm, union Value start, uint32_t offset, uint32_t size) {
+	start.vu32 += offset;
 	#ifndef POLYMERASE_NO_MEM_BOUND_CHECK
-	if(start + size < start || start + size > vm->mem_size) vm->throw_s(vm, "memory access out of bounds");
+	if(start.vu32 + size < start.vu32 || start.vu32 + size > vm->mem_size) vm->throw_s(vm, "memory access out of bounds");
 	#endif
-	return &vm->mem[* (uint32_t*) &start];
+	return &vm->mem[start.vu32];
 }
 static uint64_t __attribute__((always_inline)) clz32(uint32_t x) {
 	return __builtin_clz(x);
@@ -109,55 +126,52 @@ func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
 }
 
 func writeDivZeroRvCheck(b *strings.Builder, ins Instr) {
-	bSprintf(b, "if(%s%d == 0) vm->throw_s(vm, \"divide by zero\"); ", NGEN_VALUE_PREFIX, ins.Values[1])
+	bSprintf(b, "if(%s%d.vu64 == 0) vm->throw_s(vm, \"divide by zero\"); ", NGEN_VALUE_PREFIX, ins.Values[1]) // TODO: fix
 }
 
 func writeUnOp_Eqz(b *strings.Builder, ins Instr, ty string) {
 	bSprintf(b,
-		"%s%d = ((* (%s*) &%s%d) == 0);",
+		"%s%d.vu64 = (%s%d.V_%s == 0);",
 		NGEN_VALUE_PREFIX, ins.Target,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
 	)
 }
 
 func writeUnOp_Fcall(b *strings.Builder, ins Instr, f string, ty string, retTy string) {
 	bSprintf(b,
-		"* (%s*) &%s%d = %s(* (%s*) &%s%d);",
-		retTy,
-		NGEN_VALUE_PREFIX, ins.Target,
+		"%s%d.V_%s = %s(%s%d.V_%s);",
+		NGEN_VALUE_PREFIX, ins.Target, retTy,
 		f,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
 	)
 }
 
 func writeBinOp_Shift(b *strings.Builder, ins Instr, op string, ty string, rounding uint64) {
 	bSprintf(b,
-		"%s%d = ((* (%s*) &%s%d) %s ((* (%s*) &%s%d) %% %d));",
+		"%s%d.vu64 = (%s%d.V_%s) %s (%s%d.V_%s %% %d);",
 		NGEN_VALUE_PREFIX, ins.Target,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
 		op,
-		ty, NGEN_VALUE_PREFIX, ins.Values[1],
+		NGEN_VALUE_PREFIX, ins.Values[1], ty,
 		rounding,
 	)
 }
 
 func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string, retTy string) {
 	bSprintf(b,
-		"* (%s*) &%s%d = %s(* (%s*) &%s%d, * (%s*) &%s%d);",
-		retTy,
-		NGEN_VALUE_PREFIX, ins.Target,
+		"%s%d.V_%s = %s(%s%d.V_%s, %s%d.V_%s);",
+		NGEN_VALUE_PREFIX, ins.Target, retTy,
 		f,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
-		ty, NGEN_VALUE_PREFIX, ins.Values[1],
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
+		NGEN_VALUE_PREFIX, ins.Values[1], ty,
 	)
 }
 
 func writeBinOp_ConstRv(b *strings.Builder, ins Instr, op string, ty string, rv string) {
 	bSprintf(b,
-		"* (%s*) &%s%d = ((* (%s*) &%s%d) %s (%s));",
-		ty,
-		NGEN_VALUE_PREFIX, ins.Target,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		"%s%d.V_%s = (%s%d.V_%s %s (%s));",
+		NGEN_VALUE_PREFIX, ins.Target, ty,
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
 		op,
 		rv,
 	)
@@ -165,12 +179,11 @@ func writeBinOp_ConstRv(b *strings.Builder, ins Instr, op string, ty string, rv 
 
 func writeBinOp2(b *strings.Builder, ins Instr, op string, ty string, retTy string) {
 	bSprintf(b,
-		"* (%s*) &%s%d = ((* (%s*) &%s%d) %s (* (%s*) &%s%d));",
-		retTy,
-		NGEN_VALUE_PREFIX, ins.Target,
-		ty, NGEN_VALUE_PREFIX, ins.Values[0],
+		"%s%d.V_%s = (%s%d.V_%s %s %s%d.V_%s);",
+		NGEN_VALUE_PREFIX, ins.Target, retTy,
+		NGEN_VALUE_PREFIX, ins.Values[0], ty,
 		op,
-		ty, NGEN_VALUE_PREFIX, ins.Values[1],
+		NGEN_VALUE_PREFIX, ins.Values[1], ty,
 	)
 }
 
@@ -180,7 +193,7 @@ func writeBinOp(b *strings.Builder, ins Instr, op string, ty string) {
 
 func writeMemLoad(b *strings.Builder, ins Instr, ty string) {
 	bSprintf(b,
-		"* (int64_t *) &%s%d = * (%s *) mem_translate(vm, %s%d + %dull, sizeof(%s));", // TODO: any missing conversions?
+		"%s%d.vi64 = * (%s *) mem_translate(vm, %s%d, %du, sizeof(%s));", // TODO: any missing conversions?
 		NGEN_VALUE_PREFIX, ins.Target,
 		ty,
 		NGEN_VALUE_PREFIX, ins.Values[0],
@@ -191,7 +204,7 @@ func writeMemLoad(b *strings.Builder, ins Instr, ty string) {
 
 func writeMemStore(b *strings.Builder, ins Instr, ty string) {
 	bSprintf(b,
-		"* (%s *) mem_translate(vm, %s%d + %dull, sizeof(%s)) = %s%d;",
+		"* (%s *) mem_translate(vm, %s%d, %du, sizeof(%s)) = %s%d.vu64;",
 		ty,
 		NGEN_VALUE_PREFIX, ins.Values[0],
 		uint64(ins.Immediates[1]),
@@ -210,7 +223,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 	}
 	builder.WriteString(") {\n")
 
-	builder.WriteString("uint64_t phi = 0;\n")
+	builder.WriteString("union Value phi = { .vu64 = 0 };\n")
 
 	for i := uint64(0); i < numLocals; i++ {
 		bSprintf(builder, "uint64_t %s%d = 0;\n", NGEN_LOCAL_PREFIX, i+numParams)
@@ -230,17 +243,17 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			if len(ins.Values) == 0 {
 				body.WriteString("return 0;")
 			} else {
-				bSprintf(body, "return %s%d;", NGEN_VALUE_PREFIX, ins.Values[0])
+				bSprintf(body, "return %s%d.vu64;", NGEN_VALUE_PREFIX, ins.Values[0])
 			}
 		case "get_local":
 			bSprintf(body,
-				"%s%d = %s%d;",
+				"%s%d.vu64 = %s%d;",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_LOCAL_PREFIX, ins.Immediates[0],
 			)
 		case "set_local":
 			bSprintf(body,
-				"%s%d = %s%d;",
+				"%s%d = %s%d.vu64;",
 				NGEN_LOCAL_PREFIX, ins.Immediates[0],
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
@@ -249,7 +262,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				panic("global index out of bounds")
 			}
 			bSprintf(body,
-				"%s%d = globals[%d];",
+				"%s%d.vu64 = globals[%d];",
 				NGEN_VALUE_PREFIX, ins.Target,
 				uint64(ins.Immediates[0]),
 			)
@@ -258,36 +271,36 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				panic("global index out of bounds")
 			}
 			bSprintf(body,
-				"globals[%d] = %s%d;",
+				"globals[%d] = %s%d.vu64;",
 				uint64(ins.Immediates[0]),
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
 		case "call":
 			bSprintf(body,
-				"%s%d = %s%d(vm",
+				"%s%d.vu64 = %s%d(vm",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_FUNCTION_PREFIX, ins.Immediates[0],
 			)
 			for _, v := range ins.Values {
-				bSprintf(body, ",%s%d", NGEN_VALUE_PREFIX, v)
+				bSprintf(body, ",%s%d.vu64", NGEN_VALUE_PREFIX, v)
 			}
 			body.WriteString(");")
 		case "call_indirect":
 			bSprintf(body,
-				"%s%d = ((uint64_t (*)(struct VirtualMachine *",
+				"%s%d.vu64 = ((uint64_t (*)(struct VirtualMachine *",
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
 			for range ins.Values[:len(ins.Values)-1] {
 				bSprintf(body, ",uint64_t")
 			}
 			bSprintf(body,
-				")) %sresolve_indirect(vm, %s%d, %d)) (vm",
+				")) %sresolve_indirect(vm, %s%d.vu32, %d)) (vm",
 				NGEN_ENV_API_PREFIX,
 				NGEN_VALUE_PREFIX, ins.Values[len(ins.Values)-1],
 				len(ins.Values)-1,
 			)
 			for _, v := range ins.Values[:len(ins.Values)-1] {
-				bSprintf(body, ",%s%d", NGEN_VALUE_PREFIX, v)
+				bSprintf(body, ",%s%d.vu64", NGEN_VALUE_PREFIX, v)
 			}
 			body.WriteString(");")
 		case "jmp":
@@ -298,14 +311,14 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_if":
 			bSprintf(body,
-				"if(* (uint32_t*) &%s%d) { phi = %s%d; goto %s%d; }",
+				"if(%s%d.vu32) { phi = %s%d; goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
 			)
 		case "jmp_either":
 			bSprintf(body,
-				"phi = %s%d; if(* (uint32_t*) &%s%d) { goto %s%d; } else { goto %s%d; }",
+				"phi = %s%d; if(%s%d.vu32) { goto %s%d; } else { goto %s%d; }",
 				NGEN_VALUE_PREFIX, ins.Values[1],
 				NGEN_VALUE_PREFIX, ins.Values[0],
 				NGEN_INS_LABEL_PREFIX, ins.Immediates[0],
@@ -313,7 +326,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "jmp_table":
 			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[1])
-			bSprintf(body, "switch(* (uint32_t*) &%s%d) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
+			bSprintf(body, "switch(%s%d.vu32) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
@@ -331,7 +344,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "select":
 			bSprintf(body,
-				"%s%d = (* (uint32_t*) &%s%d) ? %s%d : %s%d;",
+				"%s%d = %s%d.vu32 ? %s%d : %s%d;",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[2],
 				NGEN_VALUE_PREFIX, ins.Values[0],
@@ -339,7 +352,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			)
 		case "i32.const", "f32.const":
 			bSprintf(body,
-				"%s%d = (uint32_t) (%du);",
+				"%s%d.vu64 = (uint32_t) (%du);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				uint32(ins.Immediates[0]),
 			)
@@ -407,7 +420,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp(body, ins, ">=", "uint32_t")
 		case "i64.const", "f64.const":
 			bSprintf(body,
-				"%s%d = (uint64_t) (%dull);",
+				"%s%d.vu64 = (uint64_t) (%dull);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				uint64(ins.Immediates[0]),
 			)
@@ -638,13 +651,13 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 
 		case "current_memory":
 			bSprintf(body,
-				"%s%d = vm->mem_size / 65536;",
+				"%s%d.vu64 = vm->mem_size / 65536;",
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
 
 		case "grow_memory":
 			bSprintf(body,
-				"%s%d = vm->mem_size / 65536; vm->grow_memory(vm, (* (uint32_t*) &%s%d) * 65536);",
+				"%s%d.vu64 = vm->mem_size / 65536; vm->grow_memory(vm, %s%d.vu32 * 65536);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
@@ -664,7 +677,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 	body.WriteString("\nreturn 0;\n")
 
 	for id, _ := range valueIDs {
-		bSprintf(builder, "uint64_t %s%d = 0;\n", NGEN_VALUE_PREFIX, id)
+		bSprintf(builder, "union Value %s%d = { .vu64 = 0 };\n", NGEN_VALUE_PREFIX, id)
 	}
 
 	builder.WriteString(body.String())
