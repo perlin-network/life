@@ -7,12 +7,9 @@ import "C"
 
 import (
 	"github.com/perlin-network/life/exec"
-	"unsafe"
 )
 
 type AOTContext struct {
-	dlHandle unsafe.Pointer
-	vmHandle *C.struct_VirtualMachine
 }
 
 func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
