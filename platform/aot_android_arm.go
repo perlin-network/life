@@ -1,10 +1,5 @@
 package platform
 
-/*
-#include "vm_def.h"
-*/
-import "C"
-
 import (
 	"github.com/perlin-network/life/exec"
 )
