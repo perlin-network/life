@@ -1575,6 +1575,12 @@ func (vm *VirtualMachine) Execute() {
 			importID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
 			vm.Delegate = func() {
+				defer func() {
+					if err := recover(); err != nil {
+						vm.Exited = true
+						vm.ExitError = err
+					}
+				}()
 				imp := vm.FunctionImports[importID]
 				if imp.F == nil {
 					imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
