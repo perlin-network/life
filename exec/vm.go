@@ -11,9 +11,9 @@ import (
 	"github.com/perlin-network/life/utils"
 
 	"github.com/go-interpreter/wagon/wasm"
+	"strings"
 )
 
-// FunctionImport represents the function import type. If len(sig.ReturnTypes) == 0, the return value will be ignored.
 type FunctionImport func(vm *VirtualMachine) int64
 
 const (
@@ -30,12 +30,29 @@ const (
 // LE is a simple alias to `binary.LittleEndian`.
 var LE = binary.LittleEndian
 
+type FunctionImportInfo struct {
+	ModuleName string
+	FieldName  string
+	F          FunctionImport
+}
+
+type NCompileConfig struct {
+	AliasDef             bool
+	DisableMemBoundCheck bool
+}
+
+type AOTService interface {
+	UnsafeInvokeFunction_0(vm *VirtualMachine, name string) uint64
+	UnsafeInvokeFunction_1(vm *VirtualMachine, name string, p0 uint64) uint64
+	UnsafeInvokeFunction_2(vm *VirtualMachine, name string, p0, p1 uint64) uint64
+}
+
 // VirtualMachine is a WebAssembly execution environment.
 type VirtualMachine struct {
 	Config           VMConfig
 	Module           *compiler.Module
 	FunctionCode     []compiler.InterpreterCode
-	FunctionImports  []FunctionImport
+	FunctionImports  []FunctionImportInfo
 	CallStack        []Frame
 	CurrentFrame     int
 	Table            []uint32
@@ -50,6 +67,9 @@ type VirtualMachine struct {
 	ReturnValue      int64
 	Gas              uint64
 	GasLimitExceeded bool
+	GasPolicy        compiler.GasPolicy
+	ImportResolver   ImportResolver
+	AOTService       AOTService
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -113,13 +133,17 @@ func NewVirtualMachine(
 
 	table := make([]uint32, 0)
 	globals := make([]int64, 0)
-	funcImports := make([]FunctionImport, 0)
+	funcImports := make([]FunctionImportInfo, 0)
 
 	if m.Base.Import != nil && impResolver != nil {
 		for _, imp := range m.Base.Import.Entries {
 			switch imp.Type.Kind() {
 			case wasm.ExternalFunction:
-				funcImports = append(funcImports, impResolver.ResolveFunc(imp.ModuleName, imp.FieldName))
+				funcImports = append(funcImports, FunctionImportInfo{
+					ModuleName: imp.ModuleName,
+					FieldName:  imp.FieldName,
+					F:          nil, // deferred
+				})
 			case wasm.ExternalGlobal:
 				globals = append(globals, impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName))
 			case wasm.ExternalMemory:
@@ -216,7 +240,145 @@ func NewVirtualMachine(
 		Globals:         globals,
 		Memory:          memory,
 		Exited:          true,
+		GasPolicy:       gasPolicy,
+		ImportResolver:  impResolver,
 	}, nil
+}
+
+func (vm *VirtualMachine) SetAOTService(s AOTService) {
+	vm.AOTService = s
+}
+
+func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
+	builder.WriteString(fmt.Sprintf(format, args...))
+}
+
+func escapeName(name string) string {
+	ret := ""
+
+	for _, ch := range []byte(name) {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			ret += string(ch)
+		} else {
+			ret += fmt.Sprintf("\\x%02x", ch)
+		}
+	}
+
+	return ret
+}
+
+func filterName(name string) string {
+	ret := ""
+
+	for _, ch := range []byte(name) {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			ret += string(ch)
+		}
+	}
+
+	return ret
+}
+
+func (vm *VirtualMachine) GenerateNEnv(config NCompileConfig) string {
+	builder := &strings.Builder{}
+
+	bSprintf(builder, "#include <stdint.h>\n\n")
+
+	if config.DisableMemBoundCheck {
+		builder.WriteString("#define POLYMERASE_NO_MEM_BOUND_CHECK\n")
+	}
+
+	builder.WriteString(compiler.NGEN_HEADER)
+	if !vm.Config.DisableFloatingPoint {
+		builder.WriteString(compiler.NGEN_FP_HEADER)
+	}
+
+	bSprintf(builder, "static uint64_t globals[] = {")
+	for _, v := range vm.Globals {
+		bSprintf(builder, "%dull,", uint64(v))
+	}
+	bSprintf(builder, "};\n")
+
+	for i, code := range vm.FunctionCode {
+		bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i)
+		for j := 0; j < code.NumParams; j++ {
+			bSprintf(builder, ",uint64_t")
+		}
+		bSprintf(builder, ");\n")
+	}
+
+	// call_indirect dispatcher.
+	bSprintf(builder, "struct TableEntry { uint64_t num_params; void *func; };\n")
+	bSprintf(builder, "static const uint64_t num_table_entries = %d;\n", len(vm.Table))
+	bSprintf(builder, "static struct TableEntry table[] = {\n")
+	for _, entry := range vm.Table {
+		if entry == math.MaxUint32 {
+			bSprintf(builder, "{ .num_params = 0, .func = 0 },\n")
+		} else {
+			functionID := int(entry)
+			code := vm.FunctionCode[functionID]
+
+			bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID)
+		}
+	}
+	bSprintf(builder, "};\n")
+	bSprintf(builder, "static void * __attribute__((always_inline)) %sresolve_indirect(struct VirtualMachine *vm, uint64_t entry_id, uint64_t num_params) {\n", compiler.NGEN_ENV_API_PREFIX)
+	bSprintf(builder, "if(entry_id >= num_table_entries) { vm->throw_s(vm, \"%s\"); }\n", "table entry out of bounds")
+	bSprintf(builder, "if(table[entry_id].func == 0) { vm->throw_s(vm, \"%s\"); }\n", "table entry is null")
+	bSprintf(builder, "if(table[entry_id].num_params != num_params) { vm->throw_s(vm, \"%s\"); }\n", "argument count mismatch")
+	bSprintf(builder, "return table[entry_id].func;\n")
+	bSprintf(builder, "}\n")
+
+	bSprintf(builder, "struct ImportEntry { const char *module_name; const char *field_name; ExternalFunction f; };\n")
+	bSprintf(builder, "static const uint64_t num_import_entries = %d;\n", len(vm.FunctionImports))
+	bSprintf(builder, "static struct ImportEntry imports[] = {\n")
+	for _, imp := range vm.FunctionImports {
+		bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName))
+	}
+	bSprintf(builder, "};\n")
+	bSprintf(builder,
+		"static uint64_t __attribute__((always_inline)) %sinvoke_import(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params) {\n",
+		compiler.NGEN_ENV_API_PREFIX,
+	)
+
+	bSprintf(builder, "if(import_id >= num_import_entries) { vm->throw_s(vm, \"%s\"); }\n", "import entry out of bounds")
+	bSprintf(builder, "if(imports[import_id].f == 0) { imports[import_id].f = vm->resolve_import(vm, imports[import_id].module_name, imports[import_id].field_name); }\n")
+	bSprintf(builder, "if(imports[import_id].f == 0) { vm->throw_s(vm, \"%s\"); }\n", "cannot resolve import")
+	bSprintf(builder, "return imports[import_id].f(vm, import_id, num_params, params);\n")
+	bSprintf(builder, "}\n")
+
+	return builder.String()
+}
+
+func (vm *VirtualMachine) NBuildAliasDef() string {
+	builder := &strings.Builder{}
+
+	builder.WriteString("// Aliases for exported functions\n")
+
+	if vm.Module.Base.Export != nil {
+		for name, exp := range vm.Module.Base.Export.Entries {
+			if exp.Kind == wasm.ExternalFunction {
+				bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index)
+			}
+		}
+	}
+
+	return builder.String()
+}
+
+func (vm *VirtualMachine) NCompile(config NCompileConfig) string {
+	body, err := vm.Module.CompileWithNGen(vm.GasPolicy, uint64(len(vm.Globals)))
+	if err != nil {
+		panic(err)
+	}
+
+	out := vm.GenerateNEnv(config) + "\n" + body
+	if config.AliasDef {
+		out += "\n"
+		out += vm.NBuildAliasDef()
+	}
+
+	return out
 }
 
 // Init initializes a frame. Must be called on `call` and `call_indirect`.
@@ -1413,7 +1575,11 @@ func (vm *VirtualMachine) Execute() {
 			importID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
 			vm.Delegate = func() {
-				frame.Regs[valueID] = vm.FunctionImports[importID](vm)
+				imp := vm.FunctionImports[importID]
+				if imp.F == nil {
+					imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
+				}
+				frame.Regs[valueID] = imp.F(vm)
 			}
 			return
 
