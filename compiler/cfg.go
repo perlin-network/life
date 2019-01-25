@@ -31,54 +31,104 @@ func (g *CFGraph) doLivenessBFS(blkID int, valueID TyValueID, valueLiveness map[
 	var queue []int
 
 	queue = append(queue, blkID)
-	visited := make(map[int]struct{}) // already-visited blocks
+	visited := make(map[int]struct{})
+	visited[blkID] = struct{}{}
 
-	greyBlockIDs := make(map[int]struct{})
-	blackBlockIDs := make(map[int]struct{})
+	beginnerCounter := make(map[int]int)
 
-	blackBlockIDs[blkID] = struct{}{}
+	counter := make(map[int]int)
 
-outer:
+	maxCounter := 0
+
 	for len(queue) > 0 {
 		poppedBlockID := queue[0]
-
-		block := g.Blocks[poppedBlockID]
-
-		for _, targetBlockID := range block.JmpTargets {
-			if _, seen := visited[targetBlockID]; !seen {
-				if _, colored := g.Blocks[targetBlockID].UsedValues[valueID]; !colored {
-					queue = append(queue, targetBlockID)
-
-					greyBlockIDs[targetBlockID] = struct{}{}
-					visited[targetBlockID] = struct{}{}
-				} else {
-					blackBlockIDs[targetBlockID] = struct{}{}
-				}
-			}
-		}
-
 		queue = queue[1:]
 
-		if len(queue) == 0 && len(blackBlockIDs) > 0 {
-			for blackBlockID := range blackBlockIDs {
-				if _, seen := visited[blackBlockID]; !seen {
-					queue = append(queue, blackBlockID)
-					valueLiveness[valueID][blackBlockID] = struct{}{}
-					visited[blackBlockID] = struct{}{}
+		for _, targetBlockID := range g.Blocks[poppedBlockID].JmpTargets {
+			if _, seen := visited[targetBlockID]; !seen {
+				if _, isBlack := g.Blocks[targetBlockID].UsedValues[valueID]; isBlack {
+					counter[targetBlockID] += counter[poppedBlockID] + 1
+				} else {
+					counter[targetBlockID] += counter[poppedBlockID]
 				}
+
+				// Track the first counter value that has begun counting && counter value is not 0.
+				if _, begun := beginnerCounter[counter[targetBlockID]]; !begun && counter[targetBlockID] != 0 {
+					beginnerCounter[counter[targetBlockID]] = targetBlockID
+				}
+
+				// Get the max count
+				if maxCounter < counter[targetBlockID] {
+					maxCounter = counter[targetBlockID]
+				}
+
+				queue = append(queue, targetBlockID)
+				visited[targetBlockID] = struct{}{}
 			}
-
-			for greyBlockID := range greyBlockIDs {
-				valueLiveness[valueID][greyBlockID] = struct{}{}
-			}
-
-			greyBlockIDs = make(map[int]struct{})
-			blackBlockIDs = make(map[int]struct{})
-
-			goto outer
 		}
 	}
+
+	if valueID == 5 {
+		fmt.Println(beginnerCounter)
+		fmt.Println(counter)
+	}
+
+	// Backtrackk!
+
 }
+
+//func (g *CFGraph) doLivenessBFS(blkID int, valueID TyValueID, valueLiveness map[TyValueID]map[int]struct{}) {
+//	var queue []int
+//
+//	queue = append(queue, blkID)
+//	visited := make(map[int]struct{}) // already-visited blocks
+//
+//	greyBlockIDs := make(map[int]struct{})
+//	blackBlockIDs := make(map[int]struct{})
+//
+//	blackBlockIDs[blkID] = struct{}{}
+//
+//outer:
+//	for len(queue) > 0 {
+//		poppedBlockID := queue[0]
+//
+//		block := g.Blocks[poppedBlockID]
+//
+//		for _, targetBlockID := range block.JmpTargets {
+//			if _, seen := visited[targetBlockID]; !seen {
+//				if _, colored := g.Blocks[targetBlockID].UsedValues[valueID]; !colored {
+//					queue = append(queue, targetBlockID)
+//
+//					greyBlockIDs[targetBlockID] = struct{}{}
+//					visited[targetBlockID] = struct{}{}
+//				} else {
+//					blackBlockIDs[targetBlockID] = struct{}{}
+//				}
+//			}
+//		}
+//
+//		queue = queue[1:]
+//
+//		if len(queue) == 0 && len(blackBlockIDs) > 0 {
+//			for blackBlockID := range blackBlockIDs {
+//				if _, seen := visited[blackBlockID]; !seen {
+//					queue = append(queue, blackBlockID)
+//					valueLiveness[valueID][blackBlockID] = struct{}{}
+//					visited[blackBlockID] = struct{}{}
+//				}
+//			}
+//
+//			for greyBlockID := range greyBlockIDs {
+//				valueLiveness[valueID][greyBlockID] = struct{}{}
+//			}
+//
+//			greyBlockIDs = make(map[int]struct{})
+//			blackBlockIDs = make(map[int]struct{})
+//
+//			goto outer
+//		}
+//	}
+//}
 
 func (g *CFGraph) AnalyzeLiveness() (map[TyValueID][]int, TyValueID) {
 	valueIDUpperBound := TyValueID(0)
