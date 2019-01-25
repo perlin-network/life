@@ -4,7 +4,7 @@ func (c *SSAFunctionCompiler) InsertGasCounters(gp GasPolicy) {
 	cfg := c.NewCFGraph()
 
 	for i, _ := range cfg.Blocks {
-		blk := &cfg.Blocks[i]
+		blk := cfg.Blocks[i]
 		totalCost := int64(0)
 		for _, ins := range blk.Code {
 			totalCost += gp.GetCost(ins.Op)
