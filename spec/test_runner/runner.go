@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/exec"
-	"github.com/perlin-network/life/platform"
 	"io/ioutil"
 	"os"
 	"path"
@@ -101,10 +100,10 @@ func (c *Config) Run(cfgPath string) error {
 			}, &Resolver{}, &compiler.SimpleGasPolicy{
 				GasPerInstruction: 1,
 			})
-			aotSvc := platform.FullAOTCompile(localVM)
+			/*aotSvc := platform.FullAOTCompile(localVM)
 			if aotSvc != nil {
 				localVM.SetAOTService(aotSvc)
-			}
+			}*/
 			if err != nil {
 				panic(err)
 			}
