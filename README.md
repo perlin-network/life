@@ -58,7 +58,7 @@ Suppose we have already loaded our *.wasm module's bytecode into the variable `v
 
 Lets pass the bytecode into a newly instantiated virtual machine:
 ```go
-vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{})
+vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{}, nil)
 if err != nil { // if the wasm bytecode is invalid
     panic(err)
 }
@@ -144,7 +144,7 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 We can then include the import resolver into our WebAssembly VM:
 
 ```go
-vm, err := exec.NewVirtualMachine([]byte, exec.VMConfig{}, new(Resolver))
+vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, new(Resolver), nil)
 if err != nil {
     panic(err)
 }
