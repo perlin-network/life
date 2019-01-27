@@ -17,10 +17,10 @@
 
 ## Features
 
-- **Fast** - Uses a wide range of optimization techniques and is faster than all other WebAssembly implementations tested ([go-interpreter/wagon](https://github.com/go-interpreter/wagon), [paritytech/wasmi](https://github.com/paritytech/wasmi)). Benchmark results are [here](#benchmarks). JIT support for x86-64 and ARM is planned.
+- **Fast** - Includes a fast interpreter and an experimental AOT compilation engine.
 - **Correct** - Implements WebAssembly execution semantics and passes most of the [official test suite](https://github.com/WebAssembly/testsuite) (66/72 passed, none of the failures are related to the execution semantics).
 - **Secure** - User code executed is fully sandboxed. A WebAssembly module's access to resources (instruction cycles, memory usage) may easily be controlled to the very finest detail.
-- **Pure** - Does not rely on any native dependencies, and may easily be cross-compiled for running WebAssembly modules on practically any platform (Windows/Linux/Mac/Android/iOS/etc).
+- **Pure** - Does not rely on any native dependencies in interpreter-only mode, and may easily be cross-compiled for running WebAssembly modules on practically any platform (Windows/Linux/Mac/Android/iOS/etc).
 - **Practical** - Make full use of the minimal nature of WebAssembly to write code once and run anywhere. Completely customize how WebAssembly module imports are resolved and integrated, and have complete control over the execution lifecycle of your WebAssembly modules.
 
 
@@ -47,6 +47,9 @@ go build
 # param in it is optional arguements for entrypoint. params should be converted into `int`.
 ./life -entry 'method' /path/to/your/wasm/program.wasm [param,...] 
 
+# run your wasm program with the Polymerase AOT compilation engine enabled
+./life -polymerase -entry 'method' /path/to/your/wasm/program.wasm [param,...]
+
 ```
 
 ## Executing WebAssembly Modules
@@ -55,7 +58,7 @@ Suppose we have already loaded our *.wasm module's bytecode into the variable `v
 
 Lets pass the bytecode into a newly instantiated virtual machine:
 ```go
-vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{})
+vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, &exec.NopResolver{}, nil)
 if err != nil { // if the wasm bytecode is invalid
     panic(err)
 }
@@ -141,7 +144,7 @@ func (r *Resolver) ResolveGlobal(module, field string) int64 {
 We can then include the import resolver into our WebAssembly VM:
 
 ```go
-vm, err := exec.NewVirtualMachine([]byte, exec.VMConfig{}, new(Resolver))
+vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, new(Resolver), nil)
 if err != nil {
     panic(err)
 }

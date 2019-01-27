@@ -100,6 +100,10 @@ func (c *Config) Run(cfgPath string) error {
 			}, &Resolver{}, &compiler.SimpleGasPolicy{
 				GasPerInstruction: 1,
 			})
+			/*aotSvc := platform.FullAOTCompile(localVM)
+			if aotSvc != nil {
+				localVM.SetAOTService(aotSvc)
+			}*/
 			if err != nil {
 				panic(err)
 			}
@@ -129,7 +133,7 @@ func (c *Config) Run(cfgPath string) error {
 					fmt.Sscanf(arg.Value, "%d", &val)
 					args = append(args, int64(val))
 				}
-				fmt.Printf("Entry = %d\n", entryID)
+				fmt.Printf("Entry = %d, len(args) = %d\n", entryID, len(args))
 				ret, err := localVM.Run(entryID, args...)
 				if err != nil {
 					panic(err)

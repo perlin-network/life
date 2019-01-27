@@ -10,6 +10,7 @@ import (
 	"github.com/go-interpreter/wagon/wasm/leb128"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
+	"strings"
 )
 
 type Module struct {
@@ -101,6 +102,73 @@ func LoadModule(raw []byte) (*Module, error) {
 		Base:          m,
 		FunctionNames: functionNames,
 	}, nil
+}
+
+func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (out string, retErr error) {
+	defer utils.CatchPanic(&retErr)
+
+	importStubBuilder := &strings.Builder{}
+	importTypeIDs := make([]int, 0)
+	numFuncImports := 0
+
+	if m.Base.Import != nil {
+		for i := 0; i < len(m.Base.Import.Entries); i++ {
+			e := &m.Base.Import.Entries[i]
+			if e.Type.Kind() != wasm.ExternalFunction {
+				continue
+			}
+			tyID := e.Type.(wasm.FuncImport).Type
+			ty := &m.Base.Types.Entries[int(tyID)]
+
+			bSprintf(importStubBuilder, "uint64_t %s%d(struct VirtualMachine *vm", NGEN_FUNCTION_PREFIX, i)
+			for j := 0; j < len(ty.ParamTypes); j++ {
+				bSprintf(importStubBuilder, ",uint64_t %s%d", NGEN_LOCAL_PREFIX, j)
+			}
+			importStubBuilder.WriteString(") {\n")
+			importStubBuilder.WriteString("uint64_t params[] = {")
+			for j := 0; j < len(ty.ParamTypes); j++ {
+				bSprintf(importStubBuilder, "%s%d", NGEN_LOCAL_PREFIX, j)
+				if j != len(ty.ParamTypes)-1 {
+					importStubBuilder.WriteByte(',')
+				}
+			}
+			importStubBuilder.WriteString("};\n")
+			bSprintf(importStubBuilder, "return %sinvoke_import(vm, %d, %d, params);\n", NGEN_ENV_API_PREFIX, numFuncImports, len(ty.ParamTypes))
+			importStubBuilder.WriteString("}\n")
+			importTypeIDs = append(importTypeIDs, int(tyID))
+			numFuncImports++
+		}
+	}
+
+	out += importStubBuilder.String()
+
+	for i, f := range m.Base.FunctionIndexSpace {
+		//fmt.Printf("Compiling function %d (%+v) with %d locals\n", i, f.Sig, len(f.Body.Locals))
+		d, err := disasm.Disassemble(f, m.Base)
+		if err != nil {
+			panic(err)
+		}
+		compiler := NewSSAFunctionCompiler(m.Base, d)
+		compiler.CallIndexOffset = numFuncImports
+		compiler.Compile(importTypeIDs)
+		if m.DisableFloatingPoint {
+			compiler.FilterFloatingPoint()
+		}
+		if gp != nil {
+			compiler.InsertGasCounters(gp)
+		}
+		//fmt.Println(compiler.Code)
+		//fmt.Printf("%+v\n", compiler.NewCFGraph())
+		//numRegs := compiler.RegAlloc()
+		//fmt.Println(compiler.Code)
+		numLocals := 0
+		for _, v := range f.Body.Locals {
+			numLocals += int(v.Count)
+		}
+		out += compiler.NGen(uint64(numFuncImports+i), uint64(len(f.Sig.ParamTypes)), uint64(numLocals), numGlobals)
+	}
+
+	return
 }
 
 func (m *Module) CompileForInterpreter(gp GasPolicy) (_retCode []InterpreterCode, retErr error) {
