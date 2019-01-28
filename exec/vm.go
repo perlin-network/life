@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
+	"runtime/debug"
 
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
 
-	"github.com/go-interpreter/wagon/wasm"
 	"strings"
+
+	"github.com/go-interpreter/wagon/wasm"
 )
 
 type FunctionImport func(vm *VirtualMachine) int64
@@ -70,6 +72,7 @@ type VirtualMachine struct {
 	GasPolicy        compiler.GasPolicy
 	ImportResolver   ImportResolver
 	AOTService       AOTService
+	StackTrace       string
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -526,6 +529,7 @@ func (vm *VirtualMachine) Execute() {
 		if err := recover(); err != nil {
 			vm.Exited = true
 			vm.ExitError = err
+			vm.StackTrace = string(debug.Stack())
 		}
 	}()
 
@@ -1556,7 +1560,6 @@ func (vm *VirtualMachine) Execute() {
 			value := frame.Regs[int(LE.Uint32(frame.Code[frame.IP+12:frame.IP+16]))]
 
 			frame.IP += 16
-
 
 			effective := int(uint64(base) + uint64(offset))
 			fmt.Println("effective:", effective)
