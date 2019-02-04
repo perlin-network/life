@@ -1562,10 +1562,6 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 16
 
 			effective := int(uint64(base) + uint64(offset))
-			fmt.Println("effective:", effective)
-			fmt.Println("mem size:", len(vm.Memory))
-			fmt.Println("base:", base)
-			fmt.Println("offset:", offset)
 			LE.PutUint32(vm.Memory[effective:effective+4], uint32(value))
 		case opcodes.I64Store:
 			LE.Uint32(frame.Code[frame.IP : frame.IP+4])
