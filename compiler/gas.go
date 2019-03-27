@@ -5,7 +5,7 @@ func (c *SSAFunctionCompiler) InsertGasCounters(gp GasPolicy) {
 
 	for i, _ := range cfg.Blocks {
 		blk := &cfg.Blocks[i]
-		totalCost := int64(0)
+		totalCost := int64(1)
 		for _, ins := range blk.Code {
 			totalCost += gp.GetCost(ins.Op)
 			if totalCost < 0 {
