@@ -2,12 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"runtime/debug"
 )
 
 // CatchPanic catches any panic and writes the error to out.
 func CatchPanic(out *error) {
 	if err := recover(); err != nil {
-		*out = UnifyError(err)
+		*out = fmt.Errorf("Error: %s\n---GO TRACEBACK---\n%s", UnifyError(err), string(debug.Stack()))
 	}
 }
 
