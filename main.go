@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"github.com/perlin-network/life/platform"
+	"github.com/perlin-network/life/wasm-validation"
 	"io/ioutil"
 	"strconv"
 	"time"
@@ -71,6 +72,16 @@ func main() {
 
 	// Read WebAssembly *.wasm file.
 	input, err := ioutil.ReadFile(flag.Arg(0))
+	if err != nil {
+		panic(err)
+	}
+
+	validator, err := wasm_validation.NewValidator()
+	if err != nil {
+		panic(err)
+	}
+
+	err = validator.ValidateWasm(input)
 	if err != nil {
 		panic(err)
 	}
