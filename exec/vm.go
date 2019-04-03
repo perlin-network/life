@@ -13,7 +13,11 @@ import (
 
 	"strings"
 
+	"bytes"
+	"compress/gzip"
 	"github.com/go-interpreter/wagon/wasm"
+	"github.com/vmihailenco/msgpack"
+	"io/ioutil"
 )
 
 type FunctionImport func(vm *VirtualMachine) int64
@@ -75,6 +79,19 @@ type VirtualMachine struct {
 	StackTrace       string
 }
 
+type DumpedExports map[string]int
+
+// Dump of a VM that is not currently running. Contains code of all functions.
+// Sandboxing is not guaranteed after restoring from this dump.
+// The VM should not import anything.
+type VMDumpUnsafe struct {
+	FunctionCode []compiler.InterpreterCode
+	Table        []uint32
+	Globals      []int64
+	Memory       []byte
+	Exports      DumpedExports
+}
+
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
 type VMConfig struct {
 	EnableJIT                bool
@@ -105,6 +122,74 @@ type Frame struct {
 type ImportResolver interface {
 	ResolveFunc(module, field string) FunctionImport
 	ResolveGlobal(module, field string) int64
+}
+
+func NewVirtualMachineFromDumpUnsafe(
+	dump []byte,
+	config VMConfig,
+) (*VirtualMachine, DumpedExports, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(dump))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_decoded, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var decoded VMDumpUnsafe
+	if err := msgpack.Unmarshal(_decoded, &decoded); err != nil {
+		return nil, nil, err
+	}
+
+	return &VirtualMachine{
+		Module:          nil,
+		Config:          config,
+		FunctionCode:    decoded.FunctionCode,
+		FunctionImports: nil,
+		CallStack:       make([]Frame, DefaultCallStackSize),
+		CurrentFrame:    -1,
+		Table:           decoded.Table,
+		Globals:         decoded.Globals,
+		Memory:          decoded.Memory,
+		Exited:          true,
+		GasPolicy:       nil,
+		ImportResolver:  nil,
+	}, decoded.Exports, nil
+}
+
+func (vm *VirtualMachine) DumpUnsafe(exportNames ...string) []byte {
+	exports := make(map[string]int)
+	for _, s := range exportNames {
+		var ok bool
+		exports[s], ok = vm.GetFunctionExport(s)
+		if !ok {
+			panic(fmt.Sprintf("export not found: %s", s))
+		}
+	}
+	dump := &VMDumpUnsafe{
+		FunctionCode: vm.FunctionCode,
+		Table:        vm.Table,
+		Globals:      vm.Globals,
+		Memory:       vm.Memory,
+		Exports:      exports,
+	}
+	marshalOut, err := msgpack.Marshal(dump)
+	if err != nil {
+		panic(err)
+	}
+	buf := bytes.NewBuffer(nil)
+	writer := gzip.NewWriter(buf)
+	_, err = writer.Write(marshalOut)
+	if err != nil {
+		panic(err)
+	}
+	err = writer.Close()
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // NewVirtualMachine instantiates a virtual machine for a given WebAssembly module, with
@@ -1718,14 +1803,17 @@ func (vm *VirtualMachine) Execute() {
 			tableItemID := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 
-			sig := &vm.Module.Base.Types.Entries[typeID]
-
 			functionID := int(vm.Table[tableItemID])
 			code := vm.FunctionCode[functionID]
 
-			// TODO: We are only checking CC here; Do we want strict typeck?
-			if code.NumParams != len(sig.ParamTypes) || code.NumReturns != len(sig.ReturnTypes) {
-				panic("type mismatch")
+			// Only validate if this is not a VM restored from a dump.
+			if vm.Module != nil {
+				sig := &vm.Module.Base.Types.Entries[typeID]
+
+				// TODO: We are only checking CC here; Do we want strict typeck?
+				if code.NumParams != len(sig.ParamTypes) || code.NumReturns != len(sig.ReturnTypes) {
+					panic("type mismatch")
+				}
 			}
 
 			oldRegs := frame.Regs
