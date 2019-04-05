@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+option go_package = "protos";
+
+message ModuleInfo {
+    repeated FuncType types = 1;
+    repeated FuncInfo functions = 2;
+    repeated FuncImportInfo func_imports = 3;
+    repeated TableInfo tables = 4;
+    repeated MemoryInfo memories = 5;
+    uint32 start_func = 6;
+}
+
+message FuncType {
+    repeated ValueType params = 1;
+    repeated ValueType returns = 2;
+}
+
+message FuncImportInfo {
+    string module = 1;
+    string field = 2;
+    uint32 type_id = 3;
+    string name = 4;
+}
+
+message FuncInfo {
+    uint32 type_id = 1;
+    string name = 2;
+    repeated LocalInfo locals = 3;
+    repeated Operator code = 4;
+}
+
+message TableInfo {
+    uint32 initial = 1;
+    uint32 maximum = 2;
+    bool has_maximum = 3;
+}
+
+message MemoryInfo {
+    uint32 initial = 1;
+    uint32 maximum = 2;
+    bool has_maximum = 3;
+}
+
+message LocalInfo {
+    uint32 count = 1;
+    ValueType ty = 2;
+}
+
+message Operator {
+    Op op = 1;
+    repeated uint64 immediates = 2;
+    bool has_block_ty = 3;
+    ValueType block_ty = 4;
+}
+
+enum ValueType {
+    I32 = 0;
+    I64 = 1;
+    F32 = 2;
+    F64 = 3;
+}
+
+enum Op {
+    Nop = 0;
+}

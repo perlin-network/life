@@ -1,11 +1,11 @@
 extern crate wasmparser;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate rmp_serde;
-extern crate serde_json;
+extern crate protobuf;
 
-use wasmparser::{WasmDecoder, BinaryReaderError, Type as WpType, FuncType as WpFuncType};
+mod protos;
+
+use wasmparser::{WasmDecoder, BinaryReaderError, Type as WpType, FuncType as WpFuncType, ImportSectionEntryType, NameEntry, Operator as WpOperator};
+use protos::module::{ModuleInfo, FuncType, ValueType, FuncInfo, FuncImportInfo, TableInfo, MemoryInfo, LocalInfo, Operator, Op};
+use protobuf::Message;
 
 static mut CODE_BUF: *mut u8 = ::std::ptr::null_mut();
 static mut PARSER_RESULT: *mut ParserResult = ::std::ptr::null_mut();
@@ -13,31 +13,6 @@ const CODE_BUF_SIZE: usize = 1048576;
 
 struct ParserResult {
     output: Vec<u8>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-struct ModuleInfo {
-    types: Vec<FuncType>,
-    functions: Vec<FunctionInfo>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-struct FunctionInfo {
-    
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct FuncType {
-    params: Vec<ValueType>,
-    returns: Vec<ValueType>,
-}
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-enum ValueType {
-    I32,
-    I64,
-    F32,
-    F64,
 }
 
 #[no_mangle]
@@ -79,14 +54,15 @@ pub extern "C" fn check_and_parse(code_ptr: *const u8, code_len: usize) -> u64 {
             mutable_global_imports: false,
         }),
     );
-    let mut output = ModuleInfo::default();
+    let mut output = ModuleInfo::new();
+    let mut current_func: usize = 0;
     loop {
         let state = parser.read();
         use wasmparser::ParserState;
         match *state {
             ParserState::EndWasm => {
                 set_parser_result(Box::new(ParserResult {
-                    output: serde_json::to_vec(&output).unwrap(),
+                    output: output.write_to_bytes().unwrap(),
                 }));
                 return unsafe {
                       (&*PARSER_RESULT).output.as_ptr() as usize as u64
@@ -95,11 +71,83 @@ pub extern "C" fn check_and_parse(code_ptr: *const u8, code_len: usize) -> u64 {
             },
             ParserState::Error(_) => return 0,
             ParserState::TypeSectionEntry(ref ty) => {
-                output.types.push(FuncType {
-                    params: ty.params.iter().map(|x| wp_type_to_value_type(*x)).collect(),
-                    returns: ty.returns.iter().map(|x| wp_type_to_value_type(*x)).collect(),
-                });
-            }
+                let mut ft = FuncType::new();
+                ft.params = ty.params.iter().map(|x| wp_type_to_value_type(*x)).collect();
+                ft.returns = ty.returns.iter().map(|x| wp_type_to_value_type(*x)).collect();
+                output.types.push(ft);
+            },
+            ParserState::ImportSectionEntry { module, field, ty } => {
+                match ty {
+                    ImportSectionEntryType::Function(type_id) => {
+                        let mut info = FuncImportInfo::new();
+                        info.module = module.into();
+                        info.field = field.into();
+                        info.type_id = type_id;
+                        output.func_imports.push(info);
+                    },
+                    _ => {}
+                }
+            },
+            ParserState::FunctionSectionEntry(type_id) => {
+                let mut info = FuncInfo::new();
+                info.type_id = type_id;
+                output.functions.push(info);
+            },
+            ParserState::TableSectionEntry(ty) => {
+                let mut info = TableInfo::new();
+                info.initial = ty.limits.initial;
+                if let Some(x) = ty.limits.maximum {
+                    info.maximum = x;
+                    info.has_maximum = true;
+                }
+                output.tables.push(info);
+            },
+            ParserState::MemorySectionEntry(ty) => {
+                let mut info = MemoryInfo::new();
+                info.initial = ty.limits.initial;
+                if let Some(x) = ty.limits.maximum {
+                    info.maximum = x;
+                    info.has_maximum = true;
+                }
+                output.memories.push(info);
+            },
+            ParserState::NameSectionEntry(ref entry) => {
+                match *entry {
+                    NameEntry::Function(ref names) => {
+                        for name in names.iter() {
+                            let index = name.index as usize;
+                            if index < output.func_imports.len() {
+                                output.func_imports[index].name = name.name.to_string();
+                            } else {
+                                output.functions[index - output.func_imports.len()].name = name.name.to_string();
+                            }
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            ParserState::StartSectionEntry(x) => {
+                output.start_func = x;
+            },
+            ParserState::BeginFunctionBody { .. } => {
+            },
+            ParserState::FunctionBodyLocals { ref locals } => {
+                for &(n, ty) in locals.iter() {
+                    let mut loc = LocalInfo::new();
+                    loc.count = n;
+                    loc.ty = wp_type_to_value_type(ty);
+                    output.functions[current_func].locals.push(loc);
+                }
+            },
+            ParserState::CodeOperator(ref op) => {
+                let op = match *op {
+                    _ => Operator { op: Op::Nop, ..Default::default() } // TODO
+                };
+                output.functions[current_func].code.push(op);
+            },
+            ParserState::EndFunctionBody => {
+                current_func += 1;
+            },
             _ => {}
         }
     }
