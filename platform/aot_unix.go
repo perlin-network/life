@@ -219,7 +219,7 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 	handle := C.dlopen(outPathC, C.RTLD_NOW|C.RTLD_LOCAL)
 	C.free(unsafe.Pointer(outPathC))
 	if handle == nil {
-		log.Println("unable to open compiled code")
+		log.Println("unable to open compiled code: " + C.GoString(C.dlerror()))
 		return nil
 	}
 
