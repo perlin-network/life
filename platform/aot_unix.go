@@ -203,7 +203,7 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		return nil
 	}
 
-	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-o", outPath, "-shared", inPath)
+	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-lm", "-o", outPath, "-shared", inPath)
 	out, err := cmd.CombinedOutput()
 
 	if len(out) > 0 {
@@ -219,7 +219,7 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 	handle := C.dlopen(outPathC, C.RTLD_NOW|C.RTLD_LOCAL)
 	C.free(unsafe.Pointer(outPathC))
 	if handle == nil {
-		log.Println("unable to open compiled code")
+		log.Println("unable to open compiled code: " + C.GoString(C.dlerror()))
 		return nil
 	}
 
