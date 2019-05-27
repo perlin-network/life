@@ -143,13 +143,13 @@ func updateMemory(vm *C.struct_VirtualMachine) {
 }
 
 type AOTContext struct {
-	dlHandle unsafe.Pointer
+	dlHandle *unsafe.Pointer
 	vmHandle *C.struct_VirtualMachine
 }
 
 func (c *AOTContext) resolveNameForInvocation(name string) unsafe.Pointer {
 	nameC := C.CString(name)
-	sym := C.dlsym(c.dlHandle, nameC)
+	sym := C.dlsym(*c.dlHandle, nameC)
 	C.free(unsafe.Pointer(nameC))
 
 	if sym == nil {
@@ -181,6 +181,18 @@ func (c *AOTContext) UnsafeInvokeFunction_2(vm *exec.VirtualMachine, name string
 		C.uint64_t(p0),
 		C.uint64_t(p1),
 	))
+}
+
+func (c *AOTContext) SetupVM(vm *exec.VirtualMachine) {
+	nativeVM := C.vm_alloc()
+	C.vm_build(nativeVM, C.uintptr_t(uintptr(unsafe.Pointer(vm))), C.uint64_t(len(vm.Memory)))
+	if len(vm.Memory) > 0 {
+		C.memcpy(unsafe.Pointer(nativeVM.mem), unsafe.Pointer(&vm.Memory[0]), C.ulong(len(vm.Memory)))
+	}
+
+	updateMemory(nativeVM)
+
+	c.vmHandle = nativeVM
 }
 
 func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
@@ -223,21 +235,17 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		return nil
 	}
 
-	nativeVM := C.vm_alloc()
-	C.vm_build(nativeVM, C.uintptr_t(uintptr(unsafe.Pointer(vm))), C.uint64_t(len(vm.Memory)))
-	if len(vm.Memory) > 0 {
-		C.memcpy(unsafe.Pointer(nativeVM.mem), unsafe.Pointer(&vm.Memory[0]), C.ulong(len(vm.Memory)))
-	}
-
-	updateMemory(nativeVM)
-
 	ctx := &AOTContext{
-		dlHandle: handle,
-		vmHandle: nativeVM,
+		dlHandle: &handle,
 	}
+
+	ctx.SetupVM(vm)
+
+	runtime.SetFinalizer(ctx.dlHandle, func(handle *unsafe.Pointer) {
+		C.dlclose(*handle)
+	})
 
 	runtime.SetFinalizer(ctx, func(ctx *AOTContext) {
-		C.dlclose(ctx.dlHandle)
 		C.vm_destroy(ctx.vmHandle)
 		C.free(unsafe.Pointer(ctx.vmHandle))
 	})
