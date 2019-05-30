@@ -7,6 +7,9 @@ import (
 type AOTContext struct {
 }
 
+func (c *AOTContext) Initialize(vm *exec.VirtualMachine) {
+}
+
 func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
 	return 0
 }
