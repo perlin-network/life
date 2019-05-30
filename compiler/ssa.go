@@ -2,12 +2,11 @@ package compiler
 
 import (
 	"fmt"
-
 	"math"
+	"strings"
 
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
-	"strings"
 )
 
 type TyValueID uint64
@@ -267,14 +266,14 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 			c.Locations = append(c.Locations, &Location{
 				CodePos:     len(c.Code),
 				StackDepth:  len(c.Stack),
-				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				PreserveTop: ins.Block != nil && ins.Block.Signature != wasm.BlockTypeEmpty,
 			})
 
 		case "loop":
 			c.Locations = append(c.Locations, &Location{
 				CodePos:         len(c.Code),
 				StackDepth:      len(c.Stack),
-				LoopPreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				LoopPreserveTop: ins.Block != nil && ins.Block.Signature != wasm.BlockTypeEmpty,
 				BrHead:          true,
 			})
 
@@ -284,7 +283,7 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 			c.Locations = append(c.Locations, &Location{
 				CodePos:     len(c.Code),
 				StackDepth:  len(c.Stack),
-				PreserveTop: ins.Block.Signature != wasm.BlockTypeEmpty,
+				PreserveTop: ins.Block != nil && ins.Block.Signature != wasm.BlockTypeEmpty,
 				IfBlock:     true,
 			})
 
@@ -442,12 +441,12 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 				c.PushStack(targetValueID)
 			}
 
-		case "current_memory":
+		case "memory.size":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, nil))
 			c.PushStack(retID)
 
-		case "grow_memory":
+		case "memory.grow":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
 			c.PushStack(retID)
