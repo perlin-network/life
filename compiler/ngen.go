@@ -647,13 +647,13 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "i64.store", "f64.store":
 			writeMemStore(body, ins, "uint64_t")
 
-		case "current_memory":
+		case "memory.size":
 			bSprintf(body,
 				"%s%d.vu64 = vm->mem_size / 65536;",
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
 
-		case "grow_memory":
+		case "memory.grow":
 			bSprintf(body,
 				"%s%d.vu64 = vm->mem_size / 65536; vm->grow_memory(vm, %s%d.vu32 * 65536);",
 				NGEN_VALUE_PREFIX, ins.Target,

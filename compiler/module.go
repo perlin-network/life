@@ -3,14 +3,14 @@ package compiler
 import (
 	"bytes"
 	"encoding/binary"
-	//"fmt"
+	"strings"
+
 	"github.com/go-interpreter/wagon/disasm"
 	"github.com/go-interpreter/wagon/wasm"
-	//"github.com/go-interpreter/wagon/validate"
 	"github.com/go-interpreter/wagon/wasm/leb128"
+
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
-	"strings"
 )
 
 type Module struct {
@@ -144,11 +144,15 @@ func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (out string, r
 
 	for i, f := range m.Base.FunctionIndexSpace {
 		//fmt.Printf("Compiling function %d (%+v) with %d locals\n", i, f.Sig, len(f.Body.Locals))
-		d, err := disasm.Disassemble(f, m.Base)
+		instrs, err := disasm.Disassemble(f.Body.Code)
 		if err != nil {
 			panic(err)
 		}
-		compiler := NewSSAFunctionCompiler(m.Base, d)
+		d := disasm.Disassembly{
+			Code:     instrs,
+			MaxDepth: 512,
+		}
+		compiler := NewSSAFunctionCompiler(m.Base, &d)
 		compiler.CallIndexOffset = numFuncImports
 		compiler.Compile(importTypeIDs)
 		if m.DisableFloatingPoint {
@@ -220,11 +224,15 @@ func (m *Module) CompileForInterpreter(gp GasPolicy) (_retCode []InterpreterCode
 
 	for i, f := range m.Base.FunctionIndexSpace {
 		//fmt.Printf("Compiling function %d (%+v) with %d locals\n", i, f.Sig, len(f.Body.Locals))
-		d, err := disasm.Disassemble(f, m.Base)
+		instrs, err := disasm.Disassemble(f.Body.Code)
 		if err != nil {
 			panic(err)
 		}
-		compiler := NewSSAFunctionCompiler(m.Base, d)
+		d := disasm.Disassembly{
+			Code:     instrs,
+			MaxDepth: 512,
+		}
+		compiler := NewSSAFunctionCompiler(m.Base, &d)
 		compiler.CallIndexOffset = numFuncImports
 		compiler.Compile(importTypeIDs)
 		if m.DisableFloatingPoint {

@@ -6,14 +6,13 @@ import (
 	"math"
 	"math/bits"
 	"runtime/debug"
+	"strings"
+
+	"github.com/go-interpreter/wagon/wasm"
 
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/compiler/opcodes"
 	"github.com/perlin-network/life/utils"
-
-	"strings"
-
-	"github.com/go-interpreter/wagon/wasm"
 )
 
 type FunctionImport func(vm *VirtualMachine) int64
@@ -107,6 +106,207 @@ type ImportResolver interface {
 	ResolveGlobal(module, field string) int64
 }
 
+type Module struct {
+	Config          VMConfig
+	Module          *compiler.Module
+	FunctionCode    []compiler.InterpreterCode
+	FunctionImports []FunctionImportInfo
+	Globals         []int64
+	GasPolicy       compiler.GasPolicy
+	ImportResolver  ImportResolver
+}
+
+var (
+	emptyGlobals     = []int64{}
+	emptyFuncImports = []FunctionImportInfo{}
+	emptyMemory      = []byte{}
+	emptyTable       = []uint32{}
+)
+
+// NewModule instantiates a module for a given WebAssembly module, with
+// specific execution options specified under a VMConfig, and a WebAssembly module import
+// resolver.
+func NewModule(
+	code []byte,
+	config VMConfig,
+	impResolver ImportResolver,
+	gasPolicy compiler.GasPolicy,
+) (_retVM *Module, retErr error) {
+	if config.EnableJIT {
+		fmt.Println("Warning: JIT support is removed.")
+	}
+
+	m, err := compiler.LoadModule(code)
+	if err != nil {
+		return nil, err
+	}
+
+	m.DisableFloatingPoint = config.DisableFloatingPoint
+
+	functionCode, err := m.CompileForInterpreter(gasPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	defer utils.CatchPanic(&retErr)
+
+	globals := emptyGlobals
+	funcImports := emptyFuncImports
+
+	if m.Base.Import != nil && impResolver != nil {
+		for _, imp := range m.Base.Import.Entries {
+			switch imp.Type.Kind() {
+			case wasm.ExternalFunction:
+				funcImports = append(funcImports, FunctionImportInfo{
+					ModuleName: imp.ModuleName,
+					FieldName:  imp.FieldName,
+					F:          nil, // deferred
+				})
+			case wasm.ExternalGlobal:
+				globals = append(globals, impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName))
+			case wasm.ExternalMemory:
+				// TODO: Do we want a real import?
+				if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
+					panic("cannot import another memory while we already have one")
+				}
+				m.Base.Memory = &wasm.SectionMemories{
+					Entries: []wasm.Memory{
+						wasm.Memory{
+							Limits: wasm.ResizableLimits{
+								Initial: uint32(config.DefaultMemoryPages),
+							},
+						},
+					},
+				}
+			case wasm.ExternalTable:
+				// TODO: Do we want a real import?
+				if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
+					panic("cannot import another table while we already have one")
+				}
+				m.Base.Table = &wasm.SectionTables{
+					Entries: []wasm.Table{
+						wasm.Table{
+							Limits: wasm.ResizableLimits{
+								Initial: uint32(config.DefaultTableSize),
+							},
+						},
+					},
+				}
+			default:
+				panic(fmt.Errorf("import kind not supported: %d", imp.Type.Kind()))
+			}
+		}
+	}
+
+	// Load global entries.
+	for _, entry := range m.Base.GlobalIndexSpace {
+		globals = append(globals, execInitExpr(entry.Init, globals))
+	}
+
+	return &Module{
+		Module:          m,
+		Config:          config,
+		FunctionCode:    functionCode,
+		FunctionImports: funcImports,
+		Globals:         globals,
+		GasPolicy:       gasPolicy,
+		ImportResolver:  impResolver,
+	}, nil
+}
+
+func (m *Module) getExport(key string, kind wasm.External) (int, bool) {
+	if m.Module.Base.Export == nil {
+		return -1, false
+	}
+
+	entry, ok := m.Module.Base.Export.Entries[key]
+	if !ok {
+		return -1, false
+	}
+
+	if entry.Kind != kind {
+		return -1, false
+	}
+
+	return int(entry.Index), true
+}
+
+// GetGlobalExport returns the global export with the given name.
+func (m *Module) GetGlobalExport(key string) (int, bool) {
+	return m.getExport(key, wasm.ExternalGlobal)
+}
+
+// GetFunctionExport returns the function export with the given name.
+func (m *Module) GetFunctionExport(key string) (int, bool) {
+	return m.getExport(key, wasm.ExternalFunction)
+}
+
+// NewVirtualMachine instantiates a virtual machine for the module.
+func (m *Module) NewVirtualMachine() *VirtualMachine {
+	globals := make([]int64, len(m.Globals))
+	copy(globals, m.Globals)
+	table := emptyTable
+
+	// Populate table elements.
+	if m.Module.Base.Table != nil && len(m.Module.Base.Table.Entries) > 0 {
+		t := &m.Module.Base.Table.Entries[0]
+
+		if m.Config.MaxTableSize != 0 && int(t.Limits.Initial) > m.Config.MaxTableSize {
+			panic("max table size exceeded")
+		}
+
+		table = make([]uint32, int(t.Limits.Initial))
+		for i := 0; i < int(t.Limits.Initial); i++ {
+			table[i] = 0xffffffff
+		}
+		if m.Module.Base.Elements != nil && len(m.Module.Base.Elements.Entries) > 0 {
+			for _, e := range m.Module.Base.Elements.Entries {
+				offset := int(execInitExpr(e.Offset, globals))
+				copy(table[offset:], e.Elems)
+			}
+		}
+	}
+
+	// Load linear memory.
+	memory := emptyMemory
+	if m.Module.Base.Memory != nil && len(m.Module.Base.Memory.Entries) > 0 {
+		initialLimit := int(m.Module.Base.Memory.Entries[0].Limits.Initial)
+		if m.Config.MaxMemoryPages != 0 && initialLimit > m.Config.MaxMemoryPages {
+			panic("max memory exceeded")
+		}
+
+		capacity := initialLimit * DefaultPageSize
+
+		// Initialize empty memory.
+		memory = make([]byte, capacity)
+		for i := 0; i < capacity; i++ {
+			memory[i] = 0
+		}
+
+		if m.Module.Base.Data != nil && len(m.Module.Base.Data.Entries) > 0 {
+			for _, e := range m.Module.Base.Data.Entries {
+				offset := int(execInitExpr(e.Offset, globals))
+				copy(memory[int(offset):], e.Data)
+			}
+		}
+	}
+
+	return &VirtualMachine{
+		Module:          m.Module,
+		Config:          m.Config,
+		FunctionCode:    m.FunctionCode,
+		FunctionImports: m.FunctionImports,
+		CallStack:       make([]Frame, DefaultCallStackSize),
+		CurrentFrame:    -1,
+		Table:           table,
+		Globals:         globals,
+		Memory:          memory,
+		Exited:          true,
+		GasPolicy:       m.GasPolicy,
+		ImportResolver:  m.ImportResolver,
+	}
+}
+
 // NewVirtualMachine instantiates a virtual machine for a given WebAssembly module, with
 // specific execution options specified under a VMConfig, and a WebAssembly module import
 // resolver.
@@ -134,9 +334,9 @@ func NewVirtualMachine(
 
 	defer utils.CatchPanic(&retErr)
 
-	table := make([]uint32, 0)
-	globals := make([]int64, 0)
-	funcImports := make([]FunctionImportInfo, 0)
+	table := emptyTable
+	globals := emptyGlobals
+	funcImports := emptyFuncImports
 
 	if m.Base.Import != nil && impResolver != nil {
 		for _, imp := range m.Base.Import.Entries {
@@ -209,7 +409,7 @@ func NewVirtualMachine(
 	}
 
 	// Load linear memory.
-	memory := make([]byte, 0)
+	memory := emptyMemory
 	if m.Base.Memory != nil && len(m.Base.Memory.Entries) > 0 {
 		initialLimit := int(m.Base.Memory.Entries[0].Limits.Initial)
 		if config.MaxMemoryPages != 0 && initialLimit > config.MaxMemoryPages {
