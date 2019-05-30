@@ -43,6 +43,7 @@ type NCompileConfig struct {
 }
 
 type AOTService interface {
+	Initialize(vm *VirtualMachine)
 	UnsafeInvokeFunction_0(vm *VirtualMachine, name string) uint64
 	UnsafeInvokeFunction_1(vm *VirtualMachine, name string, p0 uint64) uint64
 	UnsafeInvokeFunction_2(vm *VirtualMachine, name string, p0, p1 uint64) uint64
@@ -111,6 +112,7 @@ type Module struct {
 	Module          *compiler.Module
 	FunctionCode    []compiler.InterpreterCode
 	FunctionImports []FunctionImportInfo
+	Table           []uint32
 	Globals         []int64
 	GasPolicy       compiler.GasPolicy
 	ImportResolver  ImportResolver
@@ -150,6 +152,7 @@ func NewModule(
 
 	defer utils.CatchPanic(&retErr)
 
+	table := emptyTable
 	globals := emptyGlobals
 	funcImports := emptyFuncImports
 
@@ -203,11 +206,32 @@ func NewModule(
 		globals = append(globals, execInitExpr(entry.Init, globals))
 	}
 
+	// Populate table elements.
+	if m.Base.Table != nil && len(m.Base.Table.Entries) > 0 {
+		t := &m.Base.Table.Entries[0]
+
+		if config.MaxTableSize != 0 && int(t.Limits.Initial) > config.MaxTableSize {
+			panic("max table size exceeded")
+		}
+
+		table = make([]uint32, int(t.Limits.Initial))
+		for i := 0; i < int(t.Limits.Initial); i++ {
+			table[i] = 0xffffffff
+		}
+		if m.Base.Elements != nil && len(m.Base.Elements.Entries) > 0 {
+			for _, e := range m.Base.Elements.Entries {
+				offset := int(execInitExpr(e.Offset, globals))
+				copy(table[offset:], e.Elems)
+			}
+		}
+	}
+
 	return &Module{
 		Module:          m,
 		Config:          config,
 		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
+		Table:           table,
 		Globals:         globals,
 		GasPolicy:       gasPolicy,
 		ImportResolver:  impResolver,
@@ -241,31 +265,114 @@ func (m *Module) GetFunctionExport(key string) (int, bool) {
 	return m.getExport(key, wasm.ExternalFunction)
 }
 
+func (m *Module) GenerateNEnv(config NCompileConfig) string {
+	builder := &strings.Builder{}
+
+	bSprintf(builder, "#include <stdint.h>\n\n")
+
+	if config.DisableMemBoundCheck {
+		builder.WriteString("#define POLYMERASE_NO_MEM_BOUND_CHECK\n")
+	}
+
+	builder.WriteString(compiler.NGEN_HEADER)
+	if !m.Config.DisableFloatingPoint {
+		builder.WriteString(compiler.NGEN_FP_HEADER)
+	}
+
+	bSprintf(builder, "static uint64_t globals[] = {")
+	for _, v := range m.Globals {
+		bSprintf(builder, "%dull,", uint64(v))
+	}
+	bSprintf(builder, "};\n")
+
+	for i, code := range m.FunctionCode {
+		bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i)
+		for j := 0; j < code.NumParams; j++ {
+			bSprintf(builder, ",uint64_t")
+		}
+		bSprintf(builder, ");\n")
+	}
+
+	// call_indirect dispatcher.
+	bSprintf(builder, "struct TableEntry { uint64_t num_params; void *func; };\n")
+	bSprintf(builder, "static const uint64_t num_table_entries = %d;\n", len(m.Table))
+	bSprintf(builder, "static struct TableEntry table[] = {\n")
+	for _, entry := range m.Table {
+		if entry == math.MaxUint32 {
+			bSprintf(builder, "{ .num_params = 0, .func = 0 },\n")
+		} else {
+			functionID := int(entry)
+			code := m.FunctionCode[functionID]
+
+			bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID)
+		}
+	}
+	bSprintf(builder, "};\n")
+	bSprintf(builder, "static void * __attribute__((always_inline)) %sresolve_indirect(struct VirtualMachine *vm, uint64_t entry_id, uint64_t num_params) {\n", compiler.NGEN_ENV_API_PREFIX)
+	bSprintf(builder, "if(entry_id >= num_table_entries) { vm->throw_s(vm, \"%s\"); }\n", "table entry out of bounds")
+	bSprintf(builder, "if(table[entry_id].func == 0) { vm->throw_s(vm, \"%s\"); }\n", "table entry is null")
+	bSprintf(builder, "if(table[entry_id].num_params != num_params) { vm->throw_s(vm, \"%s\"); }\n", "argument count mismatch")
+	bSprintf(builder, "return table[entry_id].func;\n")
+	bSprintf(builder, "}\n")
+
+	bSprintf(builder, "struct ImportEntry { const char *module_name; const char *field_name; ExternalFunction f; };\n")
+	bSprintf(builder, "static const uint64_t num_import_entries = %d;\n", len(m.FunctionImports))
+	bSprintf(builder, "static struct ImportEntry imports[] = {\n")
+	for _, imp := range m.FunctionImports {
+		bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName))
+	}
+	bSprintf(builder, "};\n")
+	bSprintf(builder,
+		"static uint64_t __attribute__((always_inline)) %sinvoke_import(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params) {\n",
+		compiler.NGEN_ENV_API_PREFIX,
+	)
+
+	bSprintf(builder, "if(import_id >= num_import_entries) { vm->throw_s(vm, \"%s\"); }\n", "import entry out of bounds")
+	bSprintf(builder, "if(imports[import_id].f == 0) { imports[import_id].f = vm->resolve_import(vm, imports[import_id].module_name, imports[import_id].field_name); }\n")
+	bSprintf(builder, "if(imports[import_id].f == 0) { vm->throw_s(vm, \"%s\"); }\n", "cannot resolve import")
+	bSprintf(builder, "return imports[import_id].f(vm, import_id, num_params, params);\n")
+	bSprintf(builder, "}\n")
+
+	return builder.String()
+}
+
+func (m *Module) NBuildAliasDef() string {
+	builder := &strings.Builder{}
+
+	builder.WriteString("// Aliases for exported functions\n")
+
+	if m.Module.Base.Export != nil {
+		for name, exp := range m.Module.Base.Export.Entries {
+			if exp.Kind == wasm.ExternalFunction {
+				bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index)
+			}
+		}
+	}
+
+	return builder.String()
+}
+
+func (m *Module) NCompile(config NCompileConfig) string {
+	body, err := m.Module.CompileWithNGen(m.GasPolicy, uint64(len(m.Globals)))
+	if err != nil {
+		panic(err)
+	}
+
+	out := m.GenerateNEnv(config) + "\n" + body
+	if config.AliasDef {
+		out += "\n"
+		out += m.NBuildAliasDef()
+	}
+
+	return out
+}
+
 // NewVirtualMachine instantiates a virtual machine for the module.
 func (m *Module) NewVirtualMachine() *VirtualMachine {
 	globals := make([]int64, len(m.Globals))
 	copy(globals, m.Globals)
-	table := emptyTable
-
-	// Populate table elements.
-	if m.Module.Base.Table != nil && len(m.Module.Base.Table.Entries) > 0 {
-		t := &m.Module.Base.Table.Entries[0]
-
-		if m.Config.MaxTableSize != 0 && int(t.Limits.Initial) > m.Config.MaxTableSize {
-			panic("max table size exceeded")
-		}
-
-		table = make([]uint32, int(t.Limits.Initial))
-		for i := 0; i < int(t.Limits.Initial); i++ {
-			table[i] = 0xffffffff
-		}
-		if m.Module.Base.Elements != nil && len(m.Module.Base.Elements.Entries) > 0 {
-			for _, e := range m.Module.Base.Elements.Entries {
-				offset := int(execInitExpr(e.Offset, globals))
-				copy(table[offset:], e.Elems)
-			}
-		}
-	}
+	table := make([]uint32, len(m.Table))
+	copy(table, m.Table)
 
 	// Load linear memory.
 	memory := emptyMemory
@@ -449,6 +556,7 @@ func NewVirtualMachine(
 }
 
 func (vm *VirtualMachine) SetAOTService(s AOTService) {
+	s.Initialize(vm)
 	vm.AOTService = s
 }
 
