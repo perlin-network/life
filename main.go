@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"github.com/perlin-network/life/platform"
-	"github.com/perlin-network/life/wasm-validation"
 	"io/ioutil"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -68,6 +69,8 @@ func main() {
 	entryFunctionFlag := flag.String("entry", "app_main", "entry function name")
 	pmFlag := flag.Bool("polymerase", false, "enable the Polymerase engine")
 	noFloatingPointFlag := flag.Bool("no-fp", false, "disable floating point")
+	emitBytecodeFlag := flag.Bool("emit-bc-unsafe", false, "emit interpreter bytecode without validation")
+	bcExportsFlag := flag.String("bc-exports", "", "exports in bytecode dump")
 	flag.Parse()
 
 	// Read WebAssembly *.wasm file.
@@ -76,14 +79,16 @@ func main() {
 		panic(err)
 	}
 
-	validator, err := wasm_validation.NewValidator()
-	if err != nil {
-		panic(err)
-	}
+	if !*emitBytecodeFlag {
+		validator, err := exec.NewEngine()
+		if err != nil {
+			panic(err)
+		}
 
-	err = validator.ValidateWasm(input)
-	if err != nil {
-		panic(err)
+		err = validator.ValidateWasm(input)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
@@ -95,6 +100,11 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	if *emitBytecodeFlag {
+		os.Stdout.Write(vm.DumpUnsafe(strings.Split(*bcExportsFlag, ",")...))
+		return
 	}
 
 	if *pmFlag {

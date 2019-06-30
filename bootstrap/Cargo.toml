@@ -1,5 +1,5 @@
 [package]
-name = "wasm-validation"
+name = "bootstrap"
 version = "0.1.0"
 authors = ["losfair <zhy20000919@hotmail.com>"]
 edition = "2018"
@@ -12,3 +12,7 @@ lto = true
 
 [dependencies]
 wasmparser = "0.29"
+protobuf = "2.4"
+
+[build-dependencies]
+protoc-rust = "2.4"
