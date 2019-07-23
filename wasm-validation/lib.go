@@ -3,8 +3,6 @@ package wasm_validation
 import (
 	"errors"
 	"github.com/perlin-network/life/exec"
-	"github.com/perlin-network/life/platform"
-	"log"
 	"sync"
 )
 
@@ -50,20 +48,6 @@ func NewValidator() (*Validator, error) {
 		funcGetCodeBuf: funcGetCodeBuf,
 		funcCheck:      funcCheck,
 	}, nil
-}
-
-func (v *Validator) SelfCompileAOTAsync() {
-	go func() {
-		log.Println("Compiling validator")
-
-		aotSvc := platform.FullAOTCompile(v.vm)
-		if aotSvc != nil {
-			log.Println("Polymerase enabled for validator.")
-			v.mu.Lock()
-			v.vm.SetAOTService(aotSvc)
-			v.mu.Unlock()
-		}
-	}()
 }
 
 func (v *Validator) ValidateWasm(input []byte) error {
