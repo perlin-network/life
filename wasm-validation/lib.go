@@ -24,6 +24,10 @@ type Validator struct {
 	funcCheck      int
 }
 
+var globalValidator *Validator
+var globalValidatorErr error
+var globalValidatorInit sync.Once
+
 func NewValidator() (*Validator, error) {
 	vm, err := exec.NewVirtualMachine(ValidatorCode, exec.VMConfig{
 		DefaultMemoryPages: 32,
@@ -73,4 +77,16 @@ func (v *Validator) ValidateWasm(input []byte) error {
 	} else {
 		return errors.New("unknown return value")
 	}
+}
+
+func GetValidator() *Validator {
+	globalValidatorInit.Do(func() {
+		globalValidator, globalValidatorErr = NewValidator()
+	})
+
+	if globalValidatorErr != nil {
+		panic(globalValidatorErr) // "poisoning"
+	}
+
+	return globalValidator
 }
