@@ -7,7 +7,7 @@ func (c *SSAFunctionCompiler) InsertGasCounters(gp GasPolicy) {
 		blk := &cfg.Blocks[i]
 		totalCost := int64(1)
 		for _, ins := range blk.Code {
-			totalCost += gp.GetCost(ins.Op)
+			totalCost += gp.GetCost(ins)
 			if totalCost < 0 {
 				panic("total cost overflow")
 			}
