@@ -10,3 +10,6 @@ coverage.txt
 *.test
 
 go.sum
+test_runner
+tests/generated
+target/
