@@ -5,7 +5,11 @@ TEST_RUNNER:=target/test_runner
 
 # Run all test fixtures
 .PHONY: test
-test: testsuite test_runner wast $(patsubst ${JSON_DIR}/%.json, ${NO_TEST}, $(wildcard ${JSON_DIR}/*.json))
+test: build testsuite test_runner wast $(patsubst ${JSON_DIR}/%.json, ${NO_TEST}, $(wildcard ${JSON_DIR}/*.json))
+
+.PHONY: build
+build:
+	go build .
 
 target/test_runner:
 	go build -o ${TEST_RUNNER} ./spec/test_runner

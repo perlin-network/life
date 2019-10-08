@@ -722,10 +722,10 @@ func (c *SSAFunctionCompiler) Serialize() []byte {
 				binary.Write(buf, binary.LittleEndian, uint32(v))
 			}
 
-		case "current_memory":
+		case "memory.size":
 			binary.Write(buf, binary.LittleEndian, opcodes.CurrentMemory)
 
-		case "grow_memory":
+		case "memory.grow":
 			binary.Write(buf, binary.LittleEndian, opcodes.GrowMemory)
 			binary.Write(buf, binary.LittleEndian, uint32(ins.Values[0]))
 
