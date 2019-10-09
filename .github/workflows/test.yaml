@@ -1,0 +1,14 @@
+name: test
+on: [push, pull_request]
+jobs:
+  unit:
+    name: Unit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+    - uses: actions/checkout@v1
+    - run: make test
+

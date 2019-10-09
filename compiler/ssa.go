@@ -442,12 +442,12 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 				c.PushStack(targetValueID)
 			}
 
-		case "current_memory":
+		case "memory.size":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, nil))
 			c.PushStack(retID)
 
-		case "grow_memory":
+		case "memory.grow":
 			retID := c.NextValueID()
 			c.Code = append(c.Code, buildInstr(retID, ins.Op.Name, nil, c.PopStack(1)))
 			c.PushStack(retID)
