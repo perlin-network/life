@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/perlin-network/life/exec"
 	"github.com/perlin-network/life/platform"
-	"github.com/perlin-network/life/wasm-validation"
+	wasm_validation "github.com/perlin-network/life/wasm-validation"
 	"io/ioutil"
 	"strconv"
 	"time"
@@ -76,15 +76,7 @@ func main() {
 		panic(err)
 	}
 
-	validator, err := wasm_validation.NewValidator()
-	if err != nil {
-		panic(err)
-	}
-
-	err = validator.ValidateWasm(input)
-	if err != nil {
-		panic(err)
-	}
+	err = wasm_validation.ValidateWasm(input)
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{

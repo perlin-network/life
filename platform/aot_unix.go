@@ -81,7 +81,6 @@ static uint64_t unsafe_invoke_function_2(struct VirtualMachine *vm, void *sym, u
 import "C"
 
 import (
-	"github.com/perlin-network/life/exec"
 	"io/ioutil"
 	"log"
 	os_exec "os/exec"
@@ -89,6 +88,8 @@ import (
 	"reflect"
 	"runtime"
 	"unsafe"
+
+	"github.com/perlin-network/life/exec"
 )
 
 //export go_vm_throw_s
@@ -159,6 +160,18 @@ func (c *AOTContext) resolveNameForInvocation(name string) unsafe.Pointer {
 	return sym
 }
 
+func (c *AOTContext) Initialize(vm *exec.VirtualMachine) {
+	nativeVM := C.vm_alloc()
+	C.vm_build(nativeVM, C.uintptr_t(uintptr(unsafe.Pointer(vm))), C.uint64_t(len(vm.Memory)))
+	if len(vm.Memory) > 0 {
+		C.memcpy(unsafe.Pointer(nativeVM.mem), unsafe.Pointer(&vm.Memory[0]), C.ulong(len(vm.Memory)))
+	}
+
+	updateMemory(nativeVM)
+
+	c.vmHandle = nativeVM
+}
+
 func (c *AOTContext) UnsafeInvokeFunction_0(vm *exec.VirtualMachine, name string) uint64 {
 	return uint64(C.unsafe_invoke_function_0(
 		c.vmHandle,
@@ -223,23 +236,71 @@ func FullAOTCompile(vm *exec.VirtualMachine) *AOTContext {
 		return nil
 	}
 
-	nativeVM := C.vm_alloc()
-	C.vm_build(nativeVM, C.uintptr_t(uintptr(unsafe.Pointer(vm))), C.uint64_t(len(vm.Memory)))
-	if len(vm.Memory) > 0 {
-		C.memcpy(unsafe.Pointer(nativeVM.mem), unsafe.Pointer(&vm.Memory[0]), C.ulong(len(vm.Memory)))
-	}
-
-	updateMemory(nativeVM)
-
 	ctx := &AOTContext{
 		dlHandle: handle,
-		vmHandle: nativeVM,
 	}
 
 	runtime.SetFinalizer(ctx, func(ctx *AOTContext) {
 		C.dlclose(ctx.dlHandle)
-		C.vm_destroy(ctx.vmHandle)
-		C.free(unsafe.Pointer(ctx.vmHandle))
+		if ctx.vmHandle != nil {
+			C.vm_destroy(ctx.vmHandle)
+			C.free(unsafe.Pointer(ctx.vmHandle))
+		}
+	})
+
+	return ctx
+}
+
+func FullAOTCompileModule(m *exec.Module) *AOTContext {
+	code := m.NCompile(exec.NCompileConfig{
+		AliasDef:             false,
+		DisableMemBoundCheck: C.need_mem_bound_check() == 0,
+	})
+	tempDir, err := ioutil.TempDir("", "life-aot-")
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	inPath := path.Join(tempDir, "in.c")
+	outPath := path.Join(tempDir, "out")
+
+	err = ioutil.WriteFile(inPath, []byte(code), 0644)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	cmd := os_exec.Command("clang", "-fPIC", "-O2", "-lm", "-o", outPath, "-shared", inPath)
+	out, err := cmd.CombinedOutput()
+
+	if len(out) > 0 {
+		log.Printf("compiler warnings/errors: \n%s\n", string(out))
+	}
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	outPathC := C.CString(outPath)
+	handle := C.dlopen(outPathC, C.RTLD_NOW|C.RTLD_LOCAL)
+	C.free(unsafe.Pointer(outPathC))
+	if handle == nil {
+		log.Println("unable to open compiled code: " + C.GoString(C.dlerror()))
+		return nil
+	}
+
+	ctx := &AOTContext{
+		dlHandle: handle,
+	}
+
+	runtime.SetFinalizer(ctx, func(ctx *AOTContext) {
+		C.dlclose(ctx.dlHandle)
+		if ctx.vmHandle != nil {
+			C.vm_destroy(ctx.vmHandle)
+			C.free(unsafe.Pointer(ctx.vmHandle))
+		}
 	})
 
 	return ctx
