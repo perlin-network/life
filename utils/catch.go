@@ -14,9 +14,9 @@ func CatchPanic(out *error) {
 
 // UnifyError converts e to error.
 func UnifyError(e interface{}) error {
-	switch e.(type) {
+	switch et := e.(type) {
 	case error:
-		return e.(error)
+		return et
 	default:
 		return fmt.Errorf("%+v", e)
 	}

@@ -121,7 +121,7 @@ static double __attribute__((always_inline)) fneg64(double x) {
 #define fcopysign64 copysign
 `
 
-func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
+func bSprintf(builder *strings.Builder, format string, args ...interface{}) { // nolint:interfacer
 	builder.WriteString(fmt.Sprintf(format, args...))
 }
 
@@ -167,7 +167,7 @@ func writeBinOp_Fcall(b *strings.Builder, ins Instr, f string, ty string, retTy 
 	)
 }
 
-func writeBinOp_ConstRv(b *strings.Builder, ins Instr, op string, ty string, rv string) {
+func writeBinOp_ConstRv(b *strings.Builder, ins Instr, op string, ty string, rv string) { // nolint:unused,deadcode
 	bSprintf(b,
 		"%s%d.V_%s = (%s%d.V_%s %s (%s));",
 		NGEN_VALUE_PREFIX, ins.Target, ty,
@@ -234,6 +234,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		valueIDs[ins.Target] = struct{}{}
 
 		bSprintf(body, "%s%d: ", NGEN_INS_LABEL_PREFIX, i)
+
 		switch ins.Op {
 		case "unreachable":
 			bSprintf(body, "vm->throw_s(vm, \"unreachable executed\");")
@@ -259,6 +260,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			if uint64(ins.Immediates[0]) >= numGlobals {
 				panic("global index out of bounds")
 			}
+
 			bSprintf(body,
 				"%s%d.vu64 = globals[%d];",
 				NGEN_VALUE_PREFIX, ins.Target,
@@ -268,6 +270,7 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			if uint64(ins.Immediates[0]) >= numGlobals {
 				panic("global index out of bounds")
 			}
+
 			bSprintf(body,
 				"globals[%d] = %s%d.vu64;",
 				uint64(ins.Immediates[0]),
@@ -279,27 +282,33 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_FUNCTION_PREFIX, ins.Immediates[0],
 			)
+
 			for _, v := range ins.Values {
 				bSprintf(body, ",%s%d.vu64", NGEN_VALUE_PREFIX, v)
 			}
+
 			body.WriteString(");")
 		case "call_indirect":
 			bSprintf(body,
 				"%s%d.vu64 = ((uint64_t (*)(struct VirtualMachine *",
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
+
 			for range ins.Values[:len(ins.Values)-1] {
 				bSprintf(body, ",uint64_t")
 			}
+
 			bSprintf(body,
 				")) %sresolve_indirect(vm, %s%d.vu32, %d)) (vm",
 				NGEN_ENV_API_PREFIX,
 				NGEN_VALUE_PREFIX, ins.Values[len(ins.Values)-1],
 				len(ins.Values)-1,
 			)
+
 			for _, v := range ins.Values[:len(ins.Values)-1] {
 				bSprintf(body, ",%s%d.vu64", NGEN_VALUE_PREFIX, v)
 			}
+
 			body.WriteString(");")
 		case "jmp":
 			bSprintf(body,
@@ -325,16 +334,18 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 		case "jmp_table":
 			bSprintf(body, "phi = %s%d;\n", NGEN_VALUE_PREFIX, ins.Values[1])
 			bSprintf(body, "switch(%s%d.vu32) {\n", NGEN_VALUE_PREFIX, ins.Values[0])
+
 			for i, v := range ins.Immediates {
 				if i == len(ins.Immediates)-1 {
 					bSprintf(body, "default: ")
 				} else {
 					bSprintf(body, "case %d: ", i)
 				}
+
 				bSprintf(body, "goto %s%d;\n", NGEN_INS_LABEL_PREFIX, v)
 			}
-			bSprintf(body, "}")
 
+			bSprintf(body, "}")
 		case "phi":
 			bSprintf(body,
 				"%s%d = phi;",
@@ -524,7 +535,6 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp2(body, ins, ">", "float", "uint64_t")
 		case "f32.ge":
 			writeBinOp2(body, ins, ">=", "float", "uint64_t")
-
 		case "f64.add":
 			writeBinOp(body, ins, "+", "double")
 		case "f64.sub":
@@ -565,122 +575,88 @@ func (c *SSAFunctionCompiler) NGen(selfID uint64, numParams uint64, numLocals ui
 			writeBinOp2(body, ins, ">", "double", "uint64_t")
 		case "f64.ge":
 			writeBinOp2(body, ins, ">=", "double", "uint64_t")
-
 		case "i64.extend_u/i32":
 			writeUnOp_Fcall(body, ins, "", "uint32_t", "uint64_t")
 		case "i64.extend_s/i32":
 			writeUnOp_Fcall(body, ins, "", "int32_t", "int64_t")
-
 		case "i32.wrap/i64":
 			writeUnOp_Fcall(body, ins, "", "uint32_t", "uint64_t")
-
-		// TODO: These floating point operations need to be double-checked for correctness.
-
 		case "i32.trunc_s/f32", "i64.trunc_s/f32", "i32.trunc_u/f32", "i64.trunc_u/f32":
 			writeUnOp_Fcall(body, ins, "ftrunc32", "float", "int64_t")
-
 		case "i32.trunc_s/f64", "i64.trunc_s/f64", "i32.trunc_u/f64", "i64.trunc_u/f64":
 			writeUnOp_Fcall(body, ins, "ftrunc64", "double", "int64_t")
-
 		case "f32.demote/f64":
 			writeUnOp_Fcall(body, ins, "", "double", "float")
-
 		case "f64.promote/f32":
 			writeUnOp_Fcall(body, ins, "", "float", "double")
-
 		case "f32.convert_s/i32":
 			writeUnOp_Fcall(body, ins, "", "int32_t", "float")
-
 		case "f32.convert_s/i64":
 			writeUnOp_Fcall(body, ins, "", "int64_t", "float")
-
 		case "f32.convert_u/i32":
 			writeUnOp_Fcall(body, ins, "", "uint32_t", "float")
-
 		case "f32.convert_u/i64":
 			writeUnOp_Fcall(body, ins, "", "uint64_t", "float")
-
 		case "f64.convert_s/i32":
 			writeUnOp_Fcall(body, ins, "", "int32_t", "double")
-
 		case "f64.convert_s/i64":
 			writeUnOp_Fcall(body, ins, "", "int64_t", "double")
-
 		case "f64.convert_u/i32":
 			writeUnOp_Fcall(body, ins, "", "uint32_t", "double")
-
 		case "f64.convert_u/i64":
 			writeUnOp_Fcall(body, ins, "", "uint64_t", "double")
-
 		case "i32.reinterpret/f32", "i64.reinterpret/f64", "f32.reinterpret/i32", "f64.reinterpret/i64":
-
 		case "i32.load", "f32.load", "i64.load32_u":
 			writeMemLoad(body, ins, "uint32_t")
-
 		case "i32.load8_s", "i64.load8_s":
 			writeMemLoad(body, ins, "int8_t")
-
 		case "i32.load8_u", "i64.load8_u":
 			writeMemLoad(body, ins, "uint8_t")
-
 		case "i32.load16_s", "i64.load16_s":
 			writeMemLoad(body, ins, "int16_t")
-
 		case "i32.load16_u", "i64.load16_u":
 			writeMemLoad(body, ins, "uint16_t")
-
 		case "i64.load32_s":
 			writeMemLoad(body, ins, "int32_t")
-
 		case "i64.load", "f64.load":
 			writeMemLoad(body, ins, "uint64_t")
-
 		case "i32.store", "f32.store", "i64.store32":
 			writeMemStore(body, ins, "uint32_t")
-
 		case "i32.store8", "i64.store8":
 			writeMemStore(body, ins, "uint8_t")
-
 		case "i32.store16", "i64.store16":
 			writeMemStore(body, ins, "uint16_t")
-
 		case "i64.store", "f64.store":
 			writeMemStore(body, ins, "uint64_t")
-
 		case "memory.size":
 			bSprintf(body,
 				"%s%d.vu64 = vm->mem_size / 65536;",
 				NGEN_VALUE_PREFIX, ins.Target,
 			)
-
 		case "memory.grow":
 			bSprintf(body,
 				"%s%d.vu64 = vm->mem_size / 65536; vm->grow_memory(vm, %s%d.vu32 * 65536);",
 				NGEN_VALUE_PREFIX, ins.Target,
 				NGEN_VALUE_PREFIX, ins.Values[0],
 			)
-
-		case "add_gas":
-			// TODO: Implement
-
+		case "add_gas": // TODO: Implement
 		case "fp_disabled_error":
 			bSprintf(body, "vm->throw_s(vm, \"floating point disabled\");")
-
 		default:
 			panic(ins.Op)
 		}
+
 		body.WriteByte('\n')
 	}
 
 	body.WriteString("\nreturn 0;\n")
-
 	bSprintf(builder, "union Value phi")
 
-	for id, _ := range valueIDs {
+	for id := range valueIDs {
 		bSprintf(builder, ",%s%d", NGEN_VALUE_PREFIX, id)
 	}
-	bSprintf(builder, ";\n")
 
+	bSprintf(builder, ";\n")
 	builder.WriteString(body.String())
 	builder.WriteString("}\n")
 

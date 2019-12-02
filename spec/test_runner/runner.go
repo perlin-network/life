@@ -79,7 +79,7 @@ func LoadConfigFromFile(filename string) *Config {
 	return &cfg
 }
 
-func (c *Config) Run(cfgPath string) error {
+func (c *Config) Run(cfgPath string) {
 	var vm *exec.VirtualMachine
 	namedVMs := make(map[string]*exec.VirtualMachine)
 
@@ -177,14 +177,9 @@ func (c *Config) Run(cfgPath string) error {
 		}
 		fmt.Printf("PASS L%d\n", cmd.Line)
 	}
-
-	return nil
 }
 
 func main() {
 	cfg := LoadConfigFromFile(os.Args[1])
-	err := cfg.Run(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
+	cfg.Run(os.Args[1])
 }

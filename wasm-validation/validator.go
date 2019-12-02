@@ -9,5 +9,6 @@ func _getValidatorCode() []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return code
 }

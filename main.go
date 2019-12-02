@@ -12,9 +12,7 @@ import (
 )
 
 // Resolver defines imports for WebAssembly modules ran in Life.
-type Resolver struct {
-	tempRet0 int64
-}
+type Resolver struct{}
 
 // ResolveFunc defines a set of import functions that may be called within a WebAssembly module.
 func (r *Resolver) ResolveFunc(module, field string) exec.FunctionImport {
@@ -76,7 +74,9 @@ func main() {
 		panic(err)
 	}
 
-	err = wasm_validation.ValidateWasm(input)
+	if err := wasm_validation.ValidateWasm(input); err != nil {
+		panic(err)
+	}
 
 	// Instantiate a new WebAssembly VM with a few resolved imports.
 	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{

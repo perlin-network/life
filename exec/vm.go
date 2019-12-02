@@ -174,7 +174,7 @@ func NewModule(
 				}
 				m.Base.Memory = &wasm.SectionMemories{
 					Entries: []wasm.Memory{
-						wasm.Memory{
+						{
 							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultMemoryPages),
 							},
@@ -188,7 +188,7 @@ func NewModule(
 				}
 				m.Base.Table = &wasm.SectionTables{
 					Entries: []wasm.Table{
-						wasm.Table{
+						{
 							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultTableSize),
 							},
@@ -393,7 +393,7 @@ func (m *Module) NewVirtualMachine() *VirtualMachine {
 		if m.Module.Base.Data != nil && len(m.Module.Base.Data.Entries) > 0 {
 			for _, e := range m.Module.Base.Data.Entries {
 				offset := int(execInitExpr(e.Offset, globals))
-				copy(memory[int(offset):], e.Data)
+				copy(memory[offset:], e.Data)
 			}
 		}
 	}
@@ -463,7 +463,7 @@ func NewVirtualMachine(
 				}
 				m.Base.Memory = &wasm.SectionMemories{
 					Entries: []wasm.Memory{
-						wasm.Memory{
+						{
 							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultMemoryPages),
 							},
@@ -477,7 +477,7 @@ func NewVirtualMachine(
 				}
 				m.Base.Table = &wasm.SectionTables{
 					Entries: []wasm.Table{
-						wasm.Table{
+						{
 							Limits: wasm.ResizableLimits{
 								Initial: uint32(config.DefaultTableSize),
 							},
@@ -534,7 +534,7 @@ func NewVirtualMachine(
 		if m.Base.Data != nil && len(m.Base.Data.Entries) > 0 {
 			for _, e := range m.Base.Data.Entries {
 				offset := int(execInitExpr(e.Offset, globals))
-				copy(memory[int(offset):], e.Data)
+				copy(memory[offset:], e.Data)
 			}
 		}
 	}
@@ -560,7 +560,7 @@ func (vm *VirtualMachine) SetAOTService(s AOTService) {
 	vm.AOTService = s
 }
 
-func bSprintf(builder *strings.Builder, format string, args ...interface{}) {
+func bSprintf(builder *strings.Builder, format string, args ...interface{}) { // nolint:interfacer
 	builder.WriteString(fmt.Sprintf(format, args...))
 }
 
@@ -802,14 +802,17 @@ func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 	if newGas < vm.Gas {
 		panic("gas overflow")
 	}
+
 	if vm.Config.GasLimit != 0 && newGas > vm.Config.GasLimit {
 		if vm.Config.ReturnOnGasLimitExceeded {
 			return false
-		} else {
-			panic("gas limit exceeded")
 		}
+
+		panic("gas limit exceeded")
 	}
+
 	vm.Gas = newGas
+
 	return true
 }
 
@@ -818,7 +821,7 @@ func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 // at least once every 10000 instructions. Caller is responsible for
 // detecting VM status in a loop.
 func (vm *VirtualMachine) Execute() {
-	if vm.Exited == true {
+	if vm.Exited {
 		panic("attempting to execute an exited vm")
 	}
 
@@ -1433,7 +1436,7 @@ func (vm *VirtualMachine) Execute() {
 			val := math.Float32frombits(uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]))
 			frame.IP += 4
 
-			if c := float32(-val); c != c {
+			if c := -val; c != c {
 				frame.Regs[valueID] = int64(0x7FC00000)
 			} else {
 				frame.Regs[valueID] = int64(math.Float32bits(c))
@@ -1757,7 +1760,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
 
 		case opcodes.F32ConvertSI64:
-			v := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			v := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 			frame.Regs[valueID] = int64(math.Float32bits(float32(v)))
 
@@ -1777,7 +1780,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.Regs[valueID] = int64(int32(math.Float64bits(float64(v))))
 
 		case opcodes.F64ConvertSI64:
-			v := int64(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
+			v := frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))]
 			frame.IP += 4
 			frame.Regs[valueID] = int64(math.Float64bits(float64(v)))
 
@@ -1803,7 +1806,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 12
 
 			effective := int(uint64(base) + uint64(offset))
-			frame.Regs[valueID] = int64(uint32(LE.Uint32(vm.Memory[effective : effective+4])))
+			frame.Regs[valueID] = int64(LE.Uint32(vm.Memory[effective : effective+4]))
 		case opcodes.I64Load32S:
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
@@ -1835,7 +1838,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 12
 
 			effective := int(uint64(base) + uint64(offset))
-			frame.Regs[valueID] = int64(uint8(vm.Memory[effective]))
+			frame.Regs[valueID] = int64(vm.Memory[effective])
 		case opcodes.I32Load16S, opcodes.I64Load16S:
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
@@ -1851,7 +1854,7 @@ func (vm *VirtualMachine) Execute() {
 			frame.IP += 12
 
 			effective := int(uint64(base) + uint64(offset))
-			frame.Regs[valueID] = int64(uint16(LE.Uint16(vm.Memory[effective : effective+2])))
+			frame.Regs[valueID] = int64(LE.Uint16(vm.Memory[effective : effective+2]))
 		case opcodes.I32Store, opcodes.I64Store32:
 			offset := LE.Uint32(frame.Code[frame.IP+4 : frame.IP+8])
 			base := uint32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+8:frame.IP+12]))])
@@ -1949,11 +1952,11 @@ func (vm *VirtualMachine) Execute() {
 				vm.Exited = true
 				vm.ReturnValue = val
 				return
-			} else {
-				frame = vm.GetCurrentFrame()
-				frame.Regs[frame.ReturnReg] = val
-				//fmt.Printf("Return value %d\n", val)
 			}
+
+			frame = vm.GetCurrentFrame()
+			frame.Regs[frame.ReturnReg] = val
+			//fmt.Printf("Return value %d\n", val)
 		case opcodes.ReturnVoid:
 			frame.Destroy(vm)
 			vm.CurrentFrame--
@@ -1961,9 +1964,9 @@ func (vm *VirtualMachine) Execute() {
 				vm.Exited = true
 				vm.ReturnValue = 0
 				return
-			} else {
-				frame = vm.GetCurrentFrame()
 			}
+
+			frame = vm.GetCurrentFrame()
 		case opcodes.GetLocal:
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			val := frame.Locals[id]
@@ -2050,8 +2053,8 @@ func (vm *VirtualMachine) Execute() {
 				}
 				frame.Regs[valueID] = imp.F(vm)
 			}
-			return
 
+			return
 		case opcodes.CurrentMemory:
 			frame.Regs[valueID] = int64(len(vm.Memory) / DefaultPageSize)
 

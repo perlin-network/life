@@ -11,9 +11,10 @@ func ValidateWasm(code []byte) error {
 	if err != nil {
 		return err
 	}
-	err = validate.VerifyModule(m)
-	if err != nil {
+
+	if err := validate.VerifyModule(m); err != nil {
 		return err
 	}
+
 	return nil
 }

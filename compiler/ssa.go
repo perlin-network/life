@@ -214,13 +214,16 @@ func (c *SSAFunctionCompiler) Compile(importTypeIDs []int) {
 
 		case "i32.ge_s":
 			retID := c.NextValueID()
-			if ins.Op.Code == 0x4e { // real ge_s
+
+			switch ins.Op.Code {
+			case 0x4e: // real ge_s
 				c.Code = append(c.Code, buildInstr(retID, "i32.ge_s", nil, c.PopStack(2)))
-			} else if ins.Op.Code == 0x4f { // the wagon ge_s
+			case 0x4f: // the wagon ge_s
 				c.Code = append(c.Code, buildInstr(retID, "i32.ge_u", nil, c.PopStack(2)))
-			} else {
+			default:
 				panic("unreachable")
 			}
+
 			c.PushStack(retID)
 		case "i32.clz", "i32.ctz", "i32.popcnt", "i32.eqz",
 			"i64.clz", "i64.ctz", "i64.popcnt", "i64.eqz",
