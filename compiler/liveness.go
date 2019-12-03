@@ -8,12 +8,15 @@ package compiler
 func (c *SSAFunctionCompiler) RegAlloc() int {
 	regID := TyValueID(1)
 	valueRelocs := make(map[TyValueID]TyValueID)
+
 	for _, values := range c.StackValueSets {
 		for _, v := range values {
 			valueRelocs[v] = regID
 		}
+
 		regID++
 	}
+
 	for i := range c.Code {
 		ins := &c.Code[i]
 
@@ -43,11 +46,12 @@ func (ins *Instr) BranchTargets() []int {
 	switch ins.Op {
 	case "jmp", "jmp_if", "jmp_table":
 		ret := make([]int, len(ins.Immediates))
+
 		for i, t := range ins.Immediates {
 			ret[i] = int(t)
 		}
-		return ret
 
+		return ret
 	default:
 		return []int{}
 	}

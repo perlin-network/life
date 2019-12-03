@@ -30,9 +30,7 @@ func (g *CFGraph) ToInsSeq() []Instr {
 
 	for i, bb := range g.Blocks {
 		blockRelocs[i] = len(out)
-		for _, op := range bb.Code {
-			out = append(out, op)
-		}
+		out = append(out, bb.Code...)
 		out = append(out, Instr{}) // jmp placeholder
 		blockEnds[i] = len(out)
 	}
@@ -40,9 +38,11 @@ func (g *CFGraph) ToInsSeq() []Instr {
 	for i, bb := range g.Blocks {
 		jmpIns := &out[blockEnds[i]-1]
 		jmpIns.Immediates = make([]int64, len(bb.JmpTargets))
+
 		for j, target := range bb.JmpTargets {
 			jmpIns.Immediates[j] = int64(blockRelocs[target])
 		}
+
 		switch bb.JmpKind {
 		case JmpUndef:
 			panic("got JmpUndef")
@@ -84,6 +84,7 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 					nextLabel++
 				}
 			}
+
 			if _, ok := insLabels[i+1]; !ok {
 				insLabels[i+1] = nextLabel
 				nextLabel++
@@ -97,6 +98,7 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 	}
 
 	g.Blocks = make([]BasicBlock, nextLabel)
+
 	var currentBlock *BasicBlock
 
 	for i, ins := range c.Code {
@@ -105,8 +107,10 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 				currentBlock.JmpKind = JmpUncond
 				currentBlock.JmpTargets = []int{label}
 			}
+
 			currentBlock = &g.Blocks[label]
 		}
+
 		switch ins.Op {
 		case "jmp":
 			currentBlock.JmpKind = JmpUncond
@@ -115,7 +119,7 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 			currentBlock = nil
 		case "jmp_if":
 			currentBlock.JmpKind = JmpEither
-			currentBlock.JmpTargets = []int{insLabels[int(ins.Immediates[0])], insLabels[int(i+1)]}
+			currentBlock.JmpTargets = []int{insLabels[int(ins.Immediates[0])], insLabels[i+1]}
 			currentBlock.JmpCond = ins.Values[0]
 			currentBlock.YieldValue = ins.Values[1]
 			currentBlock = nil
@@ -128,17 +132,21 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 		case "jmp_table":
 			currentBlock.JmpKind = JmpTable
 			currentBlock.JmpTargets = make([]int, len(ins.Immediates))
+
 			for j, imm := range ins.Immediates {
 				currentBlock.JmpTargets[j] = insLabels[int(imm)]
 			}
+
 			currentBlock.JmpCond = ins.Values[0]
 			currentBlock.YieldValue = ins.Values[1]
 			currentBlock = nil
 		case "return":
 			currentBlock.JmpKind = JmpReturn
+
 			if len(ins.Values) > 0 {
 				currentBlock.YieldValue = ins.Values[0]
 			}
+
 			currentBlock = nil
 		default:
 			currentBlock.Code = append(currentBlock.Code, ins)
@@ -150,6 +158,7 @@ func (c *SSAFunctionCompiler) NewCFGraph() *CFGraph {
 		if lastBlock.JmpKind != JmpUndef {
 			panic("last block should always have an undefined jump target")
 		}
+
 		lastBlock.JmpKind = JmpReturn
 	}
 

@@ -44,7 +44,10 @@ func run(w io.Writer, fname string, verify bool, entryName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+
+	defer func() {
+		_ = f.Close()
+	}()
 
 	m, err := wasm.ReadModule(f, importer)
 	if err != nil {
@@ -74,6 +77,7 @@ func run(w io.Writer, fname string, verify bool, entryName string) {
 
 	i := int64(e.Index)
 	fidx := m.Function.Types[int(i)]
+
 	ftype := m.Types.Entries[int(fidx)]
 	switch len(ftype.ReturnTypes) {
 	case 1:
@@ -84,20 +88,25 @@ func run(w io.Writer, fname string, verify bool, entryName string) {
 		log.Printf("running exported functions with more than one return value is not supported")
 		return
 	}
+
 	if len(ftype.ParamTypes) > 0 {
 		log.Printf("running exported functions with input parameters is not supported")
 		return
 	}
+
 	o, err := vm.ExecCode(i)
 	if err != nil {
 		fmt.Fprintf(w, "\n")
 		log.Printf("err=%v", err)
+
 		return
 	}
+
 	if len(ftype.ReturnTypes) == 0 {
 		fmt.Fprintf(w, "\n")
 		return
 	}
+
 	fmt.Fprintf(w, "%[1]v (%[1]T)\n", o)
 }
 
@@ -106,14 +115,18 @@ func importer(name string) (*wasm.Module, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer f.Close()
+
 	m, err := wasm.ReadModule(f, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	err = validate.VerifyModule(m)
 	if err != nil {
 		return nil, err
 	}
+
 	return m, nil
 }

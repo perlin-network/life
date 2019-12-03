@@ -53,7 +53,7 @@ func execInitExpr(expr []byte, globals []int64) int64 {
 			if err != nil {
 				panic(err)
 			}
-			stack = append(stack, int64(i))
+			stack = append(stack, i)
 		case ops.F32Const:
 			i, err := readU32(r)
 			if err != nil {
