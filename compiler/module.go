@@ -288,5 +288,5 @@ func (m *Module) CompileForInterpreter(gp GasPolicy) (ret []InterpreterCode, ret
 			Bytes:      compiler.Serialize(),
 		}
 	}
-	return
+	return ret, retErr
 }
