@@ -114,12 +114,7 @@ func LoadModule(raw []byte) (*Module, error) {
 	}, nil
 }
 
-func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (string, error) {
-	var (
-		out    string
-		retErr error
-	)
-
+func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (out string, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
 	importStubBuilder := &strings.Builder{}
@@ -203,12 +198,7 @@ func (m *Module) CompileWithNGen(gp GasPolicy, numGlobals uint64) (string, error
 	return out, retErr
 }
 
-func (m *Module) CompileForInterpreter(gp GasPolicy) ([]InterpreterCode, error) {
-	var (
-		ret    []InterpreterCode
-		retErr error
-	)
-
+func (m *Module) CompileForInterpreter(gp GasPolicy) (ret []InterpreterCode, retErr error) {
 	defer utils.CatchPanic(&retErr)
 
 	importTypeIDs := make([]int, 0)
@@ -298,6 +288,5 @@ func (m *Module) CompileForInterpreter(gp GasPolicy) ([]InterpreterCode, error) 
 			Bytes:      compiler.Serialize(),
 		}
 	}
-
-	return ret, retErr
+	return
 }
