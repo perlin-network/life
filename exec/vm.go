@@ -346,7 +346,12 @@ func (vm *VirtualMachine) Reset() {
 	vm.CurrentFrame = -1
 	vm.Exited = false
 	vm.ExitError = nil
-	vm.CallStack = make([]Frame, DefaultCallStackSize)
+	// The current depth of the callstack is a good indication of
+	// how deep it can go, clear all the current frames but leave
+	// it at its current allocation level.
+	for frame := range vm.CallStack {
+		vm.CallStack[frame] = Frame{}
+	}
 	vm.Delegate = nil
 }
 
