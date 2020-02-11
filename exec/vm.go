@@ -816,6 +816,21 @@ func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 	return true
 }
 
+// Reset makes de VM ready for a new call to Execute if the previous interruption
+// has been interrupted.
+func (vm *VirtualMachine) Reset() {
+	vm.CurrentFrame = -1
+	vm.Exited = false
+	vm.ExitError = nil
+	// The current depth of the callstack is a good indication of
+	// how deep it can go, clear all the current frames but leave
+	// it at its current allocation level.
+	for frame := range vm.CallStack {
+		vm.CallStack[frame] = Frame{}
+	}
+	vm.Delegate = nil
+}
+
 // Execute starts the virtual machines main instruction processing loop.
 // This function may return at any point and is guaranteed to return
 // at least once every 10000 instructions. Caller is responsible for
