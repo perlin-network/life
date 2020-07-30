@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"fmt"
+
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/utils"
 )
@@ -30,10 +31,7 @@ func (vm *VirtualMachine) RunWithGasLimit(entryID, limit int, params ...int64) (
 	vm.Ignite(entryID, params...)
 	for !vm.Exited {
 		vm.Execute()
-		if vm.Delegate != nil {
-			vm.Delegate()
-			vm.Delegate = nil
-		}
+		vm.execDelegate()
 		count++
 		if count == limit {
 			return -1, errors.New("gas limit exceeded")
@@ -81,10 +79,7 @@ func (vm *VirtualMachine) Run(entryID int, params ...int64) (retVal int64, retEr
 
 	for !vm.Exited {
 		vm.Execute()
-		if vm.Delegate != nil {
-			vm.Delegate()
-			vm.Delegate = nil
-		}
+		vm.execDelegate()
 	}
 
 	if vm.ExitError != nil {

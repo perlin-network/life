@@ -1,0 +1,860 @@
+# command-line-arguments
+.\vm.go:863:3: (*VirtualMachine).Execute.func1 capturing by value: vm (addr=false assign=false width=8)
+.\vm.go:2072:7: (*VirtualMachine).Execute.func2.1 capturing by value: vm (addr=false assign=false width=8)
+.\vm.go:2075:5: (*VirtualMachine).Execute.func2 capturing by value: vm (addr=false assign=false width=8)
+.\vm.go:2076:31: (*VirtualMachine).Execute.func2 capturing by value: importID (addr=false assign=false width=8)
+.\vm.go:2080:5: (*VirtualMachine).Execute.func2 capturing by ref: frame (addr=true assign=true width=8)
+.\vm.go:2080:16: (*VirtualMachine).Execute.func2 capturing by value: valueID (addr=false assign=false width=8)
+.\init_expr.go:14:6: buf escapes to heap:
+.\init_expr.go:14:6:   flow: {heap} = &buf:
+.\init_expr.go:14:6:     from buf (address-of) at .\init_expr.go:15:30
+.\init_expr.go:14:6:     from buf[:] (slice) at .\init_expr.go:15:30
+.\init_expr.go:14:6:     from io.ReadFull(r, buf[:]) (call parameter) at .\init_expr.go:15:23
+.\init_expr.go:13:14: parameter r leaks to {heap} with derefs=0:
+.\init_expr.go:13:14:   flow: {heap} = r:
+.\init_expr.go:13:14:     from io.ReadFull(r, buf[:]) (call parameter) at .\init_expr.go:15:23
+.\init_expr.go:13:14: leaking param: r
+.\init_expr.go:14:6: moved to heap: buf
+.\init_expr.go:24:6: buf escapes to heap:
+.\init_expr.go:24:6:   flow: {heap} = &buf:
+.\init_expr.go:24:6:     from buf (address-of) at .\init_expr.go:25:30
+.\init_expr.go:24:6:     from buf[:] (slice) at .\init_expr.go:25:30
+.\init_expr.go:24:6:     from io.ReadFull(r, buf[:]) (call parameter) at .\init_expr.go:25:23
+.\init_expr.go:23:14: parameter r leaks to {heap} with derefs=0:
+.\init_expr.go:23:14:   flow: {heap} = r:
+.\init_expr.go:23:14:     from io.ReadFull(r, buf[:]) (call parameter) at .\init_expr.go:25:23
+.\init_expr.go:23:14: leaking param: r
+.\init_expr.go:24:6: moved to heap: buf
+.\init_expr.go:33:19: parameter expr leaks to {heap} with derefs=0:
+.\init_expr.go:33:19:   flow: {heap} = expr:
+.\init_expr.go:33:19:     from bytes.NewReader(expr) (call parameter) at .\init_expr.go:35:22
+.\init_expr.go:33:19: leaking param: expr
+.\init_expr.go:33:32: globals does not escape
+.\vm.go:178:21: &wasm.SectionMemories literal escapes to heap:
+.\vm.go:178:21:   flow: {heap} = &{storage for &wasm.SectionMemories literal}:
+.\vm.go:178:21:     from &wasm.SectionMemories literal (spill) at .\vm.go:178:21
+.\vm.go:178:21:     from m.Base.Memory = &wasm.SectionMemories literal (assign) at .\vm.go:178:19
+.\vm.go:179:28: []wasm.Memory literal escapes to heap:
+.\vm.go:179:28:   flow: {storage for &wasm.SectionMemories literal} = &{storage for []wasm.Memory literal}:
+.\vm.go:179:28:     from []wasm.Memory literal (spill) at .\vm.go:179:28
+.\vm.go:179:28:     from wasm.SectionMemories literal (struct literal element) at .\vm.go:178:42
+.\vm.go:192:20: &wasm.SectionTables literal escapes to heap:
+.\vm.go:192:20:   flow: {heap} = &{storage for &wasm.SectionTables literal}:
+.\vm.go:192:20:     from &wasm.SectionTables literal (spill) at .\vm.go:192:20
+.\vm.go:192:20:     from m.Base.Table = &wasm.SectionTables literal (assign) at .\vm.go:192:18
+.\vm.go:193:27: []wasm.Table literal escapes to heap:
+.\vm.go:193:27:   flow: {storage for &wasm.SectionTables literal} = &{storage for []wasm.Table literal}:
+.\vm.go:193:27:     from []wasm.Table literal (spill) at .\vm.go:193:27
+.\vm.go:193:27:     from wasm.SectionTables literal (struct literal element) at .\vm.go:192:39
+.\vm.go:220:15: make([]uint32, int(t.Limits.Initial)) escapes to heap:
+.\vm.go:220:15:   flow: {heap} = &{storage for make([]uint32, int(t.Limits.Initial))}:
+.\vm.go:220:15:     from make([]uint32, int(t.Limits.Initial)) (non-constant size) at .\vm.go:220:15
+.\vm.go:202:68: imp.Type.Kind() escapes to heap:
+.\vm.go:202:68:   flow: {storage for ... argument} = &{storage for imp.Type.Kind()}:
+.\vm.go:202:68:     from imp.Type.Kind() (spill) at .\vm.go:202:68
+.\vm.go:202:68:   flow: {heap} = {storage for ... argument}:
+.\vm.go:202:68:     from ... argument (spill) at .\vm.go:202:21
+.\vm.go:202:68:     from fmt.Errorf("import kind not supported: %d", imp.Type.Kind()) (call parameter) at .\vm.go:202:21
+.\vm.go:137:2: parameter impResolver leaks to {heap} with derefs=0:
+.\vm.go:137:2:   flow: {heap} = impResolver:
+.\vm.go:137:2:     from impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName) (call parameter) at .\vm.go:172:56
+.\vm.go:138:2: parameter gasPolicy leaks to {heap} with derefs=0:
+.\vm.go:138:2:   flow: {heap} = gasPolicy:
+.\vm.go:138:2:     from m.CompileForInterpreter(gasPolicy) (call parameter) at .\vm.go:151:46
+.\vm.go:135:2: parameter code leaks to {heap} with derefs=0:
+.\vm.go:135:2:   flow: {heap} = code:
+.\vm.go:135:2:     from compiler.LoadModule(code) (call parameter) at .\vm.go:144:31
+.\vm.go:141:15: "Warning: JIT support is removed." escapes to heap:
+.\vm.go:141:15:   flow: {storage for ... argument} = &{storage for "Warning: JIT support is removed."}:
+.\vm.go:141:15:     from "Warning: JIT support is removed." (spill) at .\vm.go:141:15
+.\vm.go:141:15:   flow: {heap} = {storage for ... argument}:
+.\vm.go:141:15:     from ... argument (spill) at .\vm.go:141:14
+.\vm.go:141:15:     from fmt.Println("Warning: JIT support is removed.") (call parameter) at .\vm.go:141:14
+.\vm.go:232:9: &Module literal escapes to heap:
+.\vm.go:232:9:   flow: _retVM = &{storage for &Module literal}:
+.\vm.go:232:9:     from &Module literal (spill) at .\vm.go:232:9
+.\vm.go:232:9:     from return &Module literal, nil (return) at .\vm.go:232:2
+.\vm.go:137:2: parameter impResolver leaks to {storage for &Module literal} with derefs=0:
+.\vm.go:137:2:   flow: {storage for &Module literal} = impResolver:
+.\vm.go:137:2:     from Module literal (struct literal element) at .\vm.go:232:16
+.\vm.go:138:2: parameter gasPolicy leaks to {storage for &Module literal} with derefs=0:
+.\vm.go:138:2:   flow: {storage for &Module literal} = gasPolicy:
+.\vm.go:138:2:     from Module literal (struct literal element) at .\vm.go:232:16
+.\vm.go:135:2: leaking param: code
+.\vm.go:137:2: leaking param: impResolver
+.\vm.go:138:2: leaking param: gasPolicy
+.\vm.go:141:14: ... argument does not escape
+.\vm.go:141:15: "Warning: JIT support is removed." escapes to heap
+.\vm.go:178:21: &wasm.SectionMemories literal escapes to heap
+.\vm.go:179:28: []wasm.Memory literal escapes to heap
+.\vm.go:192:20: &wasm.SectionTables literal escapes to heap
+.\vm.go:193:27: []wasm.Table literal escapes to heap
+.\vm.go:202:21: ... argument does not escape
+.\vm.go:202:68: imp.Type.Kind() escapes to heap
+.\vm.go:220:15: make([]uint32, int(t.Limits.Initial)) escapes to heap
+.\vm.go:232:9: &Module literal escapes to heap
+.\vm.go:244:7: m does not escape
+.\vm.go:244:28: key does not escape
+.\vm.go:262:7: m does not escape
+.\vm.go:262:34: key does not escape
+.\vm.go:267:7: m does not escape
+.\vm.go:267:36: key does not escape
+.\vm.go:566:56: parameter args leaks to {heap} with derefs=1:
+.\vm.go:566:56:   flow: {heap} = *args:
+.\vm.go:566:56:     from fmt.Sprintf(format, args...) (call parameter) at .\vm.go:567:33
+.\vm.go:566:15: parameter builder leaks to {heap} with derefs=1:
+.\vm.go:566:15:   flow: {heap} = *builder:
+.\vm.go:566:15:     from builder.WriteString(fmt.Sprintf(format, args...)) (call parameter) at .\vm.go:567:21
+.\vm.go:566:15: leaking param content: builder
+.\vm.go:566:41: format does not escape
+.\vm.go:566:56: leaking param content: args
+.\vm.go:577:23: ch escapes to heap:
+.\vm.go:577:23:   flow: {storage for ... argument} = &{storage for ch}:
+.\vm.go:577:23:     from ch (spill) at .\vm.go:577:23
+.\vm.go:577:23:   flow: {heap} = {storage for ... argument}:
+.\vm.go:577:23:     from ... argument (spill) at .\vm.go:577:22
+.\vm.go:577:23:     from fmt.Sprintf("\\x%02x", ch) (call parameter) at .\vm.go:577:22
+.\vm.go:575:17: string(ch) escapes to heap:
+.\vm.go:575:17:   flow: ret = &{storage for string(ch)}:
+.\vm.go:575:17:     from string(ch) (spill) at .\vm.go:575:17
+.\vm.go:575:17:     from ret += string(ch) (assign) at .\vm.go:575:8
+.\vm.go:570:17: name does not escape
+.\vm.go:575:17: string(ch) escapes to heap
+.\vm.go:577:22: ... argument does not escape
+.\vm.go:577:23: ch escapes to heap
+.\vm.go:573:27: ([]byte)(name) does not escape
+.\vm.go:335:84: "cannot resolve import" escapes to heap:
+.\vm.go:335:84:   flow: {storage for ... argument} = &{storage for "cannot resolve import"}:
+.\vm.go:335:84:     from "cannot resolve import" (spill) at .\vm.go:335:84
+.\vm.go:335:84:   flow: {heap} = {storage for ... argument}:
+.\vm.go:335:84:     from ... argument (spill) at .\vm.go:335:10
+.\vm.go:335:84:     from bSprintf(builder, "if(imports[import_id].f == 0) { vm->throw_s(vm, \"%s\"); }\n", "cannot resolve import") (call parameter) at .\vm.go:335:10
+.\vm.go:333:90: "import entry out of bounds" escapes to heap:
+.\vm.go:333:90:   flow: {storage for ... argument} = &{storage for "import entry out of bounds"}:
+.\vm.go:333:90:     from "import entry out of bounds" (spill) at .\vm.go:333:90
+.\vm.go:333:90:   flow: {heap} = {storage for ... argument}:
+.\vm.go:333:90:     from ... argument (spill) at .\vm.go:333:10
+.\vm.go:333:90:     from bSprintf(builder, "if(import_id >= num_import_entries) { vm->throw_s(vm, \"%s\"); }\n", "import entry out of bounds") (call parameter) at .\vm.go:333:10
+.\vm.go:329:3: compiler.NGEN_ENV_API_PREFIX escapes to heap:
+.\vm.go:329:3:   flow: {storage for ... argument} = &{storage for compiler.NGEN_ENV_API_PREFIX}:
+.\vm.go:329:3:     from compiler.NGEN_ENV_API_PREFIX (spill) at .\vm.go:329:3
+.\vm.go:329:3:   flow: {heap} = {storage for ... argument}:
+.\vm.go:329:3:     from ... argument (spill) at .\vm.go:328:10
+.\vm.go:329:3:     from bSprintf(builder, "static uint64_t __attribute__((always_inline)) %sinvoke_import(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params) {\n", compiler.NGEN_ENV_API_PREFIX) (call parameter) at .\vm.go:328:10
+.\vm.go:325:121: escapeName(imp.FieldName) escapes to heap:
+.\vm.go:325:121:   flow: {storage for ... argument} = &{storage for escapeName(imp.FieldName)}:
+.\vm.go:325:121:     from escapeName(imp.FieldName) (spill) at .\vm.go:325:121
+.\vm.go:325:121:   flow: {heap} = {storage for ... argument}:
+.\vm.go:325:121:     from ... argument (spill) at .\vm.go:325:11
+.\vm.go:325:121:     from bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName)) (call parameter) at .\vm.go:325:11
+.\vm.go:325:93: escapeName(imp.ModuleName) escapes to heap:
+.\vm.go:325:93:   flow: {storage for ... argument} = &{storage for escapeName(imp.ModuleName)}:
+.\vm.go:325:93:     from escapeName(imp.ModuleName) (spill) at .\vm.go:325:93
+.\vm.go:325:93:   flow: {heap} = {storage for ... argument}:
+.\vm.go:325:93:     from ... argument (spill) at .\vm.go:325:11
+.\vm.go:325:93:     from bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName)) (call parameter) at .\vm.go:325:11
+.\vm.go:322:75: len(m.FunctionImports) escapes to heap:
+.\vm.go:322:75:   flow: {storage for ... argument} = &{storage for len(m.FunctionImports)}:
+.\vm.go:322:75:     from len(m.FunctionImports) (spill) at .\vm.go:322:75
+.\vm.go:322:75:   flow: {heap} = {storage for ... argument}:
+.\vm.go:322:75:     from ... argument (spill) at .\vm.go:322:10
+.\vm.go:322:75:     from bSprintf(builder, "static const uint64_t num_import_entries = %d;\n", len(m.FunctionImports)) (call parameter) at .\vm.go:322:10
+.\vm.go:317:99: "argument count mismatch" escapes to heap:
+.\vm.go:317:99:   flow: {storage for ... argument} = &{storage for "argument count mismatch"}:
+.\vm.go:317:99:     from "argument count mismatch" (spill) at .\vm.go:317:99
+.\vm.go:317:99:   flow: {heap} = {storage for ... argument}:
+.\vm.go:317:99:     from ... argument (spill) at .\vm.go:317:10
+.\vm.go:317:99:     from bSprintf(builder, "if(table[entry_id].num_params != num_params) { vm->throw_s(vm, \"%s\"); }\n", "argument count mismatch") (call parameter) at .\vm.go:317:10
+.\vm.go:316:84: "table entry is null" escapes to heap:
+.\vm.go:316:84:   flow: {storage for ... argument} = &{storage for "table entry is null"}:
+.\vm.go:316:84:     from "table entry is null" (spill) at .\vm.go:316:84
+.\vm.go:316:84:   flow: {heap} = {storage for ... argument}:
+.\vm.go:316:84:     from ... argument (spill) at .\vm.go:316:10
+.\vm.go:316:84:     from bSprintf(builder, "if(table[entry_id].func == 0) { vm->throw_s(vm, \"%s\"); }\n", "table entry is null") (call parameter) at .\vm.go:316:10
+.\vm.go:315:88: "table entry out of bounds" escapes to heap:
+.\vm.go:315:88:   flow: {storage for ... argument} = &{storage for "table entry out of bounds"}:
+.\vm.go:315:88:     from "table entry out of bounds" (spill) at .\vm.go:315:88
+.\vm.go:315:88:   flow: {heap} = {storage for ... argument}:
+.\vm.go:315:88:     from ... argument (spill) at .\vm.go:315:10
+.\vm.go:315:88:     from bSprintf(builder, "if(entry_id >= num_table_entries) { vm->throw_s(vm, \"%s\"); }\n", "table entry out of bounds") (call parameter) at .\vm.go:315:10
+.\vm.go:314:20: compiler.NGEN_ENV_API_PREFIX escapes to heap:
+.\vm.go:314:20:   flow: {storage for ... argument} = &{storage for compiler.NGEN_ENV_API_PREFIX}:
+.\vm.go:314:20:     from compiler.NGEN_ENV_API_PREFIX (spill) at .\vm.go:314:20
+.\vm.go:314:20:   flow: {heap} = {storage for ... argument}:
+.\vm.go:314:20:     from ... argument (spill) at .\vm.go:314:10
+.\vm.go:314:20:     from bSprintf(builder, "static void * __attribute__((always_inline)) %sresolve_indirect(struct VirtualMachine *vm, uint64_t entry_id, uint64_t num_params) {\n", compiler.NGEN_ENV_API_PREFIX) (call parameter) at .\vm.go:314:10
+.\vm.go:310:67: functionID escapes to heap:
+.\vm.go:310:67:   flow: {storage for ... argument} = &{storage for functionID}:
+.\vm.go:310:67:     from functionID (spill) at .\vm.go:310:67
+.\vm.go:310:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:310:67:     from ... argument (spill) at .\vm.go:310:12
+.\vm.go:310:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:310:12
+.\vm.go:310:67: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:310:67:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:310:67:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:310:67
+.\vm.go:310:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:310:67:     from ... argument (spill) at .\vm.go:310:12
+.\vm.go:310:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:310:12
+.\vm.go:310:67: code.NumParams escapes to heap:
+.\vm.go:310:67:   flow: {storage for ... argument} = &{storage for code.NumParams}:
+.\vm.go:310:67:     from code.NumParams (spill) at .\vm.go:310:67
+.\vm.go:310:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:310:67:     from ... argument (spill) at .\vm.go:310:12
+.\vm.go:310:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:310:12
+.\vm.go:301:74: len(m.Table) escapes to heap:
+.\vm.go:301:74:   flow: {storage for ... argument} = &{storage for len(m.Table)}:
+.\vm.go:301:74:     from len(m.Table) (spill) at .\vm.go:301:74
+.\vm.go:301:74:   flow: {heap} = {storage for ... argument}:
+.\vm.go:301:74:     from ... argument (spill) at .\vm.go:301:10
+.\vm.go:301:74:     from bSprintf(builder, "static const uint64_t num_table_entries = %d;\n", len(m.Table)) (call parameter) at .\vm.go:301:10
+.\vm.go:292:21: i escapes to heap:
+.\vm.go:292:21:   flow: {storage for ... argument} = &{storage for i}:
+.\vm.go:292:21:     from i (spill) at .\vm.go:292:21
+.\vm.go:292:21:   flow: {heap} = {storage for ... argument}:
+.\vm.go:292:21:     from ... argument (spill) at .\vm.go:292:11
+.\vm.go:292:21:     from bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i) (call parameter) at .\vm.go:292:11
+.\vm.go:292:21: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:292:21:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:292:21:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:292:21
+.\vm.go:292:21:   flow: {heap} = {storage for ... argument}:
+.\vm.go:292:21:     from ... argument (spill) at .\vm.go:292:11
+.\vm.go:292:21:     from bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i) (call parameter) at .\vm.go:292:11
+.\vm.go:287:37: uint64(v) escapes to heap:
+.\vm.go:287:37:   flow: {storage for ... argument} = &{storage for uint64(v)}:
+.\vm.go:287:37:     from uint64(v) (spill) at .\vm.go:287:37
+.\vm.go:287:37:   flow: {heap} = {storage for ... argument}:
+.\vm.go:287:37:     from ... argument (spill) at .\vm.go:287:11
+.\vm.go:287:37:     from bSprintf(builder, "%dull,", uint64(v)) (call parameter) at .\vm.go:287:11
+.\vm.go:271:7: m does not escape
+.\vm.go:272:13: &strings.Builder literal does not escape
+.\vm.go:274:10: ... argument does not escape
+.\vm.go:285:10: ... argument does not escape
+.\vm.go:287:11: ... argument does not escape
+.\vm.go:287:37: uint64(v) escapes to heap
+.\vm.go:289:10: ... argument does not escape
+.\vm.go:292:11: ... argument does not escape
+.\vm.go:292:21: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:292:21: i escapes to heap
+.\vm.go:294:12: ... argument does not escape
+.\vm.go:296:11: ... argument does not escape
+.\vm.go:300:10: ... argument does not escape
+.\vm.go:301:10: ... argument does not escape
+.\vm.go:301:74: len(m.Table) escapes to heap
+.\vm.go:302:10: ... argument does not escape
+.\vm.go:305:12: ... argument does not escape
+.\vm.go:310:12: ... argument does not escape
+.\vm.go:310:67: code.NumParams escapes to heap
+.\vm.go:310:67: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:310:67: functionID escapes to heap
+.\vm.go:313:10: ... argument does not escape
+.\vm.go:314:10: ... argument does not escape
+.\vm.go:314:20: compiler.NGEN_ENV_API_PREFIX escapes to heap
+.\vm.go:315:10: ... argument does not escape
+.\vm.go:315:88: "table entry out of bounds" escapes to heap
+.\vm.go:316:10: ... argument does not escape
+.\vm.go:316:84: "table entry is null" escapes to heap
+.\vm.go:317:10: ... argument does not escape
+.\vm.go:317:99: "argument count mismatch" escapes to heap
+.\vm.go:318:10: ... argument does not escape
+.\vm.go:319:10: ... argument does not escape
+.\vm.go:321:10: ... argument does not escape
+.\vm.go:322:10: ... argument does not escape
+.\vm.go:322:75: len(m.FunctionImports) escapes to heap
+.\vm.go:323:10: ... argument does not escape
+.\vm.go:325:11: ... argument does not escape
+.\vm.go:325:93: escapeName(imp.ModuleName) escapes to heap
+.\vm.go:325:121: escapeName(imp.FieldName) escapes to heap
+.\vm.go:327:10: ... argument does not escape
+.\vm.go:328:10: ... argument does not escape
+.\vm.go:329:3: compiler.NGEN_ENV_API_PREFIX escapes to heap
+.\vm.go:333:10: ... argument does not escape
+.\vm.go:333:90: "import entry out of bounds" escapes to heap
+.\vm.go:334:10: ... argument does not escape
+.\vm.go:335:10: ... argument does not escape
+.\vm.go:335:84: "cannot resolve import" escapes to heap
+.\vm.go:336:10: ... argument does not escape
+.\vm.go:337:10: ... argument does not escape
+.\vm.go:589:17: string(ch) escapes to heap:
+.\vm.go:589:17:   flow: ret = &{storage for string(ch)}:
+.\vm.go:589:17:     from string(ch) (spill) at .\vm.go:589:17
+.\vm.go:589:17:     from ret += string(ch) (assign) at .\vm.go:589:8
+.\vm.go:584:17: name does not escape
+.\vm.go:589:17: string(ch) escapes to heap
+.\vm.go:587:27: ([]byte)(name) does not escape
+.\vm.go:350:136: exp.Index escapes to heap:
+.\vm.go:350:136:   flow: {storage for ... argument} = &{storage for exp.Index}:
+.\vm.go:350:136:     from exp.Index (spill) at .\vm.go:350:136
+.\vm.go:350:136:   flow: {heap} = {storage for ... argument}:
+.\vm.go:350:136:     from ... argument (spill) at .\vm.go:350:13
+.\vm.go:350:136:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:350:13
+.\vm.go:350:94: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:350:94:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:350:94:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:350:94
+.\vm.go:350:94:   flow: {heap} = {storage for ... argument}:
+.\vm.go:350:94:     from ... argument (spill) at .\vm.go:350:13
+.\vm.go:350:94:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:350:13
+.\vm.go:350:94: filterName(name) escapes to heap:
+.\vm.go:350:94:   flow: {storage for ... argument} = &{storage for filterName(name)}:
+.\vm.go:350:94:     from filterName(name) (spill) at .\vm.go:350:94
+.\vm.go:350:94:   flow: {heap} = {storage for ... argument}:
+.\vm.go:350:94:     from ... argument (spill) at .\vm.go:350:13
+.\vm.go:350:94:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:350:13
+.\vm.go:350:23: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:350:23:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:350:23:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:350:23
+.\vm.go:350:23:   flow: {heap} = {storage for ... argument}:
+.\vm.go:350:23:     from ... argument (spill) at .\vm.go:350:13
+.\vm.go:350:23:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:350:13
+.\vm.go:342:7: m does not escape
+.\vm.go:343:13: &strings.Builder literal does not escape
+.\vm.go:350:13: ... argument does not escape
+.\vm.go:350:23: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:350:94: filterName(name) escapes to heap
+.\vm.go:350:94: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:350:136: exp.Index escapes to heap
+.\vm.go:358:7: parameter m leaks to {heap} with derefs=1:
+.\vm.go:358:7:   flow: {heap} = *m:
+.\vm.go:358:7:     from m.GasPolicy (dot of pointer) at .\vm.go:359:41
+.\vm.go:358:7:     from m.Module.CompileWithNGen(m.GasPolicy, uint64(len(m.Globals))) (call parameter) at .\vm.go:359:39
+.\vm.go:358:7: parameter m leaks to {heap} with derefs=1:
+.\vm.go:358:7:   flow: {heap} = *m:
+.\vm.go:358:7:     from m.GasPolicy (dot of pointer) at .\vm.go:359:41
+.\vm.go:358:7:     from m.Module.CompileWithNGen(m.GasPolicy, uint64(len(m.Globals))) (call parameter) at .\vm.go:359:39
+.\vm.go:364:39: m.GenerateNEnv(config) + "\n" + body escapes to heap:
+.\vm.go:364:39:   flow: out = &{storage for m.GenerateNEnv(config) + "\n" + body}:
+.\vm.go:364:39:     from m.GenerateNEnv(config) + "\n" + body (spill) at .\vm.go:364:39
+.\vm.go:364:39:     from out := m.GenerateNEnv(config) + "\n" + body (assign) at .\vm.go:364:6
+.\vm.go:364:39:   flow: ~r1 = out:
+.\vm.go:364:39:     from return out (return) at .\vm.go:370:2
+.\vm.go:358:7: leaking param content: m
+.\vm.go:364:39: m.GenerateNEnv(config) + "\n" + body escapes to heap
+.\vm.go:375:17: make([]int64, len(m.Globals)) escapes to heap:
+.\vm.go:375:17:   flow: {heap} = &{storage for make([]int64, len(m.Globals))}:
+.\vm.go:375:17:     from make([]int64, len(m.Globals)) (non-constant size) at .\vm.go:375:17
+.\vm.go:377:15: make([]uint32, len(m.Table)) escapes to heap:
+.\vm.go:377:15:   flow: {heap} = &{storage for make([]uint32, len(m.Table))}:
+.\vm.go:377:15:     from make([]uint32, len(m.Table)) (non-constant size) at .\vm.go:377:15
+.\vm.go:391:16: make([]byte, capacity) escapes to heap:
+.\vm.go:391:16:   flow: {heap} = &{storage for make([]byte, capacity)}:
+.\vm.go:391:16:     from make([]byte, capacity) (non-constant size) at .\vm.go:391:16
+.\vm.go:374:7: parameter m leaks to {heap} with derefs=5:
+.\vm.go:374:7:   flow: {temp} = ****m:
+.\vm.go:374:7:     from m.Module (dot of pointer) at .\vm.go:397:23
+.\vm.go:374:7:     from m.Module.Base (dot of pointer) at .\vm.go:397:30
+.\vm.go:374:7:     from m.Module.Base.Data (dot of pointer) at .\vm.go:397:35
+.\vm.go:374:7:     from m.Module.Base.Data.Entries (dot of pointer) at .\vm.go:397:40
+.\vm.go:374:7:   flow: e = *{temp}:
+.\vm.go:374:7:     from for loop (range-deref) at .\vm.go:397:16
+.\vm.go:374:7:   flow: {heap} = e:
+.\vm.go:374:7:     from e.Offset (dot) at .\vm.go:398:33
+.\vm.go:374:7:     from execInitExpr(e.Offset, globals) (call parameter) at .\vm.go:398:31
+.\vm.go:404:9: &VirtualMachine literal escapes to heap:
+.\vm.go:404:9:   flow: ~r0 = &{storage for &VirtualMachine literal}:
+.\vm.go:404:9:     from &VirtualMachine literal (spill) at .\vm.go:404:9
+.\vm.go:404:9:     from return &VirtualMachine literal (return) at .\vm.go:404:2
+.\vm.go:409:24: make([]*Frame, DefaultCallStackSize) escapes to heap:
+.\vm.go:409:24:   flow: {storage for &VirtualMachine literal} = &{storage for make([]*Frame, DefaultCallStackSize)}:
+.\vm.go:409:24:     from make([]*Frame, DefaultCallStackSize) (spill) at .\vm.go:409:24
+.\vm.go:409:24:     from VirtualMachine literal (struct literal element) at .\vm.go:404:24
+.\vm.go:374:7: parameter m leaks to {storage for &VirtualMachine literal} with derefs=1:
+.\vm.go:374:7:   flow: {storage for &VirtualMachine literal} = *m:
+.\vm.go:374:7:     from m.Module (dot of pointer) at .\vm.go:405:21
+.\vm.go:374:7:     from VirtualMachine literal (struct literal element) at .\vm.go:404:24
+.\vm.go:374:7: leaking param content: m
+.\vm.go:375:17: make([]int64, len(m.Globals)) escapes to heap
+.\vm.go:377:15: make([]uint32, len(m.Table)) escapes to heap
+.\vm.go:391:16: make([]byte, capacity) escapes to heap
+.\vm.go:404:9: &VirtualMachine literal escapes to heap
+.\vm.go:409:24: make([]*Frame, DefaultCallStackSize) escapes to heap
+.\vm.go:467:21: &wasm.SectionMemories literal escapes to heap:
+.\vm.go:467:21:   flow: {heap} = &{storage for &wasm.SectionMemories literal}:
+.\vm.go:467:21:     from &wasm.SectionMemories literal (spill) at .\vm.go:467:21
+.\vm.go:467:21:     from m.Base.Memory = &wasm.SectionMemories literal (assign) at .\vm.go:467:19
+.\vm.go:468:28: []wasm.Memory literal escapes to heap:
+.\vm.go:468:28:   flow: {storage for &wasm.SectionMemories literal} = &{storage for []wasm.Memory literal}:
+.\vm.go:468:28:     from []wasm.Memory literal (spill) at .\vm.go:468:28
+.\vm.go:468:28:     from wasm.SectionMemories literal (struct literal element) at .\vm.go:467:42
+.\vm.go:481:20: &wasm.SectionTables literal escapes to heap:
+.\vm.go:481:20:   flow: {heap} = &{storage for &wasm.SectionTables literal}:
+.\vm.go:481:20:     from &wasm.SectionTables literal (spill) at .\vm.go:481:20
+.\vm.go:481:20:     from m.Base.Table = &wasm.SectionTables literal (assign) at .\vm.go:481:18
+.\vm.go:482:27: []wasm.Table literal escapes to heap:
+.\vm.go:482:27:   flow: {storage for &wasm.SectionTables literal} = &{storage for []wasm.Table literal}:
+.\vm.go:482:27:     from []wasm.Table literal (spill) at .\vm.go:482:27
+.\vm.go:482:27:     from wasm.SectionTables literal (struct literal element) at .\vm.go:481:39
+.\vm.go:509:15: make([]uint32, int(t.Limits.Initial)) escapes to heap:
+.\vm.go:509:15:   flow: {heap} = &{storage for make([]uint32, int(t.Limits.Initial))}:
+.\vm.go:509:15:     from make([]uint32, int(t.Limits.Initial)) (non-constant size) at .\vm.go:509:15
+.\vm.go:532:16: make([]byte, capacity) escapes to heap:
+.\vm.go:532:16:   flow: {heap} = &{storage for make([]byte, capacity)}:
+.\vm.go:532:16:     from make([]byte, capacity) (non-constant size) at .\vm.go:532:16
+.\vm.go:491:68: imp.Type.Kind() escapes to heap:
+.\vm.go:491:68:   flow: {storage for ... argument} = &{storage for imp.Type.Kind()}:
+.\vm.go:491:68:     from imp.Type.Kind() (spill) at .\vm.go:491:68
+.\vm.go:491:68:   flow: {heap} = {storage for ... argument}:
+.\vm.go:491:68:     from ... argument (spill) at .\vm.go:491:21
+.\vm.go:491:68:     from fmt.Errorf("import kind not supported: %d", imp.Type.Kind()) (call parameter) at .\vm.go:491:21
+.\vm.go:426:2: parameter impResolver leaks to {heap} with derefs=0:
+.\vm.go:426:2:   flow: {heap} = impResolver:
+.\vm.go:426:2:     from impResolver.ResolveGlobal(imp.ModuleName, imp.FieldName) (call parameter) at .\vm.go:461:56
+.\vm.go:427:2: parameter gasPolicy leaks to {heap} with derefs=0:
+.\vm.go:427:2:   flow: {heap} = gasPolicy:
+.\vm.go:427:2:     from m.CompileForInterpreter(gasPolicy) (call parameter) at .\vm.go:440:46
+.\vm.go:424:2: parameter code leaks to {heap} with derefs=0:
+.\vm.go:424:2:   flow: {heap} = code:
+.\vm.go:424:2:     from compiler.LoadModule(code) (call parameter) at .\vm.go:433:31
+.\vm.go:430:15: "Warning: JIT support is removed." escapes to heap:
+.\vm.go:430:15:   flow: {storage for ... argument} = &{storage for "Warning: JIT support is removed."}:
+.\vm.go:430:15:     from "Warning: JIT support is removed." (spill) at .\vm.go:430:15
+.\vm.go:430:15:   flow: {heap} = {storage for ... argument}:
+.\vm.go:430:15:     from ... argument (spill) at .\vm.go:430:14
+.\vm.go:430:15:     from fmt.Println("Warning: JIT support is removed.") (call parameter) at .\vm.go:430:14
+.\vm.go:545:9: &VirtualMachine literal escapes to heap:
+.\vm.go:545:9:   flow: _retVM = &{storage for &VirtualMachine literal}:
+.\vm.go:545:9:     from &VirtualMachine literal (spill) at .\vm.go:545:9
+.\vm.go:545:9:     from return &VirtualMachine literal, nil (return) at .\vm.go:545:2
+.\vm.go:426:2: parameter impResolver leaks to {storage for &VirtualMachine literal} with derefs=0:
+.\vm.go:426:2:   flow: {storage for &VirtualMachine literal} = impResolver:
+.\vm.go:426:2:     from VirtualMachine literal (struct literal element) at .\vm.go:545:24
+.\vm.go:427:2: parameter gasPolicy leaks to {storage for &VirtualMachine literal} with derefs=0:
+.\vm.go:427:2:   flow: {storage for &VirtualMachine literal} = gasPolicy:
+.\vm.go:427:2:     from VirtualMachine literal (struct literal element) at .\vm.go:545:24
+.\vm.go:550:24: make([]*Frame, DefaultCallStackSize) escapes to heap:
+.\vm.go:550:24:   flow: {storage for &VirtualMachine literal} = &{storage for make([]*Frame, DefaultCallStackSize)}:
+.\vm.go:550:24:     from make([]*Frame, DefaultCallStackSize) (spill) at .\vm.go:550:24
+.\vm.go:550:24:     from VirtualMachine literal (struct literal element) at .\vm.go:545:24
+.\vm.go:424:2: leaking param: code
+.\vm.go:426:2: leaking param: impResolver
+.\vm.go:427:2: leaking param: gasPolicy
+.\vm.go:430:14: ... argument does not escape
+.\vm.go:430:15: "Warning: JIT support is removed." escapes to heap
+.\vm.go:467:21: &wasm.SectionMemories literal escapes to heap
+.\vm.go:468:28: []wasm.Memory literal escapes to heap
+.\vm.go:481:20: &wasm.SectionTables literal escapes to heap
+.\vm.go:482:27: []wasm.Table literal escapes to heap
+.\vm.go:491:21: ... argument does not escape
+.\vm.go:491:68: imp.Type.Kind() escapes to heap
+.\vm.go:509:15: make([]uint32, int(t.Limits.Initial)) escapes to heap
+.\vm.go:532:16: make([]byte, capacity) escapes to heap
+.\vm.go:545:9: &VirtualMachine literal escapes to heap
+.\vm.go:550:24: make([]*Frame, DefaultCallStackSize) escapes to heap
+.\vm.go:561:7: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:561:7:   flow: {heap} = vm:
+.\vm.go:561:7:     from s.Initialize(vm) (call parameter) at .\vm.go:562:14
+.\vm.go:561:41: parameter s leaks to {heap} with derefs=0:
+.\vm.go:561:41:   flow: {heap} = s:
+.\vm.go:561:41:     from s.Initialize(vm) (call parameter) at .\vm.go:562:14
+.\vm.go:561:7: leaking param: vm
+.\vm.go:561:41: leaking param: s
+.\vm.go:660:84: "cannot resolve import" escapes to heap:
+.\vm.go:660:84:   flow: {storage for ... argument} = &{storage for "cannot resolve import"}:
+.\vm.go:660:84:     from "cannot resolve import" (spill) at .\vm.go:660:84
+.\vm.go:660:84:   flow: {heap} = {storage for ... argument}:
+.\vm.go:660:84:     from ... argument (spill) at .\vm.go:660:10
+.\vm.go:660:84:     from bSprintf(builder, "if(imports[import_id].f == 0) { vm->throw_s(vm, \"%s\"); }\n", "cannot resolve import") (call parameter) at .\vm.go:660:10
+.\vm.go:658:90: "import entry out of bounds" escapes to heap:
+.\vm.go:658:90:   flow: {storage for ... argument} = &{storage for "import entry out of bounds"}:
+.\vm.go:658:90:     from "import entry out of bounds" (spill) at .\vm.go:658:90
+.\vm.go:658:90:   flow: {heap} = {storage for ... argument}:
+.\vm.go:658:90:     from ... argument (spill) at .\vm.go:658:10
+.\vm.go:658:90:     from bSprintf(builder, "if(import_id >= num_import_entries) { vm->throw_s(vm, \"%s\"); }\n", "import entry out of bounds") (call parameter) at .\vm.go:658:10
+.\vm.go:654:3: compiler.NGEN_ENV_API_PREFIX escapes to heap:
+.\vm.go:654:3:   flow: {storage for ... argument} = &{storage for compiler.NGEN_ENV_API_PREFIX}:
+.\vm.go:654:3:     from compiler.NGEN_ENV_API_PREFIX (spill) at .\vm.go:654:3
+.\vm.go:654:3:   flow: {heap} = {storage for ... argument}:
+.\vm.go:654:3:     from ... argument (spill) at .\vm.go:653:10
+.\vm.go:654:3:     from bSprintf(builder, "static uint64_t __attribute__((always_inline)) %sinvoke_import(struct VirtualMachine *vm, uint64_t import_id, uint64_t num_params, uint64_t *params) {\n", compiler.NGEN_ENV_API_PREFIX) (call parameter) at .\vm.go:653:10
+.\vm.go:650:121: escapeName(imp.FieldName) escapes to heap:
+.\vm.go:650:121:   flow: {storage for ... argument} = &{storage for escapeName(imp.FieldName)}:
+.\vm.go:650:121:     from escapeName(imp.FieldName) (spill) at .\vm.go:650:121
+.\vm.go:650:121:   flow: {heap} = {storage for ... argument}:
+.\vm.go:650:121:     from ... argument (spill) at .\vm.go:650:11
+.\vm.go:650:121:     from bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName)) (call parameter) at .\vm.go:650:11
+.\vm.go:650:93: escapeName(imp.ModuleName) escapes to heap:
+.\vm.go:650:93:   flow: {storage for ... argument} = &{storage for escapeName(imp.ModuleName)}:
+.\vm.go:650:93:     from escapeName(imp.ModuleName) (spill) at .\vm.go:650:93
+.\vm.go:650:93:   flow: {heap} = {storage for ... argument}:
+.\vm.go:650:93:     from ... argument (spill) at .\vm.go:650:11
+.\vm.go:650:93:     from bSprintf(builder, "{ .module_name = \"%s\", .field_name = \"%s\", .f = 0 },\n", escapeName(imp.ModuleName), escapeName(imp.FieldName)) (call parameter) at .\vm.go:650:11
+.\vm.go:647:75: len(vm.FunctionImports) escapes to heap:
+.\vm.go:647:75:   flow: {storage for ... argument} = &{storage for len(vm.FunctionImports)}:
+.\vm.go:647:75:     from len(vm.FunctionImports) (spill) at .\vm.go:647:75
+.\vm.go:647:75:   flow: {heap} = {storage for ... argument}:
+.\vm.go:647:75:     from ... argument (spill) at .\vm.go:647:10
+.\vm.go:647:75:     from bSprintf(builder, "static const uint64_t num_import_entries = %d;\n", len(vm.FunctionImports)) (call parameter) at .\vm.go:647:10
+.\vm.go:642:99: "argument count mismatch" escapes to heap:
+.\vm.go:642:99:   flow: {storage for ... argument} = &{storage for "argument count mismatch"}:
+.\vm.go:642:99:     from "argument count mismatch" (spill) at .\vm.go:642:99
+.\vm.go:642:99:   flow: {heap} = {storage for ... argument}:
+.\vm.go:642:99:     from ... argument (spill) at .\vm.go:642:10
+.\vm.go:642:99:     from bSprintf(builder, "if(table[entry_id].num_params != num_params) { vm->throw_s(vm, \"%s\"); }\n", "argument count mismatch") (call parameter) at .\vm.go:642:10
+.\vm.go:641:84: "table entry is null" escapes to heap:
+.\vm.go:641:84:   flow: {storage for ... argument} = &{storage for "table entry is null"}:
+.\vm.go:641:84:     from "table entry is null" (spill) at .\vm.go:641:84
+.\vm.go:641:84:   flow: {heap} = {storage for ... argument}:
+.\vm.go:641:84:     from ... argument (spill) at .\vm.go:641:10
+.\vm.go:641:84:     from bSprintf(builder, "if(table[entry_id].func == 0) { vm->throw_s(vm, \"%s\"); }\n", "table entry is null") (call parameter) at .\vm.go:641:10
+.\vm.go:640:88: "table entry out of bounds" escapes to heap:
+.\vm.go:640:88:   flow: {storage for ... argument} = &{storage for "table entry out of bounds"}:
+.\vm.go:640:88:     from "table entry out of bounds" (spill) at .\vm.go:640:88
+.\vm.go:640:88:   flow: {heap} = {storage for ... argument}:
+.\vm.go:640:88:     from ... argument (spill) at .\vm.go:640:10
+.\vm.go:640:88:     from bSprintf(builder, "if(entry_id >= num_table_entries) { vm->throw_s(vm, \"%s\"); }\n", "table entry out of bounds") (call parameter) at .\vm.go:640:10
+.\vm.go:639:20: compiler.NGEN_ENV_API_PREFIX escapes to heap:
+.\vm.go:639:20:   flow: {storage for ... argument} = &{storage for compiler.NGEN_ENV_API_PREFIX}:
+.\vm.go:639:20:     from compiler.NGEN_ENV_API_PREFIX (spill) at .\vm.go:639:20
+.\vm.go:639:20:   flow: {heap} = {storage for ... argument}:
+.\vm.go:639:20:     from ... argument (spill) at .\vm.go:639:10
+.\vm.go:639:20:     from bSprintf(builder, "static void * __attribute__((always_inline)) %sresolve_indirect(struct VirtualMachine *vm, uint64_t entry_id, uint64_t num_params) {\n", compiler.NGEN_ENV_API_PREFIX) (call parameter) at .\vm.go:639:10
+.\vm.go:635:67: functionID escapes to heap:
+.\vm.go:635:67:   flow: {storage for ... argument} = &{storage for functionID}:
+.\vm.go:635:67:     from functionID (spill) at .\vm.go:635:67
+.\vm.go:635:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:635:67:     from ... argument (spill) at .\vm.go:635:12
+.\vm.go:635:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:635:12
+.\vm.go:635:67: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:635:67:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:635:67:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:635:67
+.\vm.go:635:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:635:67:     from ... argument (spill) at .\vm.go:635:12
+.\vm.go:635:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:635:12
+.\vm.go:635:67: code.NumParams escapes to heap:
+.\vm.go:635:67:   flow: {storage for ... argument} = &{storage for code.NumParams}:
+.\vm.go:635:67:     from code.NumParams (spill) at .\vm.go:635:67
+.\vm.go:635:67:   flow: {heap} = {storage for ... argument}:
+.\vm.go:635:67:     from ... argument (spill) at .\vm.go:635:12
+.\vm.go:635:67:     from bSprintf(builder, "{ .num_params = %d, .func = %s%d },\n", code.NumParams, compiler.NGEN_FUNCTION_PREFIX, functionID) (call parameter) at .\vm.go:635:12
+.\vm.go:626:74: len(vm.Table) escapes to heap:
+.\vm.go:626:74:   flow: {storage for ... argument} = &{storage for len(vm.Table)}:
+.\vm.go:626:74:     from len(vm.Table) (spill) at .\vm.go:626:74
+.\vm.go:626:74:   flow: {heap} = {storage for ... argument}:
+.\vm.go:626:74:     from ... argument (spill) at .\vm.go:626:10
+.\vm.go:626:74:     from bSprintf(builder, "static const uint64_t num_table_entries = %d;\n", len(vm.Table)) (call parameter) at .\vm.go:626:10
+.\vm.go:617:21: i escapes to heap:
+.\vm.go:617:21:   flow: {storage for ... argument} = &{storage for i}:
+.\vm.go:617:21:     from i (spill) at .\vm.go:617:21
+.\vm.go:617:21:   flow: {heap} = {storage for ... argument}:
+.\vm.go:617:21:     from ... argument (spill) at .\vm.go:617:11
+.\vm.go:617:21:     from bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i) (call parameter) at .\vm.go:617:11
+.\vm.go:617:21: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:617:21:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:617:21:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:617:21
+.\vm.go:617:21:   flow: {heap} = {storage for ... argument}:
+.\vm.go:617:21:     from ... argument (spill) at .\vm.go:617:11
+.\vm.go:617:21:     from bSprintf(builder, "uint64_t %s%d(struct VirtualMachine *", compiler.NGEN_FUNCTION_PREFIX, i) (call parameter) at .\vm.go:617:11
+.\vm.go:612:37: uint64(v) escapes to heap:
+.\vm.go:612:37:   flow: {storage for ... argument} = &{storage for uint64(v)}:
+.\vm.go:612:37:     from uint64(v) (spill) at .\vm.go:612:37
+.\vm.go:612:37:   flow: {heap} = {storage for ... argument}:
+.\vm.go:612:37:     from ... argument (spill) at .\vm.go:612:11
+.\vm.go:612:37:     from bSprintf(builder, "%dull,", uint64(v)) (call parameter) at .\vm.go:612:11
+.\vm.go:596:7: vm does not escape
+.\vm.go:597:13: &strings.Builder literal does not escape
+.\vm.go:599:10: ... argument does not escape
+.\vm.go:610:10: ... argument does not escape
+.\vm.go:612:11: ... argument does not escape
+.\vm.go:612:37: uint64(v) escapes to heap
+.\vm.go:614:10: ... argument does not escape
+.\vm.go:617:11: ... argument does not escape
+.\vm.go:617:21: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:617:21: i escapes to heap
+.\vm.go:619:12: ... argument does not escape
+.\vm.go:621:11: ... argument does not escape
+.\vm.go:625:10: ... argument does not escape
+.\vm.go:626:10: ... argument does not escape
+.\vm.go:626:74: len(vm.Table) escapes to heap
+.\vm.go:627:10: ... argument does not escape
+.\vm.go:630:12: ... argument does not escape
+.\vm.go:635:12: ... argument does not escape
+.\vm.go:635:67: code.NumParams escapes to heap
+.\vm.go:635:67: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:635:67: functionID escapes to heap
+.\vm.go:638:10: ... argument does not escape
+.\vm.go:639:10: ... argument does not escape
+.\vm.go:639:20: compiler.NGEN_ENV_API_PREFIX escapes to heap
+.\vm.go:640:10: ... argument does not escape
+.\vm.go:640:88: "table entry out of bounds" escapes to heap
+.\vm.go:641:10: ... argument does not escape
+.\vm.go:641:84: "table entry is null" escapes to heap
+.\vm.go:642:10: ... argument does not escape
+.\vm.go:642:99: "argument count mismatch" escapes to heap
+.\vm.go:643:10: ... argument does not escape
+.\vm.go:644:10: ... argument does not escape
+.\vm.go:646:10: ... argument does not escape
+.\vm.go:647:10: ... argument does not escape
+.\vm.go:647:75: len(vm.FunctionImports) escapes to heap
+.\vm.go:648:10: ... argument does not escape
+.\vm.go:650:11: ... argument does not escape
+.\vm.go:650:93: escapeName(imp.ModuleName) escapes to heap
+.\vm.go:650:121: escapeName(imp.FieldName) escapes to heap
+.\vm.go:652:10: ... argument does not escape
+.\vm.go:653:10: ... argument does not escape
+.\vm.go:654:3: compiler.NGEN_ENV_API_PREFIX escapes to heap
+.\vm.go:658:10: ... argument does not escape
+.\vm.go:658:90: "import entry out of bounds" escapes to heap
+.\vm.go:659:10: ... argument does not escape
+.\vm.go:660:10: ... argument does not escape
+.\vm.go:660:84: "cannot resolve import" escapes to heap
+.\vm.go:661:10: ... argument does not escape
+.\vm.go:662:10: ... argument does not escape
+.\vm.go:675:136: exp.Index escapes to heap:
+.\vm.go:675:136:   flow: {storage for ... argument} = &{storage for exp.Index}:
+.\vm.go:675:136:     from exp.Index (spill) at .\vm.go:675:136
+.\vm.go:675:136:   flow: {heap} = {storage for ... argument}:
+.\vm.go:675:136:     from ... argument (spill) at .\vm.go:675:13
+.\vm.go:675:136:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:675:13
+.\vm.go:675:94: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:675:94:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:675:94:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:675:94
+.\vm.go:675:94:   flow: {heap} = {storage for ... argument}:
+.\vm.go:675:94:     from ... argument (spill) at .\vm.go:675:13
+.\vm.go:675:94:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:675:13
+.\vm.go:675:94: filterName(name) escapes to heap:
+.\vm.go:675:94:   flow: {storage for ... argument} = &{storage for filterName(name)}:
+.\vm.go:675:94:     from filterName(name) (spill) at .\vm.go:675:94
+.\vm.go:675:94:   flow: {heap} = {storage for ... argument}:
+.\vm.go:675:94:     from ... argument (spill) at .\vm.go:675:13
+.\vm.go:675:94:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:675:13
+.\vm.go:675:23: compiler.NGEN_FUNCTION_PREFIX escapes to heap:
+.\vm.go:675:23:   flow: {storage for ... argument} = &{storage for compiler.NGEN_FUNCTION_PREFIX}:
+.\vm.go:675:23:     from compiler.NGEN_FUNCTION_PREFIX (spill) at .\vm.go:675:23
+.\vm.go:675:23:   flow: {heap} = {storage for ... argument}:
+.\vm.go:675:23:     from ... argument (spill) at .\vm.go:675:13
+.\vm.go:675:23:     from bSprintf(builder, "#define %sexport_%s %s%d\n", compiler.NGEN_FUNCTION_PREFIX, filterName(name), compiler.NGEN_FUNCTION_PREFIX, exp.Index) (call parameter) at .\vm.go:675:13
+.\vm.go:667:7: vm does not escape
+.\vm.go:668:13: &strings.Builder literal does not escape
+.\vm.go:675:13: ... argument does not escape
+.\vm.go:675:23: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:675:94: filterName(name) escapes to heap
+.\vm.go:675:94: compiler.NGEN_FUNCTION_PREFIX escapes to heap
+.\vm.go:675:136: exp.Index escapes to heap
+.\vm.go:683:7: parameter vm leaks to {heap} with derefs=1:
+.\vm.go:683:7:   flow: {heap} = *vm:
+.\vm.go:683:7:     from vm.GasPolicy (dot of pointer) at .\vm.go:684:43
+.\vm.go:683:7:     from vm.Module.CompileWithNGen(vm.GasPolicy, uint64(len(vm.Globals))) (call parameter) at .\vm.go:684:40
+.\vm.go:683:7: parameter vm leaks to {heap} with derefs=1:
+.\vm.go:683:7:   flow: {heap} = *vm:
+.\vm.go:683:7:     from vm.GasPolicy (dot of pointer) at .\vm.go:684:43
+.\vm.go:683:7:     from vm.Module.CompileWithNGen(vm.GasPolicy, uint64(len(vm.Globals))) (call parameter) at .\vm.go:684:40
+.\vm.go:689:40: vm.GenerateNEnv(config) + "\n" + body escapes to heap:
+.\vm.go:689:40:   flow: out = &{storage for vm.GenerateNEnv(config) + "\n" + body}:
+.\vm.go:689:40:     from vm.GenerateNEnv(config) + "\n" + body (spill) at .\vm.go:689:40
+.\vm.go:689:40:     from out := vm.GenerateNEnv(config) + "\n" + body (assign) at .\vm.go:689:6
+.\vm.go:689:40:   flow: ~r1 = out:
+.\vm.go:689:40:     from return out (return) at .\vm.go:695:2
+.\vm.go:683:7: leaking param content: vm
+.\vm.go:689:40: vm.GenerateNEnv(config) + "\n" + body escapes to heap
+.\vm.go:711:17: make([]int64, numValueSlots) escapes to heap:
+.\vm.go:711:17:   flow: {heap} = &{storage for make([]int64, numValueSlots)}:
+.\vm.go:711:17:     from make([]int64, numValueSlots) (non-constant size) at .\vm.go:711:17
+.\vm.go:719:16: make([]int64, numValueSlots) escapes to heap:
+.\vm.go:719:16:   flow: {heap} = &{storage for make([]int64, numValueSlots)}:
+.\vm.go:719:16:     from make([]int64, numValueSlots) (non-constant size) at .\vm.go:719:16
+.\vm.go:699:58: parameter code leaks to {heap} with derefs=0:
+.\vm.go:699:58:   flow: {heap} = code:
+.\vm.go:699:58:     from code.Bytes (dot) at .\vm.go:725:15
+.\vm.go:699:58:     from f.Code = code.Bytes (assign) at .\vm.go:725:9
+.\vm.go:699:7: parameter f leaks to {heap} with derefs=1:
+.\vm.go:699:7:   flow: values = *f:
+.\vm.go:699:7:     from f.values (dot of pointer) at .\vm.go:708:13
+.\vm.go:699:7:     from values = f.values (assign) at .\vm.go:708:10
+.\vm.go:699:7:   flow: {heap} = values:
+.\vm.go:699:7:     from f.values = values (assign) at .\vm.go:717:12
+.\vm.go:710:16: "make in init, keep=true" escapes to heap:
+.\vm.go:710:16:   flow: {storage for ... argument} = &{storage for "make in init, keep=true"}:
+.\vm.go:710:16:     from "make in init, keep=true" (spill) at .\vm.go:710:16
+.\vm.go:710:16:   flow: {heap} = {storage for ... argument}:
+.\vm.go:710:16:     from ... argument (spill) at .\vm.go:710:15
+.\vm.go:710:16:     from log.Println("make in init, keep=true") (call parameter) at .\vm.go:710:15
+.\vm.go:699:7: leaking param content: f
+.\vm.go:699:22: vm does not escape
+.\vm.go:699:58: leaking param: code
+.\vm.go:710:15: ... argument does not escape
+.\vm.go:710:16: "make in init, keep=true" escapes to heap
+.\vm.go:711:17: make([]int64, numValueSlots) escapes to heap
+.\vm.go:719:16: make([]int64, numValueSlots) escapes to heap
+.\vm.go:733:7: f does not escape
+.\vm.go:733:25: vm does not escape
+.\vm.go:753:9: &Frame literal escapes to heap:
+.\vm.go:753:9:   flow: res = &{storage for &Frame literal}:
+.\vm.go:753:9:     from &Frame literal (spill) at .\vm.go:753:9
+.\vm.go:753:9:     from res = &Frame literal (assign) at .\vm.go:753:7
+.\vm.go:753:9:   flow: {heap} = res:
+.\vm.go:753:9:     from vm.CallStack[vm.CurrentFrame] = res (assign) at .\vm.go:754:33
+.\vm.go:741:7: parameter vm leaks to {heap} with derefs=2:
+.\vm.go:741:7:   flow: res = **vm:
+.\vm.go:741:7:     from vm.CallStack (dot of pointer) at .\vm.go:750:11
+.\vm.go:741:7:     from vm.CallStack[vm.CurrentFrame] (dot of pointer) at .\vm.go:750:21
+.\vm.go:741:7:     from res := vm.CallStack[vm.CurrentFrame] (assign) at .\vm.go:750:6
+.\vm.go:741:7:   flow: {heap} = res:
+.\vm.go:741:7:     from vm.CallStack[vm.CurrentFrame] = res (assign) at .\vm.go:754:33
+.\vm.go:752:15: "Alloc frame" escapes to heap:
+.\vm.go:752:15:   flow: {storage for ... argument} = &{storage for "Alloc frame"}:
+.\vm.go:752:15:     from "Alloc frame" (spill) at .\vm.go:752:15
+.\vm.go:752:15:   flow: {heap} = {storage for ... argument}:
+.\vm.go:752:15:     from ... argument (spill) at .\vm.go:752:14
+.\vm.go:752:15:     from log.Println("Alloc frame") (call parameter) at .\vm.go:752:14
+.\vm.go:741:7: parameter vm leaks to ~r0 with derefs=2:
+.\vm.go:741:7:   flow: res = **vm:
+.\vm.go:741:7:     from vm.CallStack (dot of pointer) at .\vm.go:750:11
+.\vm.go:741:7:     from vm.CallStack[vm.CurrentFrame] (dot of pointer) at .\vm.go:750:21
+.\vm.go:741:7:     from res := vm.CallStack[vm.CurrentFrame] (assign) at .\vm.go:750:6
+.\vm.go:741:7:   flow: ~r0 = res:
+.\vm.go:741:7:     from return res (return) at .\vm.go:756:2
+.\vm.go:741:7: leaking param content: vm
+.\vm.go:752:14: ... argument does not escape
+.\vm.go:752:15: "Alloc frame" escapes to heap
+.\vm.go:753:9: &Frame literal escapes to heap
+.\vm.go:759:7: vm does not escape
+.\vm.go:759:37: key does not escape
+.\vm.go:777:7: vm does not escape
+.\vm.go:777:43: key does not escape
+.\vm.go:782:7: vm does not escape
+.\vm.go:782:45: key does not escape
+.\vm.go:793:14: "--- End stack trace ---" escapes to heap:
+.\vm.go:793:14:   flow: {storage for ... argument} = &{storage for "--- End stack trace ---"}:
+.\vm.go:793:14:     from "--- End stack trace ---" (spill) at .\vm.go:793:14
+.\vm.go:793:14:   flow: {heap} = {storage for ... argument}:
+.\vm.go:793:14:     from ... argument (spill) at .\vm.go:793:13
+.\vm.go:793:14:     from fmt.Println("--- End stack trace ---") (call parameter) at .\vm.go:793:13
+.\vm.go:791:70: vm.Module.FunctionNames[functionID] escapes to heap:
+.\vm.go:791:70:   flow: {storage for ... argument} = &{storage for vm.Module.FunctionNames[functionID]}:
+.\vm.go:791:70:     from vm.Module.FunctionNames[functionID] (spill) at .\vm.go:791:70
+.\vm.go:791:70:   flow: {heap} = {storage for ... argument}:
+.\vm.go:791:70:     from ... argument (spill) at .\vm.go:791:13
+.\vm.go:791:70:     from fmt.Printf("<%d> [%d] %s\n", i, functionID, vm.Module.FunctionNames[functionID]) (call parameter) at .\vm.go:791:13
+.\vm.go:791:14: functionID escapes to heap:
+.\vm.go:791:14:   flow: {storage for ... argument} = &{storage for functionID}:
+.\vm.go:791:14:     from functionID (spill) at .\vm.go:791:14
+.\vm.go:791:14:   flow: {heap} = {storage for ... argument}:
+.\vm.go:791:14:     from ... argument (spill) at .\vm.go:791:13
+.\vm.go:791:14:     from fmt.Printf("<%d> [%d] %s\n", i, functionID, vm.Module.FunctionNames[functionID]) (call parameter) at .\vm.go:791:13
+.\vm.go:791:14: i escapes to heap:
+.\vm.go:791:14:   flow: {storage for ... argument} = &{storage for i}:
+.\vm.go:791:14:     from i (spill) at .\vm.go:791:14
+.\vm.go:791:14:   flow: {heap} = {storage for ... argument}:
+.\vm.go:791:14:     from ... argument (spill) at .\vm.go:791:13
+.\vm.go:791:14:     from fmt.Printf("<%d> [%d] %s\n", i, functionID, vm.Module.FunctionNames[functionID]) (call parameter) at .\vm.go:791:13
+.\vm.go:788:14: "--- Begin stack trace ---" escapes to heap:
+.\vm.go:788:14:   flow: {storage for ... argument} = &{storage for "--- Begin stack trace ---"}:
+.\vm.go:788:14:     from "--- Begin stack trace ---" (spill) at .\vm.go:788:14
+.\vm.go:788:14:   flow: {heap} = {storage for ... argument}:
+.\vm.go:788:14:     from ... argument (spill) at .\vm.go:788:13
+.\vm.go:788:14:     from fmt.Println("--- Begin stack trace ---") (call parameter) at .\vm.go:788:13
+.\vm.go:787:7: vm does not escape
+.\vm.go:788:13: ... argument does not escape
+.\vm.go:788:14: "--- Begin stack trace ---" escapes to heap
+.\vm.go:791:13: ... argument does not escape
+.\vm.go:791:14: i escapes to heap
+.\vm.go:791:14: functionID escapes to heap
+.\vm.go:791:70: vm.Module.FunctionNames[functionID] escapes to heap
+.\vm.go:793:13: ... argument does not escape
+.\vm.go:793:14: "--- End stack trace ---" escapes to heap
+.\vm.go:797:7: parameter vm leaks to {heap} with derefs=2:
+.\vm.go:797:7:   flow: {heap} = **vm:
+.\vm.go:797:7:     from vm.GetCurrentFrame() (call parameter) at .\vm.go:815:28
+.\vm.go:797:7: leaking param content: vm
+.\vm.go:797:50: params does not escape
+.\vm.go:824:7: vm does not escape
+.\vm.go:2069:18: func literal escapes to heap:
+.\vm.go:2069:18:   flow: {heap} = &{storage for func literal}:
+.\vm.go:2069:18:     from func literal (spill) at .\vm.go:2069:18
+.\vm.go:2069:18:     from vm.Delegate = func literal (assign) at .\vm.go:2069:16
+.\vm.go:871:6: frame escapes to heap:
+.\vm.go:871:6:   flow: {storage for func literal} = &frame:
+.\vm.go:871:6:     from func literal (captured by a closure) at .\vm.go:2069:18
+.\vm.go:871:6:     from frame (reference) at .\vm.go:2080:5
+.\vm.go:2094:39: make([]byte, n * DefaultPageSize) escapes to heap:
+.\vm.go:2094:39:   flow: {heap} = &{storage for make([]byte, n * DefaultPageSize)}:
+.\vm.go:2094:39:     from make([]byte, n * DefaultPageSize) (non-constant size) at .\vm.go:2094:39
+.\vm.go:867:26: string(debug.Stack()) escapes to heap:
+.\vm.go:867:26:   flow: {heap} = &{storage for string(debug.Stack())}:
+.\vm.go:867:26:     from string(debug.Stack()) (spill) at .\vm.go:867:26
+.\vm.go:867:26:     from vm.StackTrace = string(debug.Stack()) (assign) at .\vm.go:867:18
+.\vm.go:847:7: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:847:7:   flow: {heap} = vm:
+.\vm.go:847:7:     from imp.F(vm) (call parameter) at .\vm.go:2080:32
+.\vm.go:847:7: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:847:7:   flow: {heap} = vm:
+.\vm.go:847:7:     from imp.F(vm) (call parameter) at .\vm.go:2080:32
+.\vm.go:847:7: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:847:7:   flow: {heap} = vm:
+.\vm.go:847:7:     from imp.F(vm) (call parameter) at .\vm.go:2080:32
+.\vm.go:847:7: parameter vm leaks to {storage for func literal} with derefs=0:
+.\vm.go:847:7:   flow: {storage for func literal} = vm:
+.\vm.go:847:7:     from func literal (captured by a closure) at .\vm.go:2069:18
+.\vm.go:847:7: leaking param: vm
+.\vm.go:871:6: moved to heap: frame
+.\vm.go:862:8: func literal does not escape
+.\vm.go:2069:18: func literal escapes to heap
+.\vm.go:2094:39: make([]byte, n * DefaultPageSize) escapes to heap
+.\vm.go:867:26: string(debug.Stack()) escapes to heap
+.\vm.go:2070:11: func literal does not escape
+.\vm.go:47:13: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:47:13:   flow: {heap} = vm:
+.\vm.go:47:13:     from .this.Initialize(vm) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.Initialize(vm) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:47:13: leaking param: vm
+.\vm.go:48:45: parameter name leaks to {heap} with derefs=0:
+.\vm.go:48:45:   flow: {heap} = name:
+.\vm.go:48:45:     from .this.UnsafeInvokeFunction_0(vm, name) (call parameter) at <autogenerated>:1
+.\vm.go:48:25: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:48:25:   flow: {heap} = vm:
+.\vm.go:48:25:     from .this.UnsafeInvokeFunction_0(vm, name) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.UnsafeInvokeFunction_0(vm, name) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:48:25: leaking param: vm
+.\vm.go:48:45: leaking param: name
+.\vm.go:49:45: parameter name leaks to {heap} with derefs=0:
+.\vm.go:49:45:   flow: {heap} = name:
+.\vm.go:49:45:     from .this.UnsafeInvokeFunction_1(vm, name, p0) (call parameter) at <autogenerated>:1
+.\vm.go:49:25: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:49:25:   flow: {heap} = vm:
+.\vm.go:49:25:     from .this.UnsafeInvokeFunction_1(vm, name, p0) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.UnsafeInvokeFunction_1(vm, name, p0) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:49:25: leaking param: vm
+.\vm.go:49:45: leaking param: name
+.\vm.go:50:45: parameter name leaks to {heap} with derefs=0:
+.\vm.go:50:45:   flow: {heap} = name:
+.\vm.go:50:45:     from .this.UnsafeInvokeFunction_2(vm, name, p0, p1) (call parameter) at <autogenerated>:1
+.\vm.go:50:25: parameter vm leaks to {heap} with derefs=0:
+.\vm.go:50:25:   flow: {heap} = vm:
+.\vm.go:50:25:     from .this.UnsafeInvokeFunction_2(vm, name, p0, p1) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.UnsafeInvokeFunction_2(vm, name, p0, p1) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:50:25: leaking param: vm
+.\vm.go:50:45: leaking param: name
+.\vm.go:109:22: parameter field leaks to {heap} with derefs=0:
+.\vm.go:109:22:   flow: {heap} = field:
+.\vm.go:109:22:     from .this.ResolveFunc(module, field) (call parameter) at <autogenerated>:1
+.\vm.go:109:14: parameter module leaks to {heap} with derefs=0:
+.\vm.go:109:14:   flow: {heap} = module:
+.\vm.go:109:14:     from .this.ResolveFunc(module, field) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.ResolveFunc(module, field) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:109:14: leaking param: module
+.\vm.go:109:22: leaking param: field
+.\vm.go:110:24: parameter field leaks to {heap} with derefs=0:
+.\vm.go:110:24:   flow: {heap} = field:
+.\vm.go:110:24:     from .this.ResolveGlobal(module, field) (call parameter) at <autogenerated>:1
+.\vm.go:110:16: parameter module leaks to {heap} with derefs=0:
+.\vm.go:110:16:   flow: {heap} = module:
+.\vm.go:110:16:     from .this.ResolveGlobal(module, field) (call parameter) at <autogenerated>:1
+<autogenerated>:1: parameter .this leaks to {heap} with derefs=0:
+<autogenerated>:1:   flow: {heap} = .this:
+<autogenerated>:1:     from .this.ResolveGlobal(module, field) (call parameter) at <autogenerated>:1
+<autogenerated>:1: leaking param: .this
+.\vm.go:110:16: leaking param: module
+.\vm.go:110:24: leaking param: field

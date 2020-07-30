@@ -55,7 +55,7 @@ type VirtualMachine struct {
 	Module           *compiler.Module
 	FunctionCode     []compiler.InterpreterCode
 	FunctionImports  []FunctionImportInfo
-	CallStack        []Frame
+	CallStack        []*Frame
 	CurrentFrame     int
 	Table            []uint32
 	Globals          []int64
@@ -63,7 +63,6 @@ type VirtualMachine struct {
 	NumValueSlots    int
 	Yielded          int64
 	InsideExecute    bool
-	Delegate         func()
 	Exited           bool
 	ExitError        interface{}
 	ReturnValue      int64
@@ -74,6 +73,10 @@ type VirtualMachine struct {
 	AOTService       AOTService
 	StackTrace       string
 	KeepFrameValues  bool
+	// if true function defined by importID should be called
+	delegate         bool
+	delegateImportID int
+	delegateValueID  int
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -405,7 +408,7 @@ func (m *Module) NewVirtualMachine() *VirtualMachine {
 		Config:          m.Config,
 		FunctionCode:    m.FunctionCode,
 		FunctionImports: m.FunctionImports,
-		CallStack:       make([]Frame, DefaultCallStackSize),
+		CallStack:       make([]*Frame, DefaultCallStackSize),
 		CurrentFrame:    -1,
 		Table:           table,
 		Globals:         globals,
@@ -546,7 +549,7 @@ func NewVirtualMachine(
 		Config:          config,
 		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
-		CallStack:       make([]Frame, DefaultCallStackSize),
+		CallStack:       make([]*Frame, DefaultCallStackSize),
 		CurrentFrame:    -1,
 		Table:           table,
 		Globals:         globals,
@@ -745,7 +748,12 @@ func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 		panic("call stack overflow")
 		//vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
 	}
-	return &vm.CallStack[vm.CurrentFrame]
+	res := vm.CallStack[vm.CurrentFrame]
+	if nil == res {
+		res = &Frame{}
+		vm.CallStack[vm.CurrentFrame] = res
+	}
+	return res
 }
 
 func (vm *VirtualMachine) getExport(key string, kind wasm.External) (int, bool) {
@@ -803,7 +811,8 @@ func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	vm.Exited = false
 
 	vm.CurrentFrame++
-	frame := vm.GetCurrentFrame()
+	var frame *Frame
+	frame = vm.GetCurrentFrame()
 	frame.Init(
 		vm,
 		functionID,
@@ -831,6 +840,26 @@ func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 	return true
 }
 
+func (vm *VirtualMachine) execDelegate() {
+	if !vm.delegate {
+		return
+	}
+	defer func() { vm.delegate = false }()
+	defer func() {
+		if err := recover(); err != nil {
+			vm.Exited = true
+			vm.ExitError = err
+		}
+	}()
+	imp := vm.FunctionImports[vm.delegateImportID]
+	if imp.F == nil {
+		imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
+	}
+	frame := vm.GetCurrentFrame()
+	frame.Regs[vm.delegateValueID] = imp.F(vm)
+
+}
+
 // Execute starts the virtual machines main instruction processing loop.
 // This function may return at any point and is guaranteed to return
 // at least once every 10000 instructions. Caller is responsible for
@@ -840,7 +869,7 @@ func (vm *VirtualMachine) Execute() {
 		panic("attempting to execute an exited vm")
 	}
 
-	if vm.Delegate != nil {
+	if vm.delegate {
 		panic("delegate not cleared")
 	}
 
@@ -859,7 +888,9 @@ func (vm *VirtualMachine) Execute() {
 		}
 	}()
 
-	frame := vm.GetCurrentFrame()
+	var frame *Frame
+	frame = nil
+	frame = vm.GetCurrentFrame()
 
 	for {
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
@@ -2055,20 +2086,9 @@ func (vm *VirtualMachine) Execute() {
 		case opcodes.InvokeImport:
 			importID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
-			vm.Delegate = func() {
-				defer func() {
-					if err := recover(); err != nil {
-						vm.Exited = true
-						vm.ExitError = err
-					}
-				}()
-				imp := vm.FunctionImports[importID]
-				if imp.F == nil {
-					imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
-				}
-				frame.Regs[valueID] = imp.F(vm)
-			}
-
+			vm.delegate = true
+			vm.delegateValueID = valueID
+			vm.delegateImportID = importID
 			return
 		case opcodes.CurrentMemory:
 			frame.Regs[valueID] = int64(len(vm.Memory) / DefaultPageSize)
