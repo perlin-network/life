@@ -73,6 +73,7 @@ type VirtualMachine struct {
 	ImportResolver   ImportResolver
 	AOTService       AOTService
 	StackTrace       string
+	KeepFrameValues  bool
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -98,6 +99,7 @@ type Frame struct {
 	IP           int
 	ReturnReg    int
 	Continuation int32
+	values       []int64
 }
 
 // ImportResolver is an interface for allowing one to define imports to WebAssembly modules
@@ -700,7 +702,20 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	}
 	vm.NumValueSlots += numValueSlots
 
-	values := make([]int64, numValueSlots)
+	var values []int64
+	if vm.KeepFrameValues {
+		values = f.values
+		if cap(values) < numValueSlots {
+			values = make([]int64, numValueSlots)
+		}
+		values = values[:numValueSlots]
+		for idx := range values {
+			values[idx] = 0
+		}
+		f.values = values
+	} else {
+		values = make([]int64, numValueSlots)
+	}
 
 	f.FunctionID = functionID
 	f.Regs = values[:code.NumRegs]
