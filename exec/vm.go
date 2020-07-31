@@ -842,6 +842,8 @@ func (vm *VirtualMachine) execDelegate() {
 	imp := vm.FunctionImports[vm.delegateImportID]
 	if imp.F == nil {
 		imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
+		// ? May be better `FunctionImports  []*FunctionImportInfo`
+		vm.FunctionImports[vm.delegateImportID] = imp
 	}
 	frame := vm.GetCurrentFrame()
 	frame.Regs[vm.delegateValueID] = imp.F(vm)
