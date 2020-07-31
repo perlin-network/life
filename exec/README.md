@@ -1,2 +1,0 @@
-- go test -run none -benchmem -memprofile=mem.out -bench Benchmark_life_callSumAndAdd1_10_NoAOT_KeepFrameValues
-- go tool pprof -http=:8088 mem.out

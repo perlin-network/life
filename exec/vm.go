@@ -72,7 +72,7 @@ type VirtualMachine struct {
 	ImportResolver   ImportResolver
 	AOTService       AOTService
 	StackTrace       string
-	KeepFrameValues  bool
+
 	// if true function defined by importID should be called
 	delegate         bool
 	delegateImportID int
@@ -705,24 +705,17 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	}
 	vm.NumValueSlots += numValueSlots
 
-	var values []int64
-	if vm.KeepFrameValues {
-		values = f.values
-		if cap(values) < numValueSlots {
-			values = make([]int64, numValueSlots)
-		}
-		values = values[:numValueSlots]
-		for idx := range values {
-			values[idx] = 0
-		}
-		f.values = values
-	} else {
-		values = make([]int64, numValueSlots)
+	if cap(f.values) < numValueSlots {
+		f.values = make([]int64, numValueSlots)
+	}
+	f.values = f.values[:numValueSlots]
+	for idx := range f.values {
+		f.values[idx] = 0
 	}
 
 	f.FunctionID = functionID
-	f.Regs = values[:code.NumRegs]
-	f.Locals = values[code.NumRegs:]
+	f.Regs = f.values[:code.NumRegs]
+	f.Locals = f.values[code.NumRegs:]
 	f.Code = code.Bytes
 	f.IP = 0
 	f.Continuation = 0

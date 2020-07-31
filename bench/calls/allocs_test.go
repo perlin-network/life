@@ -1,10 +1,11 @@
-package exec
+package alloc
 
 import (
 	"fmt"
 	"io/ioutil"
 	"testing"
 
+	"github.com/perlin-network/life/exec"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +14,7 @@ func Test_callSumAndAdd1(t *testing.T) {
 	input, err := ioutil.ReadFile("sum-add.wasm")
 	require.Nil(t, err)
 
-	vm, err := NewVirtualMachine(input, VMConfig{}, &lifeResolver{}, nil)
+	vm := newVM(t, input, &lifeResolver{}, false)
 	require.Nil(t, err)
 
 	entryID, ok := vm.GetFunctionExport("callSumAndAdd1")
@@ -32,25 +33,25 @@ func Test_callSumAndAdd1(t *testing.T) {
 
 }
 
-func Benchmark_life_callSumAndAdd1_10_NoAOT_DoNotKeepFrameValues(b *testing.B) {
+func Benchmark_callSumAndAdd1_0_NoAOT(b *testing.B) {
+	callSumAndAdd1(b, 0, false)
+}
+
+func Benchmark_callSumAndAdd1_0_AOT(b *testing.B) {
+	callSumAndAdd1(b, 0, true)
+}
+func Benchmark_callSumAndAdd1_1_NoAOT(b *testing.B) {
+	callSumAndAdd1(b, 1, false)
+}
+func Benchmark_callSumAndAdd1_10_NoAOT(b *testing.B) {
 	callSumAndAdd1(b, 10, false)
 }
 
-func Benchmark_life_callSumAndAdd1_10_NoAOT_KeepFrameValues(b *testing.B) {
-	callSumAndAdd1(b, 10, true)
-}
-
-func Benchmark_life_callSumAndAdd1_1_NoAOT_KeepFrameValues(b *testing.B) {
-	callSumAndAdd1(b, 1, true)
-}
-
-func callSumAndAdd1(t *testing.B, cnt int, keepFrameValues bool) {
+func callSumAndAdd1(t *testing.B, cnt int, aot bool) {
 	input, err := ioutil.ReadFile("sum-add.wasm")
 	require.Nil(t, err)
 
-	vm, err := NewVirtualMachine(input, VMConfig{}, &lifeResolver{}, nil)
-	vm.KeepFrameValues = keepFrameValues
-	require.Nil(t, err)
+	vm := newVM(t, input, &lifeResolver{}, aot)
 
 	entryID, ok := vm.GetFunctionExport("callSumAndAdd1")
 	require.True(t, ok)
@@ -66,12 +67,12 @@ func callSumAndAdd1(t *testing.B, cnt int, keepFrameValues bool) {
 
 type lifeResolver struct{}
 
-func (r *lifeResolver) ResolveFunc(module, field string) FunctionImport {
+func (r *lifeResolver) ResolveFunc(module, field string) exec.FunctionImport {
 	switch module {
 	case "env":
 		switch field {
 		case "sum":
-			return func(vm *VirtualMachine) int64 {
+			return func(vm *exec.VirtualMachine) int64 {
 				v1 := int32(vm.GetCurrentFrame().Locals[0])
 				v2 := int32(vm.GetCurrentFrame().Locals[1])
 				return int64(v1 + v2)
