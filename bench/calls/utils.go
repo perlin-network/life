@@ -11,7 +11,7 @@ import (
 
 func newVM(t require.TestingT, input []byte, impResolver exec.ImportResolver, aot bool) *exec.VirtualMachine {
 
-	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{}, impResolver, nil)
+	vm, err := exec.NewVirtualMachine(input, exec.VMConfig{KeepFrameValues: true}, impResolver, nil)
 	require.Nil(t, err)
 
 	if aot {

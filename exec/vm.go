@@ -26,6 +26,12 @@ const (
 
 	// JITCodeSizeThreshold is the lower-bound code size threshold for the JIT compiler.
 	JITCodeSizeThreshold = 30
+
+	// MaxKeptValueSlots defines maximum possible Frame.values capacity to be kept
+	MaxKeptValueSlots = 30
+	// MaxKeptValueCallStackDepth defines maximum stack size to keep Frame.values
+	// If stak grows above this threshold Frame.values will be always re-allocated
+	MaxKeptValueCallStackDepth = DefaultCallStackSize
 )
 
 // LE is a simple alias to `binary.LittleEndian`.
@@ -91,6 +97,9 @@ type VMConfig struct {
 	GasLimit                 uint64
 	DisableFloatingPoint     bool
 	ReturnOnGasLimitExceeded bool
+	// If true frame values won't be re-allocated until certain threshold is reached
+	// See MaxKeptValueSlots and MaxKeptValueCallStackDepth
+	KeepFrameValues bool
 }
 
 // Frame represents a call frame.
@@ -705,17 +714,24 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	}
 	vm.NumValueSlots += numValueSlots
 
-	if cap(f.values) < numValueSlots {
-		f.values = make([]int64, numValueSlots)
-	}
-	f.values = f.values[:numValueSlots]
-	for idx := range f.values {
-		f.values[idx] = 0
+	var values []int64
+	if vm.Config.KeepFrameValues {
+
+		if cap(f.values) < numValueSlots {
+			f.values = make([]int64, numValueSlots)
+		}
+		f.values = f.values[:numValueSlots]
+		for idx := range f.values {
+			f.values[idx] = 0
+		}
+		values = f.values
+	} else {
+		values = make([]int64, numValueSlots)
 	}
 
 	f.FunctionID = functionID
-	f.Regs = f.values[:code.NumRegs]
-	f.Locals = f.values[code.NumRegs:]
+	f.Regs = values[:code.NumRegs]
+	f.Locals = values[code.NumRegs:]
 	f.Code = code.Bytes
 	f.IP = 0
 	f.Continuation = 0
@@ -727,6 +743,10 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 func (f *Frame) Destroy(vm *VirtualMachine) {
 	numValueSlots := len(f.Regs) + len(f.Locals)
 	vm.NumValueSlots -= numValueSlots
+
+	if vm.CurrentFrame > MaxKeptValueCallStackDepth || cap(f.values) > MaxKeptValueSlots {
+		f.values = nil
+	}
 
 	//fmt.Printf("Leave function %d (%s)\n", f.FunctionID, vm.Module.FunctionNames[f.FunctionID])
 }
