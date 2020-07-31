@@ -83,6 +83,10 @@ type VirtualMachine struct {
 	delegate         bool
 	delegateImportID int
 	delegateValueID  int
+
+	// Used for memory-allocation optimization
+	targetName string
+	entryName  []byte
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
