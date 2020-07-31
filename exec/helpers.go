@@ -2,7 +2,8 @@ package exec
 
 import (
 	"errors"
-	"strconv"
+
+	"fmt"
 
 	"github.com/perlin-network/life/compiler"
 	"github.com/perlin-network/life/utils"
@@ -61,23 +62,17 @@ func (vm *VirtualMachine) Run(entryID int, params ...int64) (retVal int64, retEr
 				vm.CurrentFrame = -1
 			}
 		}
-		if len(vm.targetName) == 0 {
-			vm.targetName = compiler.NGEN_FUNCTION_PREFIX
-		} else {
-			vm.targetName = vm.targetName[0:len(compiler.NGEN_FUNCTION_PREFIX)]
-		}
-		vm.entryName = vm.entryName[:0]
-		vm.targetName = vm.targetName + string(strconv.AppendInt(vm.entryName, int64(entryID), 10))
+		targetName := fmt.Sprintf("%s%d", compiler.NGEN_FUNCTION_PREFIX, entryID)
 		switch len(params) {
 		case 0:
 			defer recoveryFunc()
-			return int64(vm.AOTService.UnsafeInvokeFunction_0(vm, vm.targetName)), nil
+			return int64(vm.AOTService.UnsafeInvokeFunction_0(vm, targetName)), nil
 		case 1:
 			defer recoveryFunc()
-			return int64(vm.AOTService.UnsafeInvokeFunction_1(vm, vm.targetName, uint64(params[0]))), nil
+			return int64(vm.AOTService.UnsafeInvokeFunction_1(vm, targetName, uint64(params[0]))), nil
 		case 2:
 			defer recoveryFunc()
-			return int64(vm.AOTService.UnsafeInvokeFunction_2(vm, vm.targetName, uint64(params[0]), uint64(params[1]))), nil
+			return int64(vm.AOTService.UnsafeInvokeFunction_2(vm, targetName, uint64(params[0]), uint64(params[1]))), nil
 		default:
 		}
 	}
