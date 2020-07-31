@@ -13,4 +13,3 @@ Benchmarking calls to/from VM
 
 - go test -run none -benchmem -cpuprofile=cpu.out -bench Benchmark_callSumAndAdd1
 - go tool pprof -http=:8088 cpu.out
-

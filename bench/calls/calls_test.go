@@ -37,14 +37,21 @@ func Benchmark_callSumAndAdd1_0_NoAOT(b *testing.B) {
 	callSumAndAdd1(b, 0, false)
 }
 
-func Benchmark_callSumAndAdd1_0_AOT(b *testing.B) {
-	callSumAndAdd1(b, 0, true)
-}
 func Benchmark_callSumAndAdd1_1_NoAOT(b *testing.B) {
 	callSumAndAdd1(b, 1, false)
 }
 func Benchmark_callSumAndAdd1_10_NoAOT(b *testing.B) {
 	callSumAndAdd1(b, 10, false)
+}
+
+func Benchmark_callSumAndAdd1_0_AOT(b *testing.B) {
+	callSumAndAdd1(b, 0, true)
+}
+func Benchmark_callSumAndAdd1_1_AOT(b *testing.B) {
+	callSumAndAdd1(b, 1, true)
+}
+func Benchmark_callSumAndAdd1_10_AOT(b *testing.B) {
+	callSumAndAdd1(b, 10, true)
 }
 
 func callSumAndAdd1(t *testing.B, cnt int, aot bool) {

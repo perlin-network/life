@@ -55,7 +55,7 @@ type VirtualMachine struct {
 	Module           *compiler.Module
 	FunctionCode     []compiler.InterpreterCode
 	FunctionImports  []FunctionImportInfo
-	CallStack        []*Frame
+	CallStack        []Frame
 	CurrentFrame     int
 	Table            []uint32
 	Globals          []int64
@@ -408,7 +408,7 @@ func (m *Module) NewVirtualMachine() *VirtualMachine {
 		Config:          m.Config,
 		FunctionCode:    m.FunctionCode,
 		FunctionImports: m.FunctionImports,
-		CallStack:       make([]*Frame, DefaultCallStackSize),
+		CallStack:       make([]Frame, DefaultCallStackSize),
 		CurrentFrame:    -1,
 		Table:           table,
 		Globals:         globals,
@@ -549,7 +549,7 @@ func NewVirtualMachine(
 		Config:          config,
 		FunctionCode:    functionCode,
 		FunctionImports: funcImports,
-		CallStack:       make([]*Frame, DefaultCallStackSize),
+		CallStack:       make([]Frame, DefaultCallStackSize),
 		CurrentFrame:    -1,
 		Table:           table,
 		Globals:         globals,
@@ -741,12 +741,7 @@ func (vm *VirtualMachine) GetCurrentFrame() *Frame {
 		panic("call stack overflow")
 		//vm.CallStack = append(vm.CallStack, make([]Frame, DefaultCallStackSize / 2)...)
 	}
-	res := vm.CallStack[vm.CurrentFrame]
-	if nil == res {
-		res = &Frame{}
-		vm.CallStack[vm.CurrentFrame] = res
-	}
-	return res
+	return &vm.CallStack[vm.CurrentFrame]
 }
 
 func (vm *VirtualMachine) getExport(key string, kind wasm.External) (int, bool) {

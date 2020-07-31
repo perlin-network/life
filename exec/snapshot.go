@@ -40,9 +40,8 @@ func (vm *VirtualMachine) WriteSnapshot(ss *Snapshot) error {
 		return err
 	}
 
-	vm.CallStack = make([]*Frame, len(state.CallStack))
+	vm.CallStack = make([]Frame, len(state.CallStack))
 	for i, f := range state.CallStack {
-		vm.CallStack[i] = &Frame{}
 		vm.CallStack[i].FunctionID = f.FunctionID
 		vm.CallStack[i].Regs = f.Regs
 		vm.CallStack[i].Locals = f.Locals
