@@ -3,6 +3,7 @@ package calls
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/perlin-network/life/exec"
@@ -79,6 +80,7 @@ func (r *lifeResolver) ResolveFunc(module, field string) exec.FunctionImport {
 	case "env":
 		switch field {
 		case "sum":
+			log.Println("Resolver called")
 			return func(vm *exec.VirtualMachine) int64 {
 				v1 := int32(vm.GetCurrentFrame().Locals[0])
 				v2 := int32(vm.GetCurrentFrame().Locals[1])
