@@ -14,6 +14,11 @@ Benchmarking calls to/from VM
 - go test -run none -benchmem -cpuprofile=cpu.out -bench Benchmark_callSumAndAdd1
 - go tool pprof -http=:8088 cpu.out
 
+# Links
+
+- https://github.com/perlin-network/life/blob/69f41b0484c346e56a57921aef51f7aa4947f5b2/exec/vm_codegen.go
+- GAS https://github.com/perlin-network/life/issues/86
+
 # Misc
 
 goos: linux
