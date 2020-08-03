@@ -34,6 +34,25 @@ func Test_callSumAndAdd1(t *testing.T) {
 
 }
 
+func Benchmark_Ignite(t *testing.B) {
+
+	input, err := ioutil.ReadFile("sum-add.wasm")
+	require.Nil(t, err)
+
+	vm := newVM(t, input, &lifeResolver{}, false)
+	require.Nil(t, err)
+
+	entryID, ok := vm.GetFunctionExport("callSumAndAdd1")
+	require.True(t, ok)
+
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		vm.Ignite(entryID, 3, 4, 10)
+		vm.CurrentFrame--
+		vm.Exited = true
+	}
+}
+
 func Benchmark_callSumAndAdd1_0_NoAOT(b *testing.B) {
 	callSumAndAdd1(b, 0, false)
 }
