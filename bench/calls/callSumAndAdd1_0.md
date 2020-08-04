@@ -1,3 +1,5 @@
+https://wasdk.github.io/wasmcodeexplorer/
+
 		case opcodes.GetLocal:
 			//1, 149
 			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4])) //2
@@ -55,3 +57,39 @@
 
 			frame = vm.GetCurrentFrame()
 			frame.Regs[frame.ReturnReg] = val			
+
+
+
+1.0:{valueID: 1, opcode: opcodes.GetLocal, v1: 2, v2: 2}
+1.9:{valueID: 2, opcode: opcodes.I32Const, v1: 1, v2: 1}
+1.18:{valueID: 1, opcode: opcodes.I32GeS, v1: 1, v2: 2}
+1.31:{valueID: 0, opcode: opcodes.JmpIf, v1: 61, v2: 1}
+1.61:{valueID: 1, opcode: opcodes.GetLocal, v1: 0, v2: 2}
+1.70:{valueID: 2, opcode: opcodes.GetLocal, v1: 1, v2: 1}
+1.79:{valueID: 1, opcode: opcodes.Call, v1: 0, v2: 2}
+0.0:{valueID: 1, opcode: opcodes.InvokeImport, v1: 0, v2: 0}
+2020/08/04 15:23:01 Resolver called
+0.9:{valueID: 0, opcode: opcodes.ReturnValue, v1: 1, v2: 0}
+1.100:{valueID: 2, opcode: opcodes.I32Const, v1: 1, v2: 1}
+1.109:{valueID: 1, opcode: opcodes.I32Add, v1: 1, v2: 2}
+1.122:{valueID: 0, opcode: opcodes.SetLocal, v1: 0, v2: 1}
+1.135:{valueID: 1, opcode: opcodes.GetLocal, v1: 2, v2: 2}
+1.144:{valueID: 2, opcode: opcodes.I32Const, v1: 4294967295, v2: 1}
+1.153:{valueID: 1, opcode: opcodes.I32Add, v1: 1, v2: 2}
+1.166:{valueID: 0, opcode: opcodes.SetLocal, v1: 2, v2: 1}
+1.179:{valueID: 0, opcode: opcodes.JmpIf, v1: 61, v2: 1}
+1.61:{valueID: 1, opcode: opcodes.GetLocal, v1: 0, v2: 2}
+1.70:{valueID: 2, opcode: opcodes.GetLocal, v1: 1, v2: 1}
+1.79:{valueID: 1, opcode: opcodes.Call, v1: 0, v2: 2}
+0.0:{valueID: 1, opcode: opcodes.InvokeImport, v1: 0, v2: 0}
+0.9:{valueID: 0, opcode: opcodes.ReturnValue, v1: 1, v2: 0}
+1.100:{valueID: 2, opcode: opcodes.I32Const, v1: 1, v2: 1}
+1.109:{valueID: 1, opcode: opcodes.I32Add, v1: 1, v2: 2}
+1.122:{valueID: 0, opcode: opcodes.SetLocal, v1: 0, v2: 1}
+1.135:{valueID: 1, opcode: opcodes.GetLocal, v1: 2, v2: 2}
+1.144:{valueID: 2, opcode: opcodes.I32Const, v1: 4294967295, v2: 1}
+1.153:{valueID: 1, opcode: opcodes.I32Add, v1: 1, v2: 2}
+1.166:{valueID: 0, opcode: opcodes.SetLocal, v1: 2, v2: 1}
+1.179:{valueID: 0, opcode: opcodes.JmpIf, v1: 61, v2: 1}
+1.196:{valueID: 1, opcode: opcodes.GetLocal, v1: 0, v2: 0}
+1.205:{valueID: 0, opcode: opcodes.ReturnValue, v1: 1, v2: 0}			

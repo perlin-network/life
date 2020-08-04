@@ -106,19 +106,3 @@ func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) (res int
 		}
 	}
 }
-
-func newCallSumAndAdd1_0() (res *function) {
-	fn := function{}
-	fn.NumParams = 3
-	fn.NumRegs = 3
-	fn.NumLocals = 0
-
-	fn.inss = append(fn.inss, ins{valueID: 1, opcode: opcodes.GetLocal, v1: 2, v2: 2})
-	fn.inss = append(fn.inss, ins{valueID: 2, opcode: opcodes.I32Const, v1: 1, v2: 1})
-	fn.inss = append(fn.inss, ins{valueID: 1, opcode: opcodes.I32GeS, v1: 1, v2: 2})
-	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.JmpIf, v1: 61, v2: 1})
-	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.Jmp, v1: 5, v2: 0})
-	fn.inss = append(fn.inss, ins{valueID: 1, opcode: opcodes.GetLocal, v1: 0, v2: 0})
-	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.ReturnValue, v1: 1, v2: 0})
-	return &fn
-}

@@ -2120,6 +2120,8 @@ func (vm *VirtualMachine) Execute() {
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = vm.Yielded
+			// https://bytecodealliance.org/articles/multi-value-all-the-wasm
+			//  A phi function takes a number of mutually exclusive, control flow-dependent parameters and returns the one that was defined where control flow came from.
 
 		case opcodes.AddGas:
 			delta := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
