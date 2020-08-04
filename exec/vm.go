@@ -903,11 +903,14 @@ func (vm *VirtualMachine) Execute() {
 	frame = vm.GetCurrentFrame()
 
 	for {
+
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
 		frame.IP += 5
 
 		//fmt.Printf("INS: [%d] %s\n", valueID, ins.String())
+		fmt.Printf("%v.%v:", frame.FunctionID, frame.IP-5)
+		fmt.Printf("{valueID: %v, opcode: opcodes.%v, v1: %v, v2: %v}\n", valueID, ins, LE.Uint32(frame.Code[frame.IP:frame.IP+4]), LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))
 
 		switch ins {
 		case opcodes.Nop:

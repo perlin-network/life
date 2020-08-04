@@ -1,15 +1,18 @@
 		case opcodes.GetLocal:
-			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
+			//1, 149
+			id := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4])) //2
 			val := frame.Locals[id]
 			frame.IP += 4
 			frame.Regs[valueID] = val
 			
 		case opcodes.I32Const:
-			val := LE.Uint32(frame.Code[frame.IP : frame.IP+4])
+			// 2, 3
+			val := LE.Uint32(frame.Code[frame.IP : frame.IP+4]) //1
 			frame.IP += 4
 			frame.Regs[valueID] = int64(val)			
 
 		case opcodes.I32GeS:
+			// 1, 31
 			a := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP:frame.IP+4]))])
 			b := int32(frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))])
 			frame.IP += 8

@@ -31,6 +31,21 @@ func Test_callSumAndAdd1(t *testing.T) {
 	ret, err = vm.Run(entryID, 3, 4, 10)
 	require.Nil(t, err)
 	require.Equal(t, int64(53), ret)
+}
+
+func Test_callSumAndAdd1_1(t *testing.T) {
+	input, err := ioutil.ReadFile("sum-add.wasm")
+	require.Nil(t, err)
+
+	vm := newVM(t, input, &lifeResolver{}, false)
+	require.Nil(t, err)
+
+	entryID, ok := vm.GetFunctionExport("callSumAndAdd1")
+	require.True(t, ok)
+
+	ret, err := vm.Run(entryID, 3, 4, 1)
+	require.Nil(t, err)
+	require.Equal(t, int64(8), ret)
 
 }
 
