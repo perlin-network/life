@@ -9,7 +9,7 @@ import (
 func Test_fast_callSumAndAdd1(t *testing.T) {
 	vm := newFastVM()
 	fn := newCallSumAndAdd1_0()
-	res := vm.exec(fn, 3, 4, 0)
+	res, _ := vm.exec(fn, 3, 4, 0)
 	require.Equal(t, int64(3), res)
 
 }

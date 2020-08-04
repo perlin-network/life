@@ -5,6 +5,8 @@
 package calls
 
 import (
+	"errors"
+
 	"github.com/perlin-network/life/compiler/opcodes"
 )
 
@@ -25,19 +27,22 @@ type ins struct {
 
 type fastvm struct {
 	valueSlots []int64
+	gas        uint
+	gasLimit   uint
 }
 
 func newFastVM() (res *fastvm) {
 	res = &fastvm{}
 	res.valueSlots = make([]int64, 1000)
+	res.gasLimit = ^uint(0)
 	return res
 }
 
-func (vm *fastvm) exec(fn *function, params ...int64) int64 {
+func (vm *fastvm) exec(fn *function, params ...int64) (res int64, err error) {
 	return vm.execinternal(0, fn, params...)
 }
 
-func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) int64 {
+func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) (res int64, err error) {
 
 	if fn.NumParams != len(params) {
 		panic("param count mismatch")
@@ -48,11 +53,15 @@ func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) int64 {
 	Locals := vm.valueSlots[slot+fn.NumRegs : slot+numValueSlots]
 	copy(Locals, params)
 
+	gas := vm.gas
+	// gasLimit := vm.gasLimit
+
 	ip := 0
 	for {
 		ins := fn.inss[ip]
 		valueID := ins.valueID
 		ip++
+		gas++
 		switch ins.opcode {
 		case opcodes.GetLocal:
 			id := ins.v1
@@ -70,6 +79,10 @@ func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) int64 {
 				Regs[valueID] = 0
 			}
 		case opcodes.JmpIf:
+			if vm.gas > vm.gasLimit {
+				return 0, errors.New("Gas limit exceeded")
+			}
+
 			target := int(ins.v1)
 			cond := int(ins.v2)
 			// yieldedReg := int(LE.Uint32(frame.Code[frame.IP+8 : frame.IP+12]))
@@ -78,12 +91,16 @@ func (vm *fastvm) execinternal(slot int, fn *function, params ...int64) int64 {
 				ip = target
 			}
 		case opcodes.Jmp:
+			if vm.gas > vm.gasLimit {
+				return 0, errors.New("Gas limit exceeded")
+			}
+
 			target := int(ins.v1)
 			// vm.Yielded = frame.Regs[int(LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))]
 			ip = target
 		case opcodes.ReturnValue:
 			val := Regs[int(ins.v1)]
-			return val
+			return val, nil
 		default:
 			panic("Unknown op")
 		}
