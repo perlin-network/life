@@ -23,6 +23,14 @@ func Benchmark_fast_callSumAndAdd1(b *testing.B) {
 	}
 }
 
+func Benchmark_fast_justCall(b *testing.B) {
+	vm := newFastVM()
+	fn := newJustCall()
+	for i := 0; i < b.N; i++ {
+		vm.exec(fn)
+	}
+}
+
 func newCallSumAndAdd1_0() (res *function) {
 	fn := function{}
 	fn.NumParams = 3
@@ -36,5 +44,15 @@ func newCallSumAndAdd1_0() (res *function) {
 	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.Jmp, v1: 5, v2: 0})
 	fn.inss = append(fn.inss, ins{valueID: 1, opcode: opcodes.GetLocal, v1: 0, v2: 0})
 	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.ReturnValue, v1: 1, v2: 0})
+	return &fn
+}
+
+func newJustCall() (res *function) {
+	fn := function{}
+	fn.NumParams = 0
+	fn.NumRegs = 1
+	fn.NumLocals = 0
+
+	fn.inss = append(fn.inss, ins{valueID: 0, opcode: opcodes.ReturnValue, v1: 0, v2: 0})
 	return &fn
 }
