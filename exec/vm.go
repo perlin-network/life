@@ -26,6 +26,12 @@ const (
 
 	// JITCodeSizeThreshold is the lower-bound code size threshold for the JIT compiler.
 	JITCodeSizeThreshold = 30
+
+	// MaxKeptValueSlots defines maximum possible Frame.values capacity to be kept
+	MaxKeptValueSlots = 30
+	// MaxKeptValueCallStackDepth defines maximum stack size to keep Frame.values
+	// If stak grows above this threshold Frame.values will be always re-allocated
+	MaxKeptValueCallStackDepth = DefaultCallStackSize
 )
 
 // LE is a simple alias to `binary.LittleEndian`.
@@ -63,7 +69,6 @@ type VirtualMachine struct {
 	NumValueSlots    int
 	Yielded          int64
 	InsideExecute    bool
-	Delegate         func()
 	Exited           bool
 	ExitError        interface{}
 	ReturnValue      int64
@@ -73,6 +78,11 @@ type VirtualMachine struct {
 	ImportResolver   ImportResolver
 	AOTService       AOTService
 	StackTrace       string
+
+	// if true function defined by importID should be called
+	delegate         bool
+	delegateImportID int
+	delegateValueID  int
 }
 
 // VMConfig denotes a set of options passed to a single VirtualMachine insta.ce
@@ -87,6 +97,9 @@ type VMConfig struct {
 	GasLimit                 uint64
 	DisableFloatingPoint     bool
 	ReturnOnGasLimitExceeded bool
+	// If true frame values won't be re-allocated until certain threshold is reached
+	// See MaxKeptValueSlots and MaxKeptValueCallStackDepth
+	KeepFrameValues bool
 }
 
 // Frame represents a call frame.
@@ -98,6 +111,7 @@ type Frame struct {
 	IP           int
 	ReturnReg    int
 	Continuation int32
+	values       []int64
 }
 
 // ImportResolver is an interface for allowing one to define imports to WebAssembly modules
@@ -700,7 +714,20 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 	}
 	vm.NumValueSlots += numValueSlots
 
-	values := make([]int64, numValueSlots)
+	var values []int64
+	if vm.Config.KeepFrameValues {
+
+		if cap(f.values) < numValueSlots {
+			f.values = make([]int64, numValueSlots)
+		}
+		f.values = f.values[:numValueSlots]
+		for idx := range f.values {
+			f.values[idx] = 0
+		}
+		values = f.values
+	} else {
+		values = make([]int64, numValueSlots)
+	}
 
 	f.FunctionID = functionID
 	f.Regs = values[:code.NumRegs]
@@ -716,6 +743,10 @@ func (f *Frame) Init(vm *VirtualMachine, functionID int, code compiler.Interpret
 func (f *Frame) Destroy(vm *VirtualMachine) {
 	numValueSlots := len(f.Regs) + len(f.Locals)
 	vm.NumValueSlots -= numValueSlots
+
+	if vm.CurrentFrame > MaxKeptValueCallStackDepth || cap(f.values) > MaxKeptValueSlots {
+		f.values = nil
+	}
 
 	//fmt.Printf("Leave function %d (%s)\n", f.FunctionID, vm.Module.FunctionNames[f.FunctionID])
 }
@@ -788,7 +819,8 @@ func (vm *VirtualMachine) Ignite(functionID int, params ...int64) {
 	vm.Exited = false
 
 	vm.CurrentFrame++
-	frame := vm.GetCurrentFrame()
+	var frame *Frame
+	frame = vm.GetCurrentFrame()
 	frame.Init(
 		vm,
 		functionID,
@@ -816,6 +848,28 @@ func (vm *VirtualMachine) AddAndCheckGas(delta uint64) bool {
 	return true
 }
 
+func (vm *VirtualMachine) execDelegate() {
+	if !vm.delegate {
+		return
+	}
+	defer func() { vm.delegate = false }()
+	defer func() {
+		if err := recover(); err != nil {
+			vm.Exited = true
+			vm.ExitError = err
+		}
+	}()
+	imp := vm.FunctionImports[vm.delegateImportID]
+	if imp.F == nil {
+		imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
+		// ? May be better `FunctionImports  []*FunctionImportInfo`
+		vm.FunctionImports[vm.delegateImportID] = imp
+	}
+	frame := vm.GetCurrentFrame()
+	frame.Regs[vm.delegateValueID] = imp.F(vm)
+
+}
+
 // Execute starts the virtual machines main instruction processing loop.
 // This function may return at any point and is guaranteed to return
 // at least once every 10000 instructions. Caller is responsible for
@@ -825,7 +879,7 @@ func (vm *VirtualMachine) Execute() {
 		panic("attempting to execute an exited vm")
 	}
 
-	if vm.Delegate != nil {
+	if vm.delegate {
 		panic("delegate not cleared")
 	}
 
@@ -844,14 +898,19 @@ func (vm *VirtualMachine) Execute() {
 		}
 	}()
 
-	frame := vm.GetCurrentFrame()
+	var frame *Frame
+	frame = nil
+	frame = vm.GetCurrentFrame()
 
 	for {
+
 		valueID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 		ins := opcodes.Opcode(frame.Code[frame.IP+4])
 		frame.IP += 5
 
 		//fmt.Printf("INS: [%d] %s\n", valueID, ins.String())
+		fmt.Printf("%v.%v:", frame.FunctionID, frame.IP-5)
+		fmt.Printf("{valueID: %v, opcode: opcodes.%v, v1: %v, v2: %v}\n", valueID, ins, LE.Uint32(frame.Code[frame.IP:frame.IP+4]), LE.Uint32(frame.Code[frame.IP+4:frame.IP+8]))
 
 		switch ins {
 		case opcodes.Nop:
@@ -2040,20 +2099,9 @@ func (vm *VirtualMachine) Execute() {
 		case opcodes.InvokeImport:
 			importID := int(LE.Uint32(frame.Code[frame.IP : frame.IP+4]))
 			frame.IP += 4
-			vm.Delegate = func() {
-				defer func() {
-					if err := recover(); err != nil {
-						vm.Exited = true
-						vm.ExitError = err
-					}
-				}()
-				imp := vm.FunctionImports[importID]
-				if imp.F == nil {
-					imp.F = vm.ImportResolver.ResolveFunc(imp.ModuleName, imp.FieldName)
-				}
-				frame.Regs[valueID] = imp.F(vm)
-			}
-
+			vm.delegate = true
+			vm.delegateValueID = valueID
+			vm.delegateImportID = importID
 			return
 		case opcodes.CurrentMemory:
 			frame.Regs[valueID] = int64(len(vm.Memory) / DefaultPageSize)
@@ -2072,6 +2120,8 @@ func (vm *VirtualMachine) Execute() {
 
 		case opcodes.Phi:
 			frame.Regs[valueID] = vm.Yielded
+			// https://bytecodealliance.org/articles/multi-value-all-the-wasm
+			//  A phi function takes a number of mutually exclusive, control flow-dependent parameters and returns the one that was defined where control flow came from.
 
 		case opcodes.AddGas:
 			delta := LE.Uint64(frame.Code[frame.IP : frame.IP+8])
